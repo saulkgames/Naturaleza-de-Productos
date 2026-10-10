@@ -1,0 +1,14 @@
+<customlist scriptid="customlist_sads_naturaleza_productos">
+  <description></description>
+  <isinactive>F</isinactive>
+  <ismatrixoption>F</ismatrixoption>
+  <isordered>T</isordered>
+  <name>Naturalezas de Productos</name>
+  <customvalues>
+    <customvalue scriptid="1">
+      <abbreviation>P</abbreviation>
+      <isinactive>F</isinactive>
+      <value>Placas de Acero</value>
+    </customvalue>
+  </customvalues>
+</customlist>

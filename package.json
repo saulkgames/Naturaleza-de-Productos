@@ -1,0 +1,17 @@
+{
+  "name": "suitecloud-project",
+  "version": "1.0.0",
+  "scripts": {
+    "test": "jest"
+  },
+  "devDependencies": {
+	"jest": "30.5.1",
+    "@types/jest": "30.0.0",
+    "@oracle/suitecloud-unit-testing": "^1.9.1"
+  },
+  "overrides": {
+    "babel-plugin-istanbul": {
+        "test-exclude": "^8.0.0"
+    }
+  }
+}
