@@ -1,0 +1,19 @@
+<role scriptid="customrole_sads_naturaleza_config_exec">
+  <centertype>BASIC</centertype>
+  <isinactive>F</isinactive>
+  <name>SADS - Ejecución Config Naturaleza</name>
+  <permissions>
+    <permission>
+      <permkey>LIST_CUSTRECORDENTRY</permkey>
+      <permlevel>CREATE</permlevel>
+    </permission>
+    <permission>
+      <permkey>ADMI_CUSTITEMFIELD</permkey>
+      <permlevel>VIEW</permlevel>
+    </permission>
+    <permission>
+      <permkey>LIST_ITEM</permkey>
+      <permlevel>VIEW</permlevel>
+    </permission>
+  </permissions>
+</role>

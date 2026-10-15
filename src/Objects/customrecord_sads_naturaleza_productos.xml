@@ -24,7 +24,7 @@
   <iconbuiltin>T</iconbuiltin>
   <iconindex></iconindex>
   <includeinsearchmenu>T</includeinsearchmenu>
-  <includename>F</includename>
+  <includename>T</includename>
   <isinactive>F</isinactive>
   <isordered>F</isordered>
   <numberinginit></numberinginit>
@@ -92,7 +92,7 @@
       <defaultchecked>F</defaultchecked>
       <defaultselection></defaultselection>
       <defaultvalue></defaultvalue>
-      <description>Texto con el id de los campos que se marcaran como obligatorio separados por comas.</description>
+      <description>Texto con el id de los campos que se marcaran como obligatorio con formato de arreglo json.</description>
       <displayheight></displayheight>
       <displaytype>NORMAL</displaytype>
       <displaywidth></displaywidth>
@@ -101,8 +101,8 @@
       <encryptatrest>F</encryptatrest>
       <fieldtype>CLOBTEXT</fieldtype>
       <globalsearch>F</globalsearch>
-      <help>Texto con el id de los campos que se marcaran como obligatorio separados por comas.&#xd;
-Ejemplo: [_sads_naturaleza_config, _sads_naturaleza_productos, _sads_naturaleza_lista]</help>
+      <help>Texto con el id de los campos que se marcaran como obligatorio con formato de arreglo json.&#xd;
+Ejemplo: ["_sads_naturaleza_config", "_sads_naturaleza_productos", "_sads_naturaleza_lista"]</help>
       <isformula>F</isformula>
       <ismandatory>T</ismandatory>
       <isparent>F</isparent>
@@ -119,6 +119,47 @@ Ejemplo: [_sads_naturaleza_config, _sads_naturaleza_productos, _sads_naturaleza_
       <searchlevel>2</searchlevel>
       <selectrecordtype></selectrecordtype>
       <showinlist>F</showinlist>
+      <sourcefilterby></sourcefilterby>
+      <sourcefrom></sourcefrom>
+      <sourcelist></sourcelist>
+      <storevalue>T</storevalue>
+      <subtab></subtab>
+    </customrecordcustomfield>
+    <customrecordcustomfield scriptid="custrecord_sads_naturaleza_tipo_art">
+      <accesslevel>2</accesslevel>
+      <aidescription></aidescription>
+      <allowquickadd>F</allowquickadd>
+      <applyformatting>F</applyformatting>
+      <checkspelling>F</checkspelling>
+      <defaultchecked>F</defaultchecked>
+      <defaultselection></defaultselection>
+      <defaultvalue></defaultvalue>
+      <description>Tipo de artículo al que aplica la configuración. Define el catálogo de campos que ofrece el Suitelet de alta.</description>
+      <displayheight></displayheight>
+      <displaytype>NORMAL</displaytype>
+      <displaywidth></displaywidth>
+      <dynamicdefault></dynamicdefault>
+      <enabletextenhance>F</enabletextenhance>
+      <encryptatrest>F</encryptatrest>
+      <fieldtype>SELECT</fieldtype>
+      <globalsearch>F</globalsearch>
+      <help></help>
+      <isformula>F</isformula>
+      <ismandatory>T</ismandatory>
+      <isparent>F</isparent>
+      <label>Tipo de Artículo</label>
+      <linktext></linktext>
+      <maxlength></maxlength>
+      <maxvalue></maxvalue>
+      <minvalue></minvalue>
+      <onparentdelete>NO_ACTION</onparentdelete>
+      <parentsubtab></parentsubtab>
+      <rolerestrict>F</rolerestrict>
+      <searchcomparefield></searchcomparefield>
+      <searchdefault></searchdefault>
+      <searchlevel>2</searchlevel>
+      <selectrecordtype>[scriptid=customlist_sads_tipos_articulo]</selectrecordtype>
+      <showinlist>T</showinlist>
       <sourcefilterby></sourcefilterby>
       <sourcefrom></sourcefrom>
       <sourcelist></sourcelist>

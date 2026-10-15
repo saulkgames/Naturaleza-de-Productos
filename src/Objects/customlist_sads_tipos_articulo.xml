@@ -1,0 +1,39 @@
+<customlist scriptid="customlist_sads_tipos_articulo">
+  <description></description>
+  <isinactive>F</isinactive>
+  <ismatrixoption>F</ismatrixoption>
+  <isordered>T</isordered>
+  <name>SADS - Tipos de Artículo</name>
+  <customvalues>
+    <customvalue scriptid="val_sads_ta_inv">
+      <abbreviation></abbreviation>
+      <isinactive>F</isinactive>
+      <value>Inventariable</value>
+    </customvalue>
+    <customvalue scriptid="val_sads_ta_noinv">
+      <abbreviation></abbreviation>
+      <isinactive>F</isinactive>
+      <value>No inventariable</value>
+    </customvalue>
+    <customvalue scriptid="val_sads_ta_otro">
+      <abbreviation></abbreviation>
+      <isinactive>F</isinactive>
+      <value>Otro cargo</value>
+    </customvalue>
+    <customvalue scriptid="val_sads_ta_serv">
+      <abbreviation></abbreviation>
+      <isinactive>F</isinactive>
+      <value>Servicio</value>
+    </customvalue>
+    <customvalue scriptid="val_sads_ta_kit">
+      <abbreviation></abbreviation>
+      <isinactive>F</isinactive>
+      <value>Kit</value>
+    </customvalue>
+    <customvalue scriptid="val_sads_ta_grupo">
+      <abbreviation></abbreviation>
+      <isinactive>F</isinactive>
+      <value>Grupo de artículos</value>
+    </customvalue>
+  </customvalues>
+</customlist>

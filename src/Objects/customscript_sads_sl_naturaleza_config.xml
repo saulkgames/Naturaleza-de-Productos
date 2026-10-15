@@ -1,0 +1,38 @@
+<suitelet scriptid="customscript_sads_sl_naturaleza_config">
+  <description>Asistente para crear registros de configuración de Naturaleza de Productos sin capturar JSON. Filtra los campos personalizados de artículo por tipo de artículo.</description>
+  <isinactive>F</isinactive>
+  <name>SADS SL Alta Configuración Naturaleza</name>
+  <notifyadmins>F</notifyadmins>
+  <notifyemails></notifyemails>
+  <notifyowner>T</notifyowner>
+  <notifyuser>F</notifyuser>
+  <scriptfile>[/SuiteScripts/SADS_Naturaleza_Productos/SADS_SL_naturaleza_config.js]</scriptfile>
+  <scriptcustomfields>
+    <scriptcustomfield scriptid="custscript_sads_sl_permitir_alta">
+      <accesslevel>2</accesslevel>
+      <defaultchecked>F</defaultchecked>
+      <description>F: solo vista previa del catálogo, sin botón Crear (iteración A). T: habilita la creación de registros (iteración B).</description>
+      <displaytype>NORMAL</displaytype>
+      <fieldtype>CHECKBOX</fieldtype>
+      <ismandatory>F</ismandatory>
+      <label>Permitir creación</label>
+      <searchlevel>2</searchlevel>
+      <storevalue>T</storevalue>
+    </scriptcustomfield>
+  </scriptcustomfields>
+  <scriptdeployments>
+    <scriptdeployment scriptid="customdeploy_sads_sl_naturaleza_config">
+      <allemployees>F</allemployees>
+      <allroles>F</allroles>
+      <audslctrole></audslctrole>
+      <custscript_sads_sl_permitir_alta>F</custscript_sads_sl_permitir_alta>
+      <eventtype></eventtype>
+      <isdeployed>T</isdeployed>
+      <isonline>F</isonline>
+      <loglevel>AUDIT</loglevel>
+      <runasrole>[scriptid=customrole_sads_naturaleza_config_exec]</runasrole>
+      <status>RELEASED</status>
+      <title>SADS - Alta de Configuración de Naturaleza</title>
+    </scriptdeployment>
+  </scriptdeployments>
+</suitelet>
