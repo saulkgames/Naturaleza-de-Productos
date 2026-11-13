@@ -45,7 +45,7 @@ Incluye:
 No incluye:
 - Formularios nativos de artículo por naturaleza (D-01).
 - Cálculo automático del peso (D-06; cambio posterior).
-- Especificación de la cadena de precios; entra en el plan v2 tras importar los campos fórmula (DA-01).
+- Especificación de la cadena de precios; entra en el plan v3 tras importar los campos fórmula (DA-01).
 - Edición de artículos existentes desde el Suitelet.
 - Creación de los campos `custitem` de parámetros y especificaciones; la hacen usuarios técnicos en la cuenta.
 - Cambios a `SADS_CS_item_dynamic_mandatory.js` y `SADS_UE_item_dynamic_mandatory.js`.
@@ -81,7 +81,7 @@ Nivel de arquitectura actual: CS y UE en nivel 0 (un archivo, sin dominio); Suit
 | Patrones | Módulo AMD sin `N/` | `domain/SADS_naturaleza_patron.js` | SL y UE de configuración | Extraer, validar y aplicar marcadores de nombre y código |
 | Parámetros | Módulo AMD sin `N/` | `domain/SADS_naturaleza_parametros.js` | SL y UE de configuración | Validar IDs y valores capturados; criterios de duplicado |
 | Adaptador de artículos | Módulo AMD con `N/search` | `infra/SADS_naturaleza_articulo_ns.js` | SL y UE de configuración | Resolver el tipo de registro de un artículo por ID interno (H-01) |
-| Precios | Módulo AMD sin `N/` | `domain/SADS_naturaleza_calculo_precios.js` | SL | Iteración B; se especifica en plan v2 |
+| Precios | Módulo AMD sin `N/` | `domain/SADS_naturaleza_calculo_precios.js` | SL | Iteración B; se especifica en plan v3 |
 | CS/UE de artículo | Existentes | Sin cambios | — | Obligatoriedad de los parámetros en UI y servidor |
 
 Justificación:
@@ -125,7 +125,7 @@ Nivel 1: sin puertos formales; los entry points conservan el acceso a `N/`.
 
 ### 4.3 Patrones de diseño
 No aplica en iteración A: los patrones de nombre son datos, no variación de comportamiento.
-Iteración B: evaluar Strategy por naturaleza para la cadena de precios si difiere entre naturalezas (plan v2).
+Iteración B: evaluar Strategy por naturaleza para la cadena de precios si difiere entre naturalezas (plan v3).
 
 ### 4.4 Estructura de archivos por capa
 Se respeta la convención plana existente para no mover entry points desplegados.
@@ -326,7 +326,7 @@ Lo usan el Suitelet (plantilla y enlace del duplicado) y el UE de configuración
 
 Unidades y redondeo:
 - Largo y ancho en pies; espesor en pulgadas (D-08); el script no convierte unidades.
-- Los valores se guardan como se capturan; el redondeo de precios se define en el plan v2.
+- Los valores se guardan como se capturan; el redondeo de precios se define en el plan v3.
 - Moneda: las sublistas `price1` a `price4` sugieren precios por moneda; se define en DA-01.
 
 ## 7. Gobernanza y rendimiento
@@ -381,7 +381,7 @@ El diseño no afirma cumplimiento; solo copia la configuración fiscal de la pla
 | R-04 | Los nombres de columna de C-2 vienen del JSON capturado a mano. | AN-07; SuiteQL no admite identificadores como parámetro. | Inyección SuiteQL. | RN-13 en el UE de configuración y validación repetida en el Suitelet antes de armar C-2. |
 | R-05 | El espesor aparece como decimal en el nombre (0.25 y no 1/4"). | RN-07. | Nombre poco familiar para ventas. | DA-05; cambio de formato aislado en `patron.formatearNumero`. |
 | R-06 | Peso capturado a mano. | D-06. | Peso erróneo en el artículo y, si aplica, en Carta Porte. | Validación > 0; cálculo automático en cambio posterior. |
-| R-07 | El mínimo de 2 pies depende de `minvalue` del `custitem`. | Supuesto S-08. | Si `save` desde script no lo aplica, se crean medidas menores a 2 pies. | P-15; si falla, agregar mínimos a la configuración en plan v2. |
+| R-07 | El mínimo de 2 pies depende de `minvalue` del `custitem`. | Supuesto S-08. | Si `save` desde script no lo aplica, se crean medidas menores a 2 pies. | P-15; si falla, agregar mínimos a la configuración en plan v3. |
 | R-08 | El campo retirado `custrecord_sads_naturaleza_tipo_art` sigue en la cuenta como obligatorio. | SDF no borra objetos al desplegar (supuesto S-10). | Usuarios técnicos obligados a capturarlo. | Paso manual de despliegue: borrar o inactivar el campo y la lista en la cuenta. |
 | R-09 | Registros de configuración existentes sin plantilla. | Campos nuevos. | No aparecen en el paso 1; CS/UE siguen funcionando. | Comportamiento esperado; los técnicos asignan plantilla. |
 | R-10 | `project:deploy` vacía la audiencia del Suitelet. | SDF aplica el XML del deployment. | Usuarios sin acceso. | Re-aplicar audiencia después de cada despliegue. |
@@ -426,7 +426,7 @@ Iteración A (sandbox `Almetal_SB`):
 5. Configurar la audiencia del Suitelet.
 6. Ejecutar P-14, P-15, P-19, P-20 y P-21; confirmar supuestos S-01 a S-16 (S-06 retirado).
 Iteración B:
-7. Importar a SDF los campos fórmula de la cadena de precios; plan v2 con la especificación.
+7. Importar a SDF los campos fórmula de la cadena de precios; plan v3 con la especificación.
 8. Implementar precios; `custscript_sads_sl_art_activo` = T.
 Producción: solo después de la iteración B; mismo orden; re-aplicar audiencia.
 Reversión: deployment del SL a inactivo; los artículos creados se inactivan a mano; el UE de configuración se puede inactivar sin afectar CS/UE de artículo.

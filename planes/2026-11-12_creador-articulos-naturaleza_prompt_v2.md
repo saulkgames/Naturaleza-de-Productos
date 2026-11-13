@@ -2,7 +2,7 @@
 
 Origen: `planes/2026-11-12_creador-articulos-naturaleza_plan_v2.md` (aprobado 2026-11-13).
 Reemplaza a `planes/2026-11-12_creador-articulos-naturaleza_prompt_v1.md`.
-Alcance: iteración A del plan (creación sin cálculo de precios). El cálculo de precios es la iteración B y se especificará en un plan v2.
+Alcance: iteración A del plan (creación sin cálculo de precios). El cálculo de precios es la iteración B y se especificará en un plan v3.
 
 ## Rol
 Eres un desarrollador senior de SuiteScript 2.1 para NetSuite y SuiteCloud Development Framework (SDF).
@@ -254,7 +254,7 @@ Corre con el rol del usuario técnico; requiere `LIST_ITEM` VIEW para RN-16 (sup
 `beforeSubmit`:
 1. Solo CREATE, EDIT y XEDIT; otros tipos terminan sin hacer nada.
 2. Leer JSON, plantilla y patrones. En XEDIT, un campo presente en `newRecord.getFields()` se lee de `newRecord`; si no, de `oldRecord` (PT-07).
-3. RN-12: `formato.parsearConfiguracion`; si lanza, error con su mensaje y no se evalúan RN-13 a RN-15.
+3. RN-12: `formato.parsearConfiguracion`; si lanza, error con su mensaje y no se evalúan RN-13 a RN-16.
 4. RN-13: `parametros.validarIds`.
 5. RN-16: si hay plantilla, tras `trim` debe cumplir `^[1-9][0-9]*$` y `resolverTipoRegistroArticulo` no debe devolver null; mensajes "El artículo plantilla debe ser un ID interno numérico." y "El artículo plantilla <id> no existe." (el ID se cita solo si es numérico).
 6. RN-14: si hay plantilla, ambos patrones son obligatorios.
@@ -304,11 +304,11 @@ Precisiones técnicas (no cambian reglas de negocio):
 | PT-05 | `formatearNumero`: `toFixed(6)`, sin ceros finales ni punto final. | Precisa RN-07; evita notación exponencial. |
 | PT-06 | Longitud de `itemid` contra `LONGITUD_MAXIMA_CODIGO` = 60 (S-14). | Mensaje claro en lugar del error genérico de `save`. |
 | PT-07 | UE en XEDIT: campo en `newRecord.getFields()` → `newRecord`; si no → `oldRecord`. | Validar el estado final. |
-| PT-08 | No crear `domain/SADS_naturaleza_calculo_precios.js`. | Iteración B, plan v2. |
+| PT-08 | No crear `domain/SADS_naturaleza_calculo_precios.js`. | Iteración B, plan v3. |
+| PT-09 | Portar del Suitelet retirado `aCadena`, `escaparHtml`, `describirError`, `agregarAviso`, `agregarCampoOculto`, `agregarTextoDeSoloLectura`, `agregarEnlace`, `urlDelSuitelet`, `urlDelSuiteletOmitible`, `registrarError` y `mensajeParaUsuario` antes de eliminarlo. | Reutilizar código ya probado. |
 | PT-10 | `resolverTipoRegistroArticulo` vive solo en `infra/SADS_naturaleza_articulo_ns.js`. | Un solo adaptador para SL y UE. |
 | PT-11 | Etiqueta de peso: `getText` en `try/catch`, luego `UNIDADES_PESO_RESPALDO`, luego texto genérico. | `getText` sobre copia en modo estándar puede no devolver texto (H-02). |
 | PT-12 | `vendorname` = nombre y `CAMPOS_A_LIMPIAR` vacíos antes de `save`. | D-10, D-11. |
-| PT-09 | Portar del Suitelet retirado `aCadena`, `escaparHtml`, `describirError`, `agregarAviso`, `agregarCampoOculto`, `agregarTextoDeSoloLectura`, `agregarEnlace`, `urlDelSuitelet`, `urlDelSuiteletOmitible`, `registrarError` y `mensajeParaUsuario` antes de eliminarlo. | Reutilizar código ya probado. |
 
 ## Restricciones técnicas
 - SuiteScript 2.1; solo los módulos `N/` listados por archivo.
@@ -365,7 +365,7 @@ Pruebas en sandbox (las ejecuta el equipo; documentarlas en el `.md`):
 | P-21 | Artículo creado abierto en la UI | El CS marca los parámetros como obligatorios |
 
 ## Documentación
-`SADS_SL_crear_articulo_nat.md`, con el estilo del `.md` del Suitelet retirado: resumen; arquitectura (Mermaid); flujo; guía para usuarios técnicos (crear `custitem` de parámetros con `minvalue`, capturar JSON, ID interno de la plantilla y patrones, ejemplo ficticio, recomendación de incluir todos los parámetros en el patrón de código); campos del formulario; consultas C-1 y C-2 descritas; reglas RN-01 a RN-15; rol y permisos; despliegue; supuestos S-01 a S-16; riesgos R-01 a R-14; troubleshooting; bitácora; pruebas.
+`SADS_SL_crear_articulo_nat.md`, con el estilo del `.md` del Suitelet retirado: resumen; arquitectura (Mermaid); flujo; guía para usuarios técnicos (crear `custitem` de parámetros con `minvalue`, capturar JSON, ID interno de la plantilla y patrones, ejemplo ficticio, recomendación de incluir todos los parámetros en el patrón de código); campos del formulario; consultas C-1 y C-2 descritas; reglas RN-01 a RN-16; rol y permisos; despliegue; supuestos S-01 a S-16; riesgos R-01 a R-14; troubleshooting; bitácora; pruebas.
 `README.md`: actualizar resumen, arquitectura, objetos SDF, estructura de archivos, pruebas, despliegue y documentación a la solución nueva; quitar referencias al Suitelet de alta y a la lista de tipos; conservar la licencia.
 
 Supuestos a listar:
@@ -397,7 +397,7 @@ Riesgos a listar:
 | R-04 | Los nombres de columna de C-2 vienen del JSON capturado a mano. | Inyección SuiteQL. | RN-13 en el UE y validación repetida en el Suitelet. |
 | R-05 | El espesor aparece como decimal (0.25 y no 1/4"). | Nombre poco familiar para ventas. | Cambio aislado en `patron.formatearNumero`. |
 | R-06 | Peso capturado a mano. | Peso erróneo en el artículo y, si aplica, en Carta Porte (S-12). | Validación > 0; cálculo automático posterior. |
-| R-07 | El mínimo de 2 pies depende de `minvalue` del `custitem` (S-08). | Medidas menores a 2 pies si no se aplica. | P-15; si falla, mínimos en la configuración en plan v2. |
+| R-07 | El mínimo de 2 pies depende de `minvalue` del `custitem` (S-08). | Medidas menores a 2 pies si no se aplica. | P-15; si falla, mínimos en la configuración en plan v3. |
 | R-08 | El campo retirado `custrecord_sads_naturaleza_tipo_art` sigue en la cuenta como obligatorio (S-10). | Usuarios técnicos obligados a capturarlo. | Paso manual 3 de despliegue. |
 | R-09 | Registros de configuración existentes sin plantilla. | No aparecen en el paso 1; CS/UE siguen funcionando. | Comportamiento esperado. |
 | R-10 | `project:deploy` vacía la audiencia del Suitelet. | Usuarios sin acceso. | Re-aplicar audiencia. |
@@ -414,7 +414,7 @@ Iteración A (sandbox `Almetal_SB`):
 4. Usuarios técnicos: crear los `custitem` de parámetros de placa (largo y ancho con `minvalue` 2), elegir el artículo plantilla y capturar JSON, su ID interno y patrones en el registro de configuración (requieren `LIST_ITEM` VIEW).
 5. Configurar la audiencia del Suitelet (roles con `LIST_ITEM` CREATE y `LIST_CUSTRECORDENTRY` VIEW).
 6. Ejecutar P-14, P-15, P-19, P-20 y P-21; confirmar S-01 a S-16 (S-06 retirado).
-Iteración B (fuera de este prompt): importar a SDF los campos fórmula de precios; plan v2; cálculo de precios; `custscript_sads_sl_art_activo` = T.
+Iteración B (fuera de este prompt): importar a SDF los campos fórmula de precios; plan v3; cálculo de precios; `custscript_sads_sl_art_activo` = T.
 Producción: solo después de la iteración B; re-aplicar la audiencia después de cada despliegue.
 Reversión: deployment del Suitelet a inactivo; los artículos creados se inactivan a mano; el UE de configuración se puede inactivar sin afectar al CS ni al UE de artículo.
 
