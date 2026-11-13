@@ -10,12 +10,13 @@ Plan anterior: `planes/2026-10-12_sl-naturaleza-config_plan_v4.md` (Suitelet de 
 |---|---|
 | Fecha | 2026-11-12 |
 | Versión | v1 |
-| Estado | Borrador |
+| Estado | Aprobado (2026-11-13) |
 | Solicitante | Desarrollo SADS (para cliente final Almetal) |
 | Entidades afectadas | Las subsidiarias de la plantilla de cada naturaleza; el registro de configuración no es por subsidiaria |
 
 Historial de cambios:
 - v1 (2026-11-12): versión inicial por cambio de alcance; retira el Suitelet de alta (plan v4) y su consulta Q-3.
+- v1 aprobado (2026-11-13): prompt para el coder en `planes/2026-11-12_creador-articulos-naturaleza_prompt_v1.md` (iteración A); sus precisiones técnicas PT-01 a PT-09 no cambian reglas de negocio.
 
 ## 1. Objetivo
 Problema: un cliente pide una medida de placa que no existe como artículo; darla de alta a mano exige capturar todo el formulario de artículo, aunque solo cambian medidas, nombre, código, precio y peso.
