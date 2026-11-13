@@ -1,29 +1,37 @@
 # Naturaleza-de-Productos
-El objetivo de este desarrollo es controlar qué campos son obligatorios en un Item dependiendo de la selección que se haga en un campo de clasificación específico.   Para lograr esto, la lógica lee un JSON (un arreglo de IDs de campos) guardado en un Custom Record y aplica la restricción tanto en la interfaz de usuario como en el servidor. 
+Control de artículos por naturaleza de producto en NetSuite.
+Cada naturaleza tiene un registro de configuración con la lista de campos de artículo que la describen (parámetros).
+Esos campos son obligatorios en la interfaz y en el servidor.
+Un Suitelet crea artículos nuevos de una naturaleza a partir de sus parámetros, copiando un artículo plantilla.
 
 | Dato | Valor |
 |---|---|
-| Fecha de generación | 2026-10-12 |
+| Fecha de actualización | 2026-11-13 |
 | Tipo de proyecto | SuiteCloud SDF, Account Customization (`src/manifest.xml`) |
 | Nombre del proyecto | Naturaleza de Productos |
 | Plataforma | SuiteScript 2.1 |
 | Ambiente de desarrollo | Sandbox `Almetal_SB` (`project.json`) |
 | Pruebas | Jest 30 con `@oracle/suitecloud-unit-testing` |
+| Iteración vigente | A: creación de artículos sin cálculo de precios; artículos inactivos |
 
 ## 1. Resumen
 El campo de artículo `custitem_sads_naturaleza_producto` apunta a un registro de `customrecord_sads_naturaleza_productos`.
 Ese registro guarda en `custrecord_sads_naturaleza_config` un arreglo JSON de IDs de campo de artículo.
-Un Client Script marca esos campos como obligatorios en pantalla.
-Un User Event bloquea el guardado en servidor si alguno viene vacío.
-Un Suitelet crea los registros de configuración sin captura manual de JSON y filtra los campos por tipo de artículo.
+Un Client Script marca esos campos como obligatorios en pantalla y un User Event bloquea el guardado si alguno viene vacío.
+El mismo registro guarda el ID interno de un artículo plantilla y los patrones de nombre y código.
+El Suitelet de creación pide los parámetros y el peso, copia la plantilla y genera nombre y código con los patrones.
+Un User Event valida la captura manual del registro de configuración.
 
 | Componente | Archivo | Tipo | Entry points | Función |
 |---|---|---|---|---|
 | CS | `SADS_CS_item_dynamic_mandatory.js` | ClientScript 2.1 | `pageInit`, `fieldChanged`, `saveRecord` | Lee la configuración con `search.lookupFields`, marca obligatorios y bloquea el guardado en la UI. |
-| UE | `SADS_UE_item_dynamic_mandatory.js` | UserEventScript 2.1 | `beforeSubmit` (CREATE y EDIT) | Valida en servidor y lanza `MISSING_DYNAMIC_MANDATORY_FIELDS` si falta un campo. |
-| Suitelet | `SADS_SL_naturaleza_config.js` | Suitelet 2.1 | `onRequest` | Alta de registros de configuración en dos pasos más confirmación. |
+| UE de artículo | `SADS_UE_item_dynamic_mandatory.js` | UserEventScript 2.1 | `beforeSubmit` (CREATE y EDIT) | Valida en servidor y lanza `MISSING_DYNAMIC_MANDATORY_FIELDS` si falta un campo. |
+| Suitelet | `SADS_SL_crear_articulo_nat.js` | Suitelet 2.1 | `onRequest` | Crea artículos de una naturaleza en dos pasos más confirmación. |
+| UE de configuración | `SADS_UE_naturaleza_config.js` | UserEventScript 2.1 | `beforeSubmit` (CREATE, EDIT y XEDIT) | Rechaza configuraciones con JSON, plantilla o patrones inválidos. |
 | Dominio | `domain/SADS_naturaleza_config_formato.js` | Módulo AMD sin `N/` | — | Contrato del JSON y errores de dominio. |
-| Dominio | `domain/SADS_naturaleza_alta_reglas.js` | Módulo AMD sin `N/` | — | Tipos de artículo, catálogo, validaciones y nombre del registro. |
+| Dominio | `domain/SADS_naturaleza_patron.js` | Módulo AMD sin `N/` | — | Marcadores `{id}` de los patrones de nombre y código. |
+| Dominio | `domain/SADS_naturaleza_parametros.js` | Módulo AMD sin `N/` | — | IDs seguros, valores capturados y criterios de duplicado. |
+| Adaptador | `infra/SADS_naturaleza_articulo_ns.js` | Módulo AMD con `N/search` | — | Tipo de registro de un artículo por ID interno. |
 
 ## 2. Arquitectura
 
@@ -33,47 +41,51 @@ flowchart LR
     G["custitem_sads_naturaleza_producto"]
   end
   CS["CS: SADS_CS_item_dynamic_mandatory.js"] -->|"lookupFields con el rol del usuario"| CR[("customrecord_sads_naturaleza_productos")]
-  UE["UE: SADS_UE_item_dynamic_mandatory.js"] -->|"lookupFields con el rol del proyecto"| CR
+  UEA["UE: SADS_UE_item_dynamic_mandatory.js"] -->|"lookupFields con el rol del proyecto"| CR
   G --> CR
-  SL["Suitelet: SADS_SL_naturaleza_config.js"] -->|"crea registros"| CR
-  SL --> DOM["domain/: formato y reglas"]
+  SL["Suitelet: SADS_SL_crear_articulo_nat.js"] -->|"lee configuración y plantilla"| CR
+  SL -->|"record.copy + save"| Articulo
+  UEC["UE: SADS_UE_naturaleza_config.js"] -->|"valida beforeSubmit"| CR
+  SL --> DOM["domain/: formato, patrón, parámetros"]
+  UEC --> DOM
+  SL --> INF["infra/: articulo_ns"]
+  UEC --> INF
   CR -->|"custrecord_sads_naturaleza_lista"| LN[("customlist_sads_naturaleza_productos")]
-  CR -->|"custrecord_sads_naturaleza_tipo_art"| LT[("customlist_sads_tipos_articulo")]
 ```
 
 ```
- Usuario edita artículo                     Usuario configura naturalezas
-          │                                               │
-          ▼                                               ▼
- ┌──────────────────┐   ┌──────────────────┐   ┌──────────────────────┐
- │ CS (UI)          │   │ UE (servidor)    │   │ Suitelet de alta     │
- │ pageInit,        │   │ beforeSubmit     │   │ onRequest            │
- │ fieldChanged,    │   │ CREATE y EDIT    │   │ + domain/            │
- │ saveRecord       │   │                  │   │                      │
- └────────┬─────────┘   └────────┬─────────┘   └──────────┬───────────┘
-          │ lee                  │ lee                    │ crea
-          ▼                      ▼                        ▼
- ┌────────────────────────────────────────────────────────────────────┐
- │ customrecord_sads_naturaleza_productos                             │
- │ custrecord_sads_naturaleza_config = ["custitem_a","custitem_b"]    │
- └────────────────────────────────────────────────────────────────────┘
+ Usuario edita artículo         Usuario crea artículo          Usuario técnico configura
+          │                               │                               │
+          ▼                               ▼                               ▼
+ ┌──────────────────┐          ┌──────────────────────┐        ┌──────────────────────┐
+ │ CS (UI) y        │          │ Suitelet de creación │        │ UE de configuración  │
+ │ UE de artículo   │          │ + domain/ + infra/   │        │ + domain/ + infra/   │
+ └────────┬─────────┘          └──────────┬───────────┘        └──────────┬───────────┘
+          │ lee                           │ lee y copia plantilla         │ valida
+          ▼                               ▼                               ▼
+ ┌────────────────────────────────────────────────────────────────────────────────────┐
+ │ customrecord_sads_naturaleza_productos                                             │
+ │ custrecord_sads_naturaleza_config     = ["custitem_pl_ancho","custitem_pl_largo"]  │
+ │ custrecord_sads_naturaleza_plantilla  = ID interno del artículo plantilla          │
+ │ custrecord_sads_naturaleza_patron_cod = PL-{custitem_pl_largo}X{custitem_pl_ancho} │
+ └────────────────────────────────────────────────────────────────────────────────────┘
 ```
 
-Los IDs del arreglo de ejemplo son ficticios.
+Los IDs de ejemplo son ficticios.
 
 ## 3. Objetos SDF
 | Objeto | Tipo | Archivo en src/Objects |
 |---|---|---|
 | Campo gatillo de artículo | `itemcustomfield` | custitem_sads_naturaleza_producto.xml |
 | Lista de naturalezas | `customlist` | customlist_sads_naturaleza_productos.xml |
-| Lista de 6 tipos base de artículo | `customlist` | customlist_sads_tipos_articulo.xml |
-| Registro de configuración | `customrecordtype` | customrecord_sads_naturaleza_productos.xml |
-| Rol del proyecto (`runasrole` del Suitelet y del UE) | `role` | customrole_sads_naturaleza_config_exec.xml |
+| Registro de configuración (lista, JSON, plantilla y patrones) | `customrecordtype` | customrecord_sads_naturaleza_productos.xml |
+| Rol del proyecto (`runasrole` del UE de artículo; `LIST_CUSTRECORDENTRY` VIEW) | `role` | customrole_sads_naturaleza_config_exec.xml |
 | Client Script con 6 deployments | `clientscript` | customscript_sads_cs_item_dynamic_mandat.xml |
-| User Event con 6 deployments | `usereventscript` | customscript_sads_ue_item_dynamic_mandat.xml |
-| Suitelet, deployment y parámetro | `suitelet` | customscript_sads_sl_naturaleza_config.xml |
+| User Event de artículo con 6 deployments | `usereventscript` | customscript_sads_ue_item_dynamic_mandat.xml |
+| Suitelet de creación, deployment y parámetro `custscript_sads_sl_art_activo` | `suitelet` | customscript_sads_sl_crear_articulo_nat.xml |
+| User Event de configuración y deployment | `usereventscript` | customscript_sads_ue_naturaleza_config.xml |
 
-Deployments del CS y del UE:
+Deployments del CS y del UE de artículo:
 | Tipo de artículo | Deployment CS | Deployment UE | Estado |
 |---|---|---|---|
 | Inventariable | `customdeploy_item_invprt_mandatory_flds` | `customdeploy_ue_item_invprt_mndry_flds` | RELEASED |
@@ -83,9 +95,8 @@ Deployments del CS y del UE:
 | Kit | `customdeploy_cs_item_kit_mndry_flds` | `customdeploy_ue_item_kit_mndry_flds` | TESTING |
 | Grupo de artículos | `customdeploy_cs_item_group_mndry_flds` | `customdeploy_ue_item_group_mndry_flds` | TESTING |
 
-Los deployments en TESTING se liberan tipo por tipo cuando las naturalezas de ese tipo tengan configuración propia.
-Los 6 deployments del UE corren con `customrole_sads_naturaleza_config_exec`.
-El Suitelet usa el deployment `customdeploy_sads_sl_naturaleza_config` con el mismo rol.
+Los 6 deployments del UE de artículo corren con `customrole_sads_naturaleza_config_exec`.
+El Suitelet (`customdeploy_sads_sl_crear_articulo_nat`) y el UE de configuración (`customdeploy_sads_ue_naturaleza_config`) corren con el rol del usuario.
 
 Manifiesto: CUSTOMRECORDS, SUBSIDIARIES y SERVERSIDESCRIPTING son obligatorias; CRM y las demás funciones son opcionales.
 
@@ -94,11 +105,14 @@ Manifiesto: CUSTOMRECORDS, SUBSIDIARIES y SERVERSIDESCRIPTING son obligatorias; 
 .
 ├── README.md
 ├── __tests__/
-│   ├── SADS_SL_naturaleza_config.test.js
-│   ├── SADS_naturaleza_alta_reglas.test.js
+│   ├── SADS_SL_crear_articulo_nat.test.js
+│   ├── SADS_UE_naturaleza_config.test.js
+│   ├── SADS_naturaleza_articulo_ns.test.js
 │   ├── SADS_naturaleza_config_formato.test.js
+│   ├── SADS_naturaleza_parametros.test.js
+│   ├── SADS_naturaleza_patron.test.js
 │   └── sample-test.js                      # Plantilla de SuiteCloud
-├── planes/                                 # Plan v4 y prompt v3 del Suitelet
+├── planes/                                 # Planes y prompts de diseño
 ├── jest.config.js
 ├── package.json
 ├── project.json                            # authId de sandbox
@@ -109,13 +123,17 @@ Manifiesto: CUSTOMRECORDS, SUBSIDIARIES y SERVERSIDESCRIPTING son obligatorias; 
     ├── FileCabinet/SuiteScripts/SADS_Naturaleza_Productos/
     │   ├── SADS_CS_item_dynamic_mandatory.js
     │   ├── SADS_UE_item_dynamic_mandatory.js
-    │   ├── SADS_SL_naturaleza_config.js
-    │   ├── SADS_SL_naturaleza_config.md     # Documentación del Suitelet
-    │   ├── SADS_item_dynamic_mandatory.md   # Notas originales del CS y del UE
+    │   ├── SADS_SL_crear_articulo_nat.js
+    │   ├── SADS_SL_crear_articulo_nat.md    # Documentación del creador de artículos
+    │   ├── SADS_UE_naturaleza_config.js
+    │   ├── SADS_item_dynamic_mandatory.md   # Notas originales del CS y del UE de artículo
     │   ├── testt.js                         # Plantilla de Client Script 2.x sin Object XML
+    │   ├── infra/
+    │   │   └── SADS_naturaleza_articulo_ns.js
     │   └── domain/
     │       ├── SADS_naturaleza_config_formato.js
-    │       └── SADS_naturaleza_alta_reglas.js
+    │       ├── SADS_naturaleza_patron.js
+    │       └── SADS_naturaleza_parametros.js
     └── Objects/                             # 8 Object XML (sección 3)
 ```
 
@@ -127,31 +145,36 @@ Comando: `npm test` o `npx jest`; no requiere cuenta NetSuite.
 
 | Suite | Pruebas | Alcance |
 |---|---|---|
-| `SADS_naturaleza_alta_reglas.test.js` | 153 | Reglas de alta, orden alfabético español y sincronía de la documentación del Suitelet con el mapa y los XML. |
+| `SADS_SL_crear_articulo_nat.test.js` | 64 | Entry point del Suitelet con `jest.mock` de `N/`. |
+| `SADS_UE_naturaleza_config.test.js` | 35 | Entry point del UE de configuración, incluido XEDIT. |
+| `SADS_naturaleza_articulo_ns.test.js` | 7 | Adaptador de tipo de registro. |
 | `SADS_naturaleza_config_formato.test.js` | 109 | Contrato del JSON y compatibilidad con la lectura del CS y del UE. |
-| `SADS_SL_naturaleza_config.test.js` | 36 | Entry point del Suitelet con `jest.mock` de `N/`. |
+| `SADS_naturaleza_parametros.test.js` | 59 | IDs, valores capturados y criterios de duplicado. |
+| `SADS_naturaleza_patron.test.js` | 63 | Marcadores, formato numérico y sustitución. |
 | `sample-test.js` | 2 | Plantilla de SuiteCloud. |
 
-Resultado del 2026-10-12: 4 suites aprobadas de 4; 300 pruebas aprobadas de 300.
-`suitecloud project:validate` contra `Almetal_SB` del mismo día: SUCCESS, 0 errores y 2 advertencias de `allroles` = T en el CS y el UE.
-El CS y el UE no tienen pruebas Jest.
+Resultado del 2026-11-13: 7 suites aprobadas de 7; 339 pruebas aprobadas de 339.
+`suitecloud project:validate` no se ejecutó para esta versión (sin cuenta en el entorno de desarrollo).
+El CS y el UE de artículo no tienen pruebas Jest.
 
 ## 6. Despliegue
 1. `npm test` en verde; el hook de `suitecloud.config.js` lo repite antes de `project:deploy`.
-2. `project:deploy` envía todo `~/Objects/*`, incluidos los deployments del CS y del UE.
-3. Después de cada despliegue, re-aplicar en la UI la audiencia del Suitelet; el XML la deja vacía.
-4. Iteración A: Suitelet en vista previa (`custscript_sads_sl_permitir_alta` = F) y pruebas de catálogo por tipo.
-5. Iteración B: parámetro en T, captura manual de Nombre y Tipo de Artículo en registros existentes y liberación por tipo de los deployments en TESTING.
+2. `project:deploy` envía todo `~/Objects/*`, incluidos los deployments del CS y del UE de artículo.
+3. Después del primer despliegue: inactivar en la cuenta el Suitelet retirado `customscript_sads_sl_naturaleza_config`, y borrar o inactivar el campo `custrecord_sads_naturaleza_tipo_art` y la lista `customlist_sads_tipos_articulo`; SDF no los borra.
+4. Usuarios técnicos: crear los `custitem` de parámetros y capturar JSON, plantilla y patrones en cada configuración.
+5. Después de cada despliegue, re-aplicar en la UI la audiencia del Suitelet; el XML la deja vacía.
+6. Iteración A: `custscript_sads_sl_art_activo` = F; los artículos se crean inactivos y conservan los precios de la plantilla.
+7. Iteración B: cálculo de precios (plan v3) y parámetro en T; solo entonces se libera a producción.
 
-El procedimiento completo, los supuestos por validar en sandbox y el troubleshooting están en la documentación del Suitelet.
+El procedimiento completo, los supuestos por validar en sandbox, los riesgos y el troubleshooting están en la documentación del Suitelet.
 
 ## 7. Documentación
 | Documento | Contenido |
 |---|---|
-| [SADS_SL_naturaleza_config.md](src/FileCabinet/SuiteScripts/SADS_Naturaleza_Productos/SADS_SL_naturaleza_config.md) | Suitelet: arquitectura, flujo, SuiteQL, contrato JSON, rol, despliegue, supuestos y troubleshooting. |
-| [SADS_item_dynamic_mandatory.md](src/FileCabinet/SuiteScripts/SADS_Naturaleza_Productos/SADS_item_dynamic_mandatory.md) | Notas originales del CS y del UE. |
-| [Plan v4](planes/2026-10-12_sl-naturaleza-config_plan_v4.md) | Diseño aprobado del Suitelet. |
-| [Prompt v3](planes/2026-10-12_sl-naturaleza-config_prompt_v3.md) | Especificación de implementación. |
+| [SADS_SL_crear_articulo_nat.md](src/FileCabinet/SuiteScripts/SADS_Naturaleza_Productos/SADS_SL_crear_articulo_nat.md) | Suitelet y UE de configuración: arquitectura, flujo, guía técnica, SuiteQL, reglas, permisos, despliegue, supuestos, riesgos y troubleshooting. |
+| [SADS_item_dynamic_mandatory.md](src/FileCabinet/SuiteScripts/SADS_Naturaleza_Productos/SADS_item_dynamic_mandatory.md) | Notas originales del CS y del UE de artículo. |
+| [Plan v2](planes/2026-11-12_creador-articulos-naturaleza_plan_v2.md) | Diseño aprobado del creador de artículos. |
+| [Prompt v2](planes/2026-11-12_creador-articulos-naturaleza_prompt_v2.md) | Especificación de implementación de la iteración A. |
 
 ## 8. Licencia
 Ver [LICENSE](LICENSE).

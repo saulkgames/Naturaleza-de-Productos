@@ -102,7 +102,7 @@
       <fieldtype>CLOBTEXT</fieldtype>
       <globalsearch>F</globalsearch>
       <help>Texto con el id de los campos que se marcaran como obligatorio con formato de arreglo json.&#xd;
-Ejemplo: ["_sads_naturaleza_config", "_sads_naturaleza_productos", "_sads_naturaleza_lista"]</help>
+Ejemplo: ["custitem_pl_ancho","custitem_pl_espesor","custitem_pl_largo"]</help>
       <isformula>F</isformula>
       <ismandatory>T</ismandatory>
       <isparent>F</isparent>
@@ -125,7 +125,7 @@ Ejemplo: ["_sads_naturaleza_config", "_sads_naturaleza_productos", "_sads_natura
       <storevalue>T</storevalue>
       <subtab></subtab>
     </customrecordcustomfield>
-    <customrecordcustomfield scriptid="custrecord_sads_naturaleza_tipo_art">
+    <customrecordcustomfield scriptid="custrecord_sads_naturaleza_plantilla">
       <accesslevel>2</accesslevel>
       <aidescription></aidescription>
       <allowquickadd>F</allowquickadd>
@@ -134,31 +134,113 @@ Ejemplo: ["_sads_naturaleza_config", "_sads_naturaleza_productos", "_sads_natura
       <defaultchecked>F</defaultchecked>
       <defaultselection></defaultselection>
       <defaultvalue></defaultvalue>
-      <description>Tipo de artículo al que aplica la configuración. Define el catálogo de campos que ofrece el Suitelet de alta.</description>
+      <description>ID interno del artículo que se copia al crear artículos de esta naturaleza (D-12).</description>
       <displayheight></displayheight>
       <displaytype>NORMAL</displaytype>
       <displaywidth></displaywidth>
       <dynamicdefault></dynamicdefault>
       <enabletextenhance>F</enabletextenhance>
       <encryptatrest>F</encryptatrest>
-      <fieldtype>SELECT</fieldtype>
+      <fieldtype>INTEGER</fieldtype>
       <globalsearch>F</globalsearch>
-      <help></help>
+      <help>Capture el ID interno del artículo plantilla; el sistema valida que exista.</help>
       <isformula>F</isformula>
-      <ismandatory>T</ismandatory>
+      <ismandatory>F</ismandatory>
       <isparent>F</isparent>
-      <label>Tipo de Artículo</label>
+      <label>Artículo Plantilla (ID interno)</label>
       <linktext></linktext>
       <maxlength></maxlength>
       <maxvalue></maxvalue>
-      <minvalue></minvalue>
-      <onparentdelete>NO_ACTION</onparentdelete>
+      <minvalue>1</minvalue>
+      <onparentdelete></onparentdelete>
       <parentsubtab></parentsubtab>
       <rolerestrict>F</rolerestrict>
       <searchcomparefield></searchcomparefield>
       <searchdefault></searchdefault>
       <searchlevel>2</searchlevel>
-      <selectrecordtype>[scriptid=customlist_sads_tipos_articulo]</selectrecordtype>
+      <selectrecordtype></selectrecordtype>
+      <showinlist>T</showinlist>
+      <sourcefilterby></sourcefilterby>
+      <sourcefrom></sourcefrom>
+      <sourcelist></sourcelist>
+      <storevalue>T</storevalue>
+      <subtab></subtab>
+    </customrecordcustomfield>
+    <customrecordcustomfield scriptid="custrecord_sads_naturaleza_patron_nom">
+      <accesslevel>2</accesslevel>
+      <aidescription></aidescription>
+      <allowquickadd>F</allowquickadd>
+      <applyformatting>F</applyformatting>
+      <checkspelling>F</checkspelling>
+      <defaultchecked>F</defaultchecked>
+      <defaultselection></defaultselection>
+      <defaultvalue></defaultvalue>
+      <description>Patrón del nombre para mostrar; marcadores {id_campo} de los IDs de la configuración.</description>
+      <displayheight></displayheight>
+      <displaytype>NORMAL</displaytype>
+      <displaywidth></displaywidth>
+      <dynamicdefault></dynamicdefault>
+      <enabletextenhance>F</enabletextenhance>
+      <encryptatrest>F</encryptatrest>
+      <fieldtype>TEXT</fieldtype>
+      <globalsearch>F</globalsearch>
+      <help></help>
+      <isformula>F</isformula>
+      <ismandatory>F</ismandatory>
+      <isparent>F</isparent>
+      <label>Patrón de Nombre</label>
+      <linktext></linktext>
+      <maxlength></maxlength>
+      <maxvalue></maxvalue>
+      <minvalue></minvalue>
+      <onparentdelete></onparentdelete>
+      <parentsubtab></parentsubtab>
+      <rolerestrict>F</rolerestrict>
+      <searchcomparefield></searchcomparefield>
+      <searchdefault></searchdefault>
+      <searchlevel>2</searchlevel>
+      <selectrecordtype></selectrecordtype>
+      <showinlist>T</showinlist>
+      <sourcefilterby></sourcefilterby>
+      <sourcefrom></sourcefrom>
+      <sourcelist></sourcelist>
+      <storevalue>T</storevalue>
+      <subtab></subtab>
+    </customrecordcustomfield>
+    <customrecordcustomfield scriptid="custrecord_sads_naturaleza_patron_cod">
+      <accesslevel>2</accesslevel>
+      <aidescription></aidescription>
+      <allowquickadd>F</allowquickadd>
+      <applyformatting>F</applyformatting>
+      <checkspelling>F</checkspelling>
+      <defaultchecked>F</defaultchecked>
+      <defaultselection></defaultselection>
+      <defaultvalue></defaultvalue>
+      <description>Patrón del código (Item Name/Number); marcadores {id_campo} de los IDs de la configuración.</description>
+      <displayheight></displayheight>
+      <displaytype>NORMAL</displaytype>
+      <displaywidth></displaywidth>
+      <dynamicdefault></dynamicdefault>
+      <enabletextenhance>F</enabletextenhance>
+      <encryptatrest>F</encryptatrest>
+      <fieldtype>TEXT</fieldtype>
+      <globalsearch>F</globalsearch>
+      <help></help>
+      <isformula>F</isformula>
+      <ismandatory>F</ismandatory>
+      <isparent>F</isparent>
+      <label>Patrón de Código</label>
+      <linktext></linktext>
+      <maxlength></maxlength>
+      <maxvalue></maxvalue>
+      <minvalue></minvalue>
+      <onparentdelete></onparentdelete>
+      <parentsubtab></parentsubtab>
+      <rolerestrict>F</rolerestrict>
+      <searchcomparefield></searchcomparefield>
+      <searchdefault></searchdefault>
+      <searchlevel>2</searchlevel>
+      <selectrecordtype></selectrecordtype>
       <showinlist>T</showinlist>
       <sourcefilterby></sourcefilterby>
       <sourcefrom></sourcefrom>

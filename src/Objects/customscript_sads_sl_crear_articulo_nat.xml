@@ -1,0 +1,37 @@
+<suitelet scriptid="customscript_sads_sl_crear_articulo_nat">
+  <description>Crea artículos de una naturaleza de producto copiando el artículo plantilla de su configuración. Genera nombre y código con los patrones de la configuración.</description>
+  <isinactive>F</isinactive>
+  <name>SADS SL Crear Artículo por Naturaleza</name>
+  <notifyadmins>F</notifyadmins>
+  <notifyemails></notifyemails>
+  <notifyowner>T</notifyowner>
+  <notifyuser>F</notifyuser>
+  <scriptfile>[/SuiteScripts/SADS_Naturaleza_Productos/SADS_SL_crear_articulo_nat.js]</scriptfile>
+  <scriptcustomfields>
+    <scriptcustomfield scriptid="custscript_sads_sl_art_activo">
+      <accesslevel>2</accesslevel>
+      <defaultchecked>F</defaultchecked>
+      <description>F: el artículo se crea inactivo (iteración A). T: se crea activo.</description>
+      <displaytype>NORMAL</displaytype>
+      <fieldtype>CHECKBOX</fieldtype>
+      <ismandatory>F</ismandatory>
+      <label>Crear artículos activos</label>
+      <searchlevel>2</searchlevel>
+      <storevalue>T</storevalue>
+    </scriptcustomfield>
+  </scriptcustomfields>
+  <scriptdeployments>
+    <scriptdeployment scriptid="customdeploy_sads_sl_crear_articulo_nat">
+      <allemployees>F</allemployees>
+      <allroles>F</allroles>
+      <audslctrole></audslctrole>
+      <custscript_sads_sl_art_activo>F</custscript_sads_sl_art_activo>
+      <eventtype></eventtype>
+      <isdeployed>T</isdeployed>
+      <isonline>F</isonline>
+      <loglevel>AUDIT</loglevel>
+      <status>RELEASED</status>
+      <title>SADS - Crear Artículo por Naturaleza</title>
+    </scriptdeployment>
+  </scriptdeployments>
+</suitelet>
