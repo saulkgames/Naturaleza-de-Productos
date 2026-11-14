@@ -10,19 +10,37 @@
   <scriptcustomfields>
     <scriptcustomfield scriptid="custscript_sads_sl_art_activo">
       <accesslevel>2</accesslevel>
+      <aidescription></aidescription>
+      <applyformatting>F</applyformatting>
+      <checkspelling>F</checkspelling>
       <defaultchecked>F</defaultchecked>
+      <defaultselection></defaultselection>
+      <defaultvalue></defaultvalue>
       <description>F: el artículo se crea inactivo (iteración A). T: se crea activo.</description>
+      <displayheight></displayheight>
       <displaytype>NORMAL</displaytype>
+      <displaywidth></displaywidth>
+      <dynamicdefault></dynamicdefault>
       <fieldtype>CHECKBOX</fieldtype>
+      <help></help>
+      <isformula>F</isformula>
       <ismandatory>F</ismandatory>
       <label>Crear artículos activos</label>
+      <linktext></linktext>
+      <maxlength></maxlength>
+      <maxvalue></maxvalue>
+      <minvalue></minvalue>
+      <onparentdelete></onparentdelete>
       <searchlevel>2</searchlevel>
+      <selectrecordtype></selectrecordtype>
+      <setting></setting>
       <storevalue>T</storevalue>
     </scriptcustomfield>
   </scriptcustomfields>
   <scriptdeployments>
     <scriptdeployment scriptid="customdeploy_sads_sl_crear_articulo_nat">
       <allemployees>F</allemployees>
+      <allpartners>F</allpartners>
       <allroles>F</allroles>
       <audslctrole></audslctrole>
       <custscript_sads_sl_art_activo>F</custscript_sads_sl_art_activo>
@@ -30,6 +48,7 @@
       <isdeployed>T</isdeployed>
       <isonline>F</isonline>
       <loglevel>AUDIT</loglevel>
+      <runasrole></runasrole>
       <status>RELEASED</status>
       <title>SADS - Crear Artículo por Naturaleza</title>
     </scriptdeployment>

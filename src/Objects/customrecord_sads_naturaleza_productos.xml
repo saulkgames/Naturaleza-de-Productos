@@ -102,7 +102,7 @@
       <fieldtype>CLOBTEXT</fieldtype>
       <globalsearch>F</globalsearch>
       <help>Texto con el id de los campos que se marcaran como obligatorio con formato de arreglo json.&#xd;
-Ejemplo: ["custitem_pl_ancho","custitem_pl_espesor","custitem_pl_largo"]</help>
+Ejemplo: [&quot;custitem_pl_ancho&quot;,&quot;custitem_pl_espesor&quot;,&quot;custitem_pl_largo&quot;]</help>
       <isformula>F</isformula>
       <ismandatory>T</ismandatory>
       <isparent>F</isparent>

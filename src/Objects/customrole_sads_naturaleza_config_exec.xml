@@ -1,10 +1,41 @@
 <role scriptid="customrole_sads_naturaleza_config_exec">
   <centertype>BASIC</centertype>
+  <coreadminpermission>F</coreadminpermission>
+  <custrecord_permission_certification>T</custrecord_permission_certification>
+  <custrecord_permission_gen_and_send_ar>F</custrecord_permission_gen_and_send_ar>
+  <custrecord_permission_generation>T</custrecord_permission_generation>
+  <custrecord_permission_network_status>F</custrecord_permission_network_status>
+  <custrecord_permission_sending>T</custrecord_permission_sending>
+  <employeerestriction>NONE</employeerestriction>
+  <employeeselectionunrestricted>F</employeeselectionunrestricted>
   <isinactive>F</isinactive>
+  <issalesrole>F</issalesrole>
+  <issinglesignononly>F</issinglesignononly>
+  <issupportrole>F</issupportrole>
+  <iswebserviceonlyrole>F</iswebserviceonlyrole>
   <name>SADS - Ejecución Config Naturaleza</name>
+  <parentrolescriptid></parentrolescriptid>
+  <restrictbydevice>F</restrictbydevice>
+  <restricttimeandexpenses>F</restricttimeandexpenses>
+  <subsidiaryoption>OWN</subsidiaryoption>
+  <subsidiaryviewingallowed>F</subsidiaryviewingallowed>
+  <tfaduration>720</tfaduration>
+  <tfarequired>OFF</tfarequired>
   <permissions>
     <permission>
+      <permkey>LIST_ITEM</permkey>
+      <permlevel>VIEW</permlevel>
+    </permission>
+    <permission>
       <permkey>LIST_CUSTRECORDENTRY</permkey>
+      <permlevel>VIEW</permlevel>
+    </permission>
+    <permission>
+      <permkey>LIST_OTHER_ADDRESS</permkey>
+      <permlevel>FULL</permlevel>
+    </permission>
+    <permission>
+      <permkey>ADMI_CUSTITEMFIELD</permkey>
       <permlevel>VIEW</permlevel>
     </permission>
   </permissions>

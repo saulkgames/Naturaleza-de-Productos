@@ -10,5 +10,15 @@
       <isinactive>F</isinactive>
       <value>Placas de Acero</value>
     </customvalue>
+    <customvalue scriptid="val_8427308_5490848_sb1_520">
+      <abbreviation></abbreviation>
+      <isinactive>F</isinactive>
+      <value>Perfiles Tubulares Cuadrados</value>
+    </customvalue>
+    <customvalue scriptid="val_8427309_5490848_sb1_327">
+      <abbreviation></abbreviation>
+      <isinactive>F</isinactive>
+      <value>Perfiles Tubulares Redondos</value>
+    </customvalue>
   </customvalues>
 </customlist>
