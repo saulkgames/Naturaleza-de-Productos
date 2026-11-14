@@ -3,7 +3,7 @@
  * @NScriptType UserEventScript
  * @NModuleScope SameAccount
  * @description Valida la captura manual del registro de configuración de Naturaleza de Productos antes de guardarlo:
- * JSON de parámetros, artículo plantilla y patrones de nombre y código (RN-12 a RN-16).
+ * JSON de parámetros, artículo plantilla y patrones de nombre y código (RN-12 a RN-17).
  */
 define([
     'N/error',
@@ -84,7 +84,7 @@ define([
     };
 
     /**
-     * Aplica RN-12 a RN-16 al estado final del registro.
+     * Aplica RN-12 a RN-17 al estado final del registro.
      * @param {{json: *, plantilla: string, patronNombre: string, patronCodigo: string}} configuracion
      * @returns {string[]} Mensajes de error; vacío si la configuración es válida.
      */
@@ -105,7 +105,7 @@ define([
     };
 
     /**
-     * Rechaza el guardado de una configuración que viole RN-12 a RN-16. Solo actúa en CREATE, EDIT y XEDIT.
+     * Rechaza el guardado de una configuración que viole RN-12 a RN-17. Solo actúa en CREATE, EDIT y XEDIT.
      * Sin plantilla, los patrones se permiten sin validar.
      * @param {Object} context - Contexto de beforeSubmit.
      * @returns {void}

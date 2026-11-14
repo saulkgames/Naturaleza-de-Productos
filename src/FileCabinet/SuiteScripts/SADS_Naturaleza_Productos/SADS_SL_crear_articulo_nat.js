@@ -628,6 +628,18 @@ define([
         });
     };
 
+    // D-13, D-14: un valor que no cabe en el formato de su marcador se corrige en el paso 2, no es error de configuración.
+    const validarFormatosDeCaptura = (preparacion, valores) => {
+        const etiquetas = {};
+        preparacion.definicion.forEach((parametro) => {
+            etiquetas[parametro.id] = parametro.etiqueta;
+        });
+        const errores = [preparacion.patronCodigo, preparacion.patronNombre]
+            .map((texto) => patron.validarFormatos({ patron: texto, valores, etiquetas }).errores)
+            .reduce((todos, propios) => todos.concat(propios), []);
+        return errores.filter((mensaje, posicion) => errores.indexOf(mensaje) === posicion);
+    };
+
     const atenderCreacion = (solicitud) => {
         const eleccion = elegirConfiguracion(solicitud);
         if (eleccion.configuracion === null) return paso1ConNaturalezaInvalida(eleccion);
@@ -637,6 +649,8 @@ define([
         const repetirPaso2 = (errores) => mostrarPaso2(preparacion, { valoresPrevios: valoresCrudos, pesoPrevio: pesoCrudo, errores });
         const captura = parametros.validarValores({ parametros: preparacion.definicion, valoresCrudos, pesoCrudo });
         if (!captura.valido) return repetirPaso2(captura.errores);
+        const erroresDeFormato = validarFormatosDeCaptura(preparacion, captura.valores);
+        if (erroresDeFormato.length > 0) return repetirPaso2(erroresDeFormato);
         const codigo = patron.aplicar({ patron: preparacion.patronCodigo, valores: captura.valores });
         const nombre = patron.aplicar({ patron: preparacion.patronNombre, valores: captura.valores });
         if (codigo.length > LONGITUD_MAXIMA_CODIGO) return repetirPaso2([MENSAJES.CODIGO_LARGO]);

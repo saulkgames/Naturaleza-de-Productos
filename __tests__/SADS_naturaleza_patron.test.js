@@ -211,6 +211,177 @@ describe('regla de dependencia', () => {
     });
 
     test('exporta las funciones de la especificación', () => {
-        expect(Object.keys(patron).sort()).toEqual(['ERRORES', 'aplicar', 'extraerMarcadores', 'formatearNumero', 'validar']);
+        expect(Object.keys(patron).sort()).toEqual([
+            'ERRORES',
+            'FORMATOS',
+            'aplicar',
+            'extraerMarcadores',
+            'formatearNumero',
+            'formatearValor',
+            'validar',
+            'validarFormatos'
+        ]);
+    });
+});
+
+describe('formatos de marcador (D-13, D-14, RN-17)', () => {
+    const IDS_TA36 = ['custitem_pl_ancho', 'custitem_pl_espesor', 'custitem_pl_largo'];
+    const CODIGO_TA36 = 'PLA36{custitem_pl_espesor:centesimas3}{custitem_pl_ancho}{custitem_pl_largo}';
+    const NOMBRE_TA36 = "Placa Acero TA36 {custitem_pl_espesor:fraccion16}'' {custitem_pl_ancho}'x{custitem_pl_largo}'";
+    const VALORES_TA36 = Object.freeze({ custitem_pl_espesor: 0.5, custitem_pl_ancho: 6, custitem_pl_largo: 20 });
+
+    test('FORMATOS está congelado con centesimas3 y fraccion16', () => {
+        expect(Object.isFrozen(patron.FORMATOS)).toBe(true);
+        expect(patron.FORMATOS).toEqual({ CENTESIMAS_3: 'centesimas3', FRACCION_16: 'fraccion16' });
+    });
+
+    test('ejemplo de placa TA36: código PLA36050620 y nombre con fracción', () => {
+        expect(patron.aplicar({ patron: CODIGO_TA36, valores: VALORES_TA36 })).toBe('PLA36050620');
+        expect(patron.aplicar({ patron: NOMBRE_TA36, valores: VALORES_TA36 })).toBe("Placa Acero TA36 1/2'' 6'x20'");
+    });
+
+    test('los patrones TA36 son válidos contra los IDs del JSON', () => {
+        expect(patron.validar({ patron: CODIGO_TA36, idsPermitidos: IDS_TA36 })).toEqual({ valido: true, errores: [] });
+        expect(patron.validar({ patron: NOMBRE_TA36, idsPermitidos: IDS_TA36 })).toEqual({ valido: true, errores: [] });
+    });
+
+    test.each([
+        [0.5, '050'],
+        [0.25, '025'],
+        [0.375, '037'],
+        [0.1875, '018'],
+        [0.0625, '006'],
+        [0.9375, '093'],
+        [0.29, '029'],
+        [0.57, '057'],
+        [1, '100'],
+        [1.25, '125'],
+        [9.99, '999'],
+        [0.01, '001']
+    ])('D-13: centesimas3 de %p → %p (truncado)', (numero, esperado) => {
+        expect(patron.formatearValor(numero, 'centesimas3')).toBe(esperado);
+    });
+
+    test.each([10, 12.5, 0.005, 0.009, 0, -0.5])('D-13: centesimas3 de %p no cabe y devuelve null', (numero) => {
+        expect(patron.formatearValor(numero, 'centesimas3')).toBeNull();
+    });
+
+    test('D-13: los dieciseisavos de 1/16 a 1 producen códigos distintos', () => {
+        const codigos = Array.from({ length: 16 }, (valor, indice) => patron.formatearValor((indice + 1) / 16, 'centesimas3'));
+        expect(new Set(codigos).size).toBe(16);
+        expect(codigos[15]).toBe('100');
+    });
+
+    test.each([
+        [0.5, '1/2'],
+        [0.25, '1/4'],
+        [0.75, '3/4'],
+        [0.375, '3/8'],
+        [0.1875, '3/16'],
+        [0.0625, '1/16'],
+        [0.625, '5/8'],
+        [1, '1'],
+        [2, '2'],
+        [1.25, '1 1/4'],
+        [1.5, '1 1/2'],
+        [2.4375, '2 7/16']
+    ])('D-14: fraccion16 de %p → %p', (numero, esperado) => {
+        expect(patron.formatearValor(numero, 'fraccion16')).toBe(esperado);
+    });
+
+    test.each([0.3, 0.03125, 0.1, 1.33])('D-14: fraccion16 de %p no es múltiplo de 1/16 y devuelve null', (numero) => {
+        expect(patron.formatearValor(numero, 'fraccion16')).toBeNull();
+    });
+
+    test('formatearValor sin formato usa el decimal de RN-07', () => {
+        expect(patron.formatearValor(2.5, null)).toBe('2.5');
+    });
+
+    test('formatearValor lanza PATRON_INVALIDO con un formato desconocido o un número inválido', () => {
+        esperarPatronInvalido(() => patron.formatearValor(1, 'mayusculas'));
+        esperarPatronInvalido(() => patron.formatearValor(NaN, 'centesimas3'));
+        esperarPatronInvalido(() => patron.formatearValor('0.5', 'fraccion16'));
+    });
+
+    test('extraerMarcadores devuelve IDs únicos sin el formato', () => {
+        expect(patron.extraerMarcadores(`${CODIGO_TA36} {custitem_pl_espesor:fraccion16}`)).toEqual([
+            'custitem_pl_espesor', 'custitem_pl_ancho', 'custitem_pl_largo'
+        ]);
+    });
+
+    test.each([
+        ['{:centesimas3}', 'El patrón tiene un marcador sin ID de campo antes de los dos puntos.'],
+        ['{custitem_pl_espesor:}', 'El patrón tiene un marcador con formato vacío después de los dos puntos.']
+    ])('estructura inválida %p', (texto, mensaje) => {
+        const error = esperarPatronInvalido(() => patron.extraerMarcadores(texto));
+        expect(error.message).toBe(mensaje);
+        expect(patron.validar({ patron: texto, idsPermitidos: IDS_TA36 })).toEqual({ valido: false, errores: [mensaje] });
+    });
+
+    test('validar reporta un formato desconocido citando formato e ID con la lista de formatos', () => {
+        const resultado = patron.validar({ patron: 'PL{custitem_pl_espesor:fraccion}', idsPermitidos: IDS_TA36 });
+        expect(resultado).toEqual({
+            valido: false,
+            errores: ['El formato fraccion del marcador {custitem_pl_espesor} no existe. Formatos válidos: centesimas3, fraccion16.']
+        });
+    });
+
+    test('validar no cita un formato no citable', () => {
+        const resultado = patron.validar({ patron: '{custitem_pl_espesor:<b>x</b>}', idsPermitidos: IDS_TA36 });
+        expect(resultado.errores).toEqual(['Un marcador del patrón tiene un formato que no existe. Formatos válidos: centesimas3, fraccion16.']);
+    });
+
+    test('validar reporta ID fuera del JSON y formato desconocido a la vez', () => {
+        const resultado = patron.validar({ patron: '{custitem_otro:centesimas3}{custitem_pl_largo:xx}', idsPermitidos: IDS_TA36 });
+        expect(resultado.errores).toEqual([
+            'El marcador {custitem_otro} no es un ID de la configuración.',
+            'El formato xx del marcador {custitem_pl_largo} no existe. Formatos válidos: centesimas3, fraccion16.'
+        ]);
+    });
+
+    test('aplicar lanza PATRON_INVALIDO si el valor no cabe en el formato o el formato no existe', () => {
+        const fuera = esperarPatronInvalido(() => patron.aplicar({ patron: NOMBRE_TA36, valores: Object.assign({}, VALORES_TA36, { custitem_pl_espesor: 0.3 }) }));
+        expect(fuera.message).toBe('El valor del marcador {custitem_pl_espesor} no cabe en el formato fraccion16.');
+        esperarPatronInvalido(() => patron.aplicar({ patron: '{custitem_pl_espesor:xx}', valores: VALORES_TA36 }));
+    });
+
+    describe('validarFormatos', () => {
+        const etiquetas = { custitem_pl_espesor: 'Espesor', custitem_pl_ancho: 'Ancho', custitem_pl_largo: 'Largo' };
+
+        test('acepta valores que caben en sus formatos', () => {
+            expect(patron.validarFormatos({ patron: NOMBRE_TA36, valores: VALORES_TA36, etiquetas })).toEqual({ valido: true, errores: [] });
+            expect(patron.validarFormatos({ patron: CODIGO_TA36, valores: VALORES_TA36, etiquetas })).toEqual({ valido: true, errores: [] });
+        });
+
+        test('reporta con la etiqueta un espesor que no es múltiplo de 1/16', () => {
+            const valores = Object.assign({}, VALORES_TA36, { custitem_pl_espesor: 0.3 });
+            expect(patron.validarFormatos({ patron: NOMBRE_TA36, valores, etiquetas })).toEqual({
+                valido: false,
+                errores: ['Espesor: el valor no corresponde a una fracción de 1/16 de pulgada.']
+            });
+        });
+
+        test('reporta con la etiqueta un espesor que no cabe en 3 dígitos', () => {
+            const valores = Object.assign({}, VALORES_TA36, { custitem_pl_espesor: 10 });
+            expect(patron.validarFormatos({ patron: CODIGO_TA36, valores, etiquetas }).errores).toEqual([
+                'Espesor: el valor no cabe en 3 dígitos de centésimas (de 0.01 a 9.99).'
+            ]);
+        });
+
+        test('reporta una vez por campo y formato y usa el ID si falta la etiqueta', () => {
+            const resultado = patron.validarFormatos({
+                patron: '{custitem_pl_espesor:fraccion16}-{custitem_pl_espesor:fraccion16}',
+                valores: { custitem_pl_espesor: 0.3 },
+                etiquetas: {}
+            });
+            expect(resultado.errores).toEqual(['custitem_pl_espesor: el valor no corresponde a una fracción de 1/16 de pulgada.']);
+        });
+
+        test('ignora estructura inválida, formatos desconocidos y valores faltantes (los reporta aplicar)', () => {
+            expect(patron.validarFormatos({ patron: '{x', valores: {}, etiquetas })).toEqual({ valido: true, errores: [] });
+            expect(patron.validarFormatos({ patron: '{custitem_a:xx}', valores: { custitem_a: 0.3 }, etiquetas })).toEqual({ valido: true, errores: [] });
+            expect(patron.validarFormatos({ patron: NOMBRE_TA36, valores: {}, etiquetas })).toEqual({ valido: true, errores: [] });
+            expect(patron.validarFormatos()).toEqual({ valido: true, errores: [] });
+        });
     });
 });

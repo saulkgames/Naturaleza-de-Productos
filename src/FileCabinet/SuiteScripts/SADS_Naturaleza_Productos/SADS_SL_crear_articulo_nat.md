@@ -2,7 +2,7 @@
 
 | Dato | Valor |
 |---|---|
-| Fecha de generación | 2026-11-13 |
+| Fecha de generación | 2026-11-13 (formatos de marcador: 2026-11-14) |
 | Iteración | A (creación sin cálculo de precios; artículos inactivos) |
 | Suitelet | `customscript_sads_sl_crear_articulo_nat` / `customdeploy_sads_sl_crear_articulo_nat` |
 | User Event | `customscript_sads_ue_naturaleza_config` / `customdeploy_sads_ue_naturaleza_config` |
@@ -42,7 +42,7 @@ Un User Event sobre el registro de configuración impide guardar configuraciones
 | Componente | Archivo | Tipo | Responsabilidad |
 |---|---|---|---|
 | Suitelet | `SADS_SL_crear_articulo_nat.js` | Suitelet 2.1 | Paso 1, paso 2, creación, duplicado y confirmación |
-| UE de configuración | `SADS_UE_naturaleza_config.js` | UserEventScript 2.1 | `beforeSubmit` CREATE, EDIT y XEDIT; RN-12 a RN-16 |
+| UE de configuración | `SADS_UE_naturaleza_config.js` | UserEventScript 2.1 | `beforeSubmit` CREATE, EDIT y XEDIT; RN-12 a RN-17 |
 | Formato | `domain/SADS_naturaleza_config_formato.js` | Módulo AMD sin `N/` (existente) | Contrato del JSON y errores de dominio |
 | Patrones | `domain/SADS_naturaleza_patron.js` | Módulo AMD sin `N/` | Extraer, validar y aplicar marcadores `{id}` |
 | Parámetros | `domain/SADS_naturaleza_parametros.js` | Módulo AMD sin `N/` | IDs seguros, definición, valores capturados y criterios de duplicado |
@@ -107,7 +107,7 @@ flowchart TD
   G2 --> J{¿Valores válidos?}
   J -- No --> H
   J -- Sí --> K[Aplicar patrones]
-  K --> K2{¿Código > 60?}
+  K --> K2{¿Formato o código > 60?}
   K2 -- Sí --> H
   K2 -- No --> L{C-2: ¿duplicado?}
   L -- Sí --> M[Página de duplicado; no se guarda]
@@ -134,10 +134,11 @@ Preparación común (paso 2 y creación, RN-11):
 
 Creación:
 1. Leer `custpage_par_0` … `custpage_par_{n-1}` y `custpage_peso`; `parametros.validarValores`. Error: paso 2 con errores y valores previos.
-2. `patron.aplicar` del patrón de código y del de nombre. Código de más de 60 caracteres: paso 2 con mensaje.
-3. `parametros.armarCriteriosDuplicado`; columnas verificadas contra el JSON; C-2. Con fila: página de duplicado y `log.audit`.
-4. Sobre la copia: naturaleza, parámetros, `weight`, `itemid`, `displayname`, `vendorname` = nombre, `upccode` y `mpn` vacíos, `isinactive` = negación de `custscript_sads_sl_art_activo`.
-5. `save({ ignoreMandatoryFields: false })`; `log.audit`; confirmación con código, nombre, estado y enlaces.
+2. `patron.validarFormatos` de ambos patrones: un valor que no cabe en el formato de su marcador regresa al paso 2 con mensaje (RN-17).
+3. `patron.aplicar` del patrón de código y del de nombre. Código de más de 60 caracteres: paso 2 con mensaje.
+4. `parametros.armarCriteriosDuplicado`; columnas verificadas contra el JSON; C-2. Con fila: página de duplicado y `log.audit`.
+5. Sobre la copia: naturaleza, parámetros, `weight`, `itemid`, `displayname`, `vendorname` = nombre, `upccode` y `mpn` vacíos, `isinactive` = negación de `custscript_sads_sl_art_activo`.
+6. `save({ ignoreMandatoryFields: false })`; `log.audit`; confirmación con código, nombre, estado y enlaces.
 
 Gobernanza estimada (límite 1,000 unidades; costos de `record.copy` y `save`: supuesto S-05):
 | Solicitud | Operaciones | Unidades |
@@ -153,7 +154,7 @@ Los usuarios técnicos preparan cada naturaleza en la cuenta; el Suitelet no cre
 
 1. Crear los campos `custitem` de los parámetros (por ejemplo ancho, largo y espesor de placa).
    Tipo Decimal o Entero; otro tipo es error de configuración (RN-03).
-   Largo y ancho con `minvalue` 2 para imponer el mínimo de 2 pies (RN-04, supuesto S-08).
+   Largo y ancho como Entero (D-15) y con `minvalue` 2 para imponer el mínimo de 2 pies (RN-04, supuesto S-08); espesor como Decimal.
    Aplicar los campos al tipo de artículo de la plantilla; un campo que no existe en la copia es error (R-12).
 2. Elegir el artículo plantilla: un artículo existente cuya configuración contable, fiscal, de subsidiarias y de unidades sea correcta para la naturaleza (R-01).
 3. En el registro "SADS - Naturaleza de Productos" capturar:
@@ -161,20 +162,40 @@ Los usuarios técnicos preparan cada naturaleza en la cuenta; el Suitelet no cre
    |---|---|
    | Configuración de Campos Obligatorios | Arreglo JSON de IDs de los parámetros; solo minúsculas, dígitos y guion bajo (RN-13) |
    | Artículo Plantilla (ID interno) | ID interno numérico del artículo plantilla (D-12, RN-16) |
-   | Patrón de Código | Texto con marcadores `{id}` de los IDs del JSON |
-   | Patrón de Nombre | Texto con marcadores `{id}` de los IDs del JSON |
+   | Patrón de Código | Texto con marcadores `{id}` o `{id:formato}` de los IDs del JSON |
+   | Patrón de Nombre | Texto con marcadores `{id}` o `{id:formato}` de los IDs del JSON |
 4. Requieren `LIST_ITEM` VIEW: el UE de configuración busca la plantilla con el rol del usuario técnico.
 5. Recomendación: incluir todos los parámetros en el patrón de código para que la unicidad de `itemid` respalde la detección de duplicados (R-03).
 
-Ejemplo (IDs ficticios):
+### Cómo escribir un patrón
+| Regla | Detalle |
+|---|---|
+| Marcador sin formato | `{id}`: escribe el valor en decimal, sin ceros a la derecha ni punto final (RN-07): 2.50 → `2.5`; 4 → `4`; 0.125 → `0.125`. |
+| Marcador con formato | `{id:formato}` con un formato de la tabla siguiente (RN-17). |
+| ID del marcador | Uno de los IDs del JSON, escrito igual: minúsculas, sin espacios (RN-15). |
+| Texto fijo | Todo lo que está fuera de llaves se copia tal cual: letras, números, espacios, guiones, `x`, `'`, `"`, `/`. |
+| Llaves | Solo para marcadores: no se admite `{}`, `{:formato}`, `{id:}`, una `{` sin cerrar ni una `}` suelta. |
+| Resultado | Se recortan espacios al inicio y al final; el código no puede pasar de 60 caracteres (S-14). |
+
+Formatos de marcador (RN-17):
+| Formato | Regla | Ejemplos | El paso 2 rechaza |
+|---|---|---|---|
+| `centesimas3` | Centésimas de pulgada truncadas, 3 dígitos con ceros a la izquierda (D-13) | 0.5 → `050`; 0.375 → `037`; 0.1875 → `018`; 1.25 → `125` | Menos de 0.01 o 10 o más |
+| `fraccion16` | Fracción de pulgada reducida, hasta dieciseisavos (D-14) | 0.5 → `1/2`; 0.1875 → `3/16`; 1 → `1`; 1.25 → `1 1/4` | Un valor que no es múltiplo de 1/16 |
+
+Con espesores múltiplos de 1/16, `centesimas3` da un código distinto para cada uno (1/16 → `006` … 15/16 → `093`; 1 → `100`).
+
+Ejemplo real de placa TA36 (IDs de campo ficticios):
 | Campo | Valor |
 |---|---|
 | Configuración | `["custitem_pl_ancho","custitem_pl_espesor","custitem_pl_largo"]` |
-| Patrón de código | `PL-{custitem_pl_espesor}-{custitem_pl_largo}X{custitem_pl_ancho}` |
-| Patrón de nombre | `PLACA A36 {custitem_pl_espesor} IN {custitem_pl_largo} X {custitem_pl_ancho} FT` |
-| Resultado con espesor 0.25, largo 4, ancho 2 | Código `PL-0.25-4X2`; nombre `PLACA A36 0.25 IN 4 X 2 FT` |
+| Patrón de código | `PLA36{custitem_pl_espesor:centesimas3}{custitem_pl_ancho}{custitem_pl_largo}` |
+| Patrón de nombre | `Placa Acero TA36 {custitem_pl_espesor:fraccion16}'' {custitem_pl_ancho}'x{custitem_pl_largo}'` |
+| Resultado con espesor 0.5, ancho 6, largo 20 | Código `PLA36050620`; nombre `Placa Acero TA36 1/2'' 6'x20'` |
+| Resultado con espesor 0.375, ancho 4, largo 10 | Código `PLA36037410`; nombre `Placa Acero TA36 3/8'' 4'x10'` |
 
-Formato de números en patrones (RN-07): `toFixed(6)` sin ceros finales ni punto final (2.50 → `2.5`; 4 → `4`; 0.125 → `0.125`).
+En el código los lados van pegados sin separador: capture siempre el ancho como el lado menor (R-15).
+
 Unidades: largo y ancho en pies; espesor en pulgadas; el script no convierte unidades.
 Sin plantilla, la configuración sigue funcionando para el CS y el UE de artículo, pero no aparece en el paso 1 (R-09).
 
@@ -230,7 +251,7 @@ En XEDIT, un campo enviado (`newRecord.getFields()`) se lee de `newRecord`; si n
 | 2 | RN-13 | `parametros.validarIds`; un ID inseguro se cita por su posición |
 | 3 | RN-16 | Con plantilla: `^[1-9][0-9]*$` y artículo existente según el adaptador |
 | 4 | RN-14 | Con plantilla: ambos patrones obligatorios |
-| 5 | RN-15 | Con plantilla: `patron.validar` de cada patrón contra los IDs del JSON |
+| 5 | RN-15, RN-17 | Con plantilla: `patron.validar` de cada patrón contra los IDs del JSON y los formatos |
 | — | Sin plantilla | Los patrones se permiten sin validar |
 
 Con errores: `error.create` con `name` `CONFIGURACION_NATURALEZA_INVALIDA`, mensaje "La configuración no es válida: " más los errores unidos por "; ", `notifyOff` true; sin `log.error`.
@@ -245,7 +266,7 @@ Error inesperado: `log.error` con detalle y se relanza el error original.
 | RN-04 | Cada valor de parámetro es un número finito mayor que 0, con punto decimal; no se aceptan comas ni texto. El mínimo de 2 pies de largo y ancho lo impone el `minvalue` del `custitem` (supuesto S-08). |
 | RN-05 | El peso es obligatorio, numérico y mayor que 0; la unidad de peso se copia de la plantilla. |
 | RN-06 | Código = patrón de código con cada `{id}` sustituido por el valor del parámetro; nombre = patrón de nombre igual. Se recorta el resultado; vacío es error. |
-| RN-07 | Formato numérico en patrones: sin ceros a la derecha ni punto final (2.50 → 2.5; 4.0 → 4); punto decimal. |
+| RN-07 | Formato numérico en patrones sin formato de marcador: sin ceros a la derecha ni punto final (2.50 → 2.5; 4.0 → 4); punto decimal. |
 | RN-08 | Si existe un artículo, activo o inactivo, con la misma naturaleza y valores iguales en todos los parámetros, no se crea y se muestra el existente. |
 | RN-09 | El artículo nuevo es copia de la plantilla; el script solo escribe naturaleza, parámetros, peso, código, nombre, código de proveedor (= nombre), estado inactivo y (iteración B) precios, y deja vacíos UPC y MPN. |
 | RN-10 | Con `custscript_sads_sl_art_activo` = F el artículo se crea inactivo; con T, activo. |
@@ -255,6 +276,7 @@ Error inesperado: `log.error` con detalle y se relanza el error original.
 | RN-14 | Si la configuración tiene plantilla, los dos patrones son obligatorios. |
 | RN-15 | Cada marcador de un patrón es un ID del JSON; llaves sin cerrar o vacías son error. |
 | RN-16 | Si la configuración tiene plantilla, su valor es un entero positivo que corresponde a un artículo existente. |
+| RN-17 | Un marcador `{id:formato}` usa un formato de `FORMATOS` (`centesimas3`, `fraccion16`); el UE rechaza otro formato y el Suitelet rechaza en el paso 2 un valor que no cabe en su formato (D-13, D-14). |
 
 ## 9. Deployments, rol y permisos
 Suitelet (`customscript_sads_sl_crear_articulo_nat.xml`):
@@ -365,6 +387,7 @@ Reversión: deployment del Suitelet a inactivo; los artículos creados se inacti
 | R-12 | Un parámetro no aplica al tipo de la plantilla. | El campo no existe en la copia. | Error de configuración con el ID del campo (P-12). |
 | R-13 | La copia hereda datos de proveedor de la plantilla (UPC, MPN, código de proveedor). | Códigos que no corresponden al artículo procesado. | `vendorname` = nombre; `upccode` y `mpn` vacíos (RN-09); P-14. |
 | R-14 | El ID de la plantilla se captura a mano (D-12). | Un ID de otro artículo existente pasa RN-16 y se copia el artículo equivocado. | P-14; los técnicos verifican el ID al capturarlo. |
+| R-15 | En el código TA36 los lados van pegados sin separador (D-15): `2'x12'` y `21'x2'` producen `212`. | Dos medidas distintas con el mismo código; `save` falla por `itemid` repetido (S-09) y el usuario ve el mensaje genérico. | Capturar siempre el ancho como el lado menor; C-2 compara valores, no códigos. |
 
 ## 15. Troubleshooting y bitácora
 | Síntoma | Causa probable | Solución |
@@ -379,9 +402,13 @@ Reversión: deployment del Suitelet a inactivo; los artículos creados se inacti
 | "El campo … no es decimal ni entero." | El `custitem` es de otro tipo (RN-03) o el valor de `Field.type` difiere (S-03). | Cambiar el tipo del campo; si es decimal, revisar S-03 y `TIPOS_SOPORTADOS`. |
 | Etiqueta "Peso (unidad de la plantilla)". | `getText` sin texto y valor de `weightunit` fuera del mapa (S-16). | Ajustar `UNIDADES_PESO_RESPALDO` con los IDs reales de la cuenta. |
 | "El código generado excede 60 caracteres…" | Patrón de código largo (S-14). | Acortar el patrón de código. |
+| Paso 2: "<Campo>: el valor no corresponde a una fracción de 1/16 de pulgada." | El patrón usa `fraccion16` y el valor no es múltiplo de 1/16 (D-14). | Capturar el espesor exacto en decimal: 1/4 = 0.25; 3/8 = 0.375; 3/16 = 0.1875. |
+| Paso 2: "<Campo>: el valor no cabe en 3 dígitos de centésimas…" | El patrón usa `centesimas3` y el valor es menor que 0.01 o de 10 o más (D-13). | Revisar la captura. |
+| `CONFIGURACION_NATURALEZA_INVALIDA`: "El formato … no existe." | Formato mal escrito en un marcador (RN-17). | Usar `centesimas3` o `fraccion16`, en minúsculas. |
+| Página de error: "El valor del marcador {…} no cabe en el formato …". | Defensa de `patron.aplicar`; no debería ocurrir porque el paso 2 lo valida antes. | Revisar el log "error de dominio". |
 | Página de duplicado con un artículo que no es igual. | C-2 compara igualdad de valores; no compara otros campos. | Revisar los parámetros del artículo existente. |
 | Página genérica al crear. | `save` rechazó: `minvalue` (P-15), `itemid` repetido (S-09), `MISSING_DYNAMIC_MANDATORY_FIELDS` o permiso. | Revisar el log "error inesperado" del deployment del Suitelet. |
-| `CONFIGURACION_NATURALEZA_INVALIDA` al guardar una configuración. | Violación de RN-12 a RN-16 (sección 7). | Corregir los campos citados en el mensaje. |
+| `CONFIGURACION_NATURALEZA_INVALIDA` al guardar una configuración. | Violación de RN-12 a RN-17 (sección 7). | Corregir los campos citados en el mensaje. |
 | "El artículo plantilla N no existe." con un ID correcto. | El usuario técnico no tiene `LIST_ITEM` VIEW. | Otorgar el permiso. |
 | `project:validate` rechaza `recordtype` del UE. | S-07 no se cumple. | Cambiar a `[scriptid=customrecord_sads_naturaleza_productos]` y volver a validar. |
 
@@ -398,15 +425,15 @@ Ver los logs: Customization > Scripting > Script Deployments > deployment > pest
 
 ## 16. Pruebas
 Comando: `npm test` (no requiere cuenta NetSuite).
-Resultado del 2026-11-13: 7 suites aprobadas de 7; 339 pruebas aprobadas de 339.
+Resultado del 2026-11-14: 7 suites aprobadas de 7; 399 pruebas aprobadas de 399.
 
 | Suite | Pruebas | Alcance |
 |---|---|---|
-| `SADS_naturaleza_patron.test.js` | 63 | P-01 a P-04; regla de dependencia |
+| `SADS_naturaleza_patron.test.js` | 115 | P-01 a P-04; formatos `centesimas3` y `fraccion16`; ejemplo TA36; regla de dependencia |
 | `SADS_naturaleza_parametros.test.js` | 59 | P-05 a P-08; regla de dependencia |
 | `SADS_naturaleza_articulo_ns.test.js` | 7 | Adaptador con y sin resultado |
-| `SADS_SL_crear_articulo_nat.test.js` | 64 | P-09 a P-13, P-16, P-22; estructura del entry point |
-| `SADS_UE_naturaleza_config.test.js` | 35 | P-17, P-18; errores inesperados |
+| `SADS_SL_crear_articulo_nat.test.js` | 69 | P-09 a P-13, P-16, P-22; alta TA36 y rechazo de formatos en el paso 2; estructura del entry point |
+| `SADS_UE_naturaleza_config.test.js` | 38 | P-17, P-18; formatos de marcador (RN-17); errores inesperados |
 | `SADS_naturaleza_config_formato.test.js` | 109 | Contrato del JSON (sin cambios) |
 | `sample-test.js` | 2 | Plantilla de SuiteCloud |
 
@@ -450,6 +477,13 @@ Pruebas en sandbox (las ejecuta el equipo):
 | `audsubsidiary` del deployment del UE. | Vacío. | No especificado; el registro de configuración no es por subsidiaria. |
 | Campos INLINE de código, nombre y estado. | IDs `custpage_codigo`, `custpage_nombre`, `custpage_estado`. | El diseño no los nombra. |
 | Mensajes del UE por patrón. | Prefijo "Patrón de código:" o "Patrón de nombre:". | Indica qué campo corregir. |
+
+Cambios posteriores al prompt v2 (decisiones del usuario del 2026-11-14):
+| ID | Decisión | Efecto |
+|---|---|---|
+| D-13 | Espesor en el código: centésimas de pulgada, 3 dígitos, truncado. | Formato `centesimas3`; cierra DA-05 para el código. |
+| D-14 | Espesor en el nombre: fracción de pulgada hasta 1/16. | Formato `fraccion16`; cierra DA-05 para el nombre. |
+| D-15 | Ancho y largo en pies enteros. | Los `custitem` de lados se crean como Entero; cierra DA-04. Sin cambio de código. |
 
 Hallazgo fuera de alcance: `validarIds` no rechaza IDs repetidos en el JSON (no lo exige RN-13). Con un ID repetido el paso 2 muestra dos campos para el mismo `custitem` y prevalece el último valor.
 

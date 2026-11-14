@@ -252,6 +252,32 @@ describe('P-17: reglas RN-12 a RN-16', () => {
     });
 });
 
+describe('RN-17: formatos de marcador', () => {
+    test('los patrones TA36 con formatos se aceptan', () => {
+        const contexto = crearContexto({ nuevos: configuracionCon({
+            custrecord_sads_naturaleza_patron_cod: 'PLA36{custitem_pl_espesor:centesimas3}{custitem_pl_ancho}{custitem_pl_largo}',
+            custrecord_sads_naturaleza_patron_nom: "Placa Acero TA36 {custitem_pl_espesor:fraccion16}'' {custitem_pl_ancho}'x{custitem_pl_largo}'"
+        }) });
+        expect(() => userEvent.beforeSubmit(contexto)).not.toThrow();
+    });
+
+    test('un formato desconocido se rechaza citando la lista de formatos', () => {
+        const errores = esperarRechazo(crearContexto({
+            nuevos: configuracionCon({ custrecord_sads_naturaleza_patron_cod: 'PLA36{custitem_pl_espesor:centesimas}' })
+        }));
+        expect(errores).toEqual([
+            'Patrón de código: El formato centesimas del marcador {custitem_pl_espesor} no existe. Formatos válidos: centesimas3, fraccion16.'
+        ]);
+    });
+
+    test('un marcador con formato vacío se rechaza', () => {
+        const errores = esperarRechazo(crearContexto({
+            nuevos: configuracionCon({ custrecord_sads_naturaleza_patron_nom: 'Placa {custitem_pl_espesor:}' })
+        }));
+        expect(errores).toEqual(['Patrón de nombre: El patrón tiene un marcador con formato vacío después de los dos puntos.']);
+    });
+});
+
 describe('P-18: XEDIT', () => {
     test('un XEDIT que solo cambia el patrón valida contra el JSON y la plantilla de oldRecord', () => {
         const contexto = crearContexto({

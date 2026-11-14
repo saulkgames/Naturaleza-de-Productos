@@ -713,6 +713,70 @@ describe('creación (POST crear)', () => {
     });
 });
 
+describe('formatos de marcador: placa TA36 (D-13 a D-15)', () => {
+    const CONFIGURACION_TA36 = Object.freeze({
+        custrecord_sads_naturaleza_config: JSON_PLACAS,
+        custrecord_sads_naturaleza_plantilla: ID_PLANTILLA,
+        custrecord_sads_naturaleza_patron_nom: "Placa Acero TA36 {custitem_pl_espesor:fraccion16}'' {custitem_pl_ancho}'x{custitem_pl_largo}'",
+        custrecord_sads_naturaleza_patron_cod: 'PLA36{custitem_pl_espesor:centesimas3}{custitem_pl_ancho}{custitem_pl_largo}'
+    });
+    const CAMPOS_TA36 = Object.freeze({
+        custitem_pl_ancho: { label: 'Ancho', type: 'integer' },
+        custitem_pl_espesor: { label: 'Espesor', type: 'float' },
+        custitem_pl_largo: { label: 'Largo', type: 'integer' }
+    });
+    const CAPTURA_TA36 = Object.freeze({
+        custpage_configuracion: '11',
+        custpage_par_0: '6',
+        custpage_par_1: '0.5',
+        custpage_par_2: '20',
+        custpage_peso: '1225.5'
+    });
+
+    test('alta de placa 1/2 x 6 x 20: código PLA36050620 y nombre con fracción', () => {
+        const { copia, valoresAsignados } = prepararEscenario({ configuracion: CONFIGURACION_TA36, campos: CAMPOS_TA36 });
+        const formulario = ejecutar(solicitudCrear(CAPTURA_TA36));
+        expect(valoresAsignados.itemid).toBe('PLA36050620');
+        expect(valoresAsignados.displayname).toBe("Placa Acero TA36 1/2'' 6'x20'");
+        expect(valoresAsignados.vendorname).toBe("Placa Acero TA36 1/2'' 6'x20'");
+        expect(valoresAsignados.custitem_pl_espesor).toBe(0.5);
+        expect(copia.save).toHaveBeenCalledTimes(1);
+        expect(formulario.campos.custpage_codigo.defaultValue).toBe('PLA36050620');
+    });
+
+    test('3/8 se trunca a 037 en el código y se escribe 3/8 en el nombre', () => {
+        const { valoresAsignados } = prepararEscenario({ configuracion: CONFIGURACION_TA36, campos: CAMPOS_TA36 });
+        ejecutar(solicitudCrear(Object.assign({}, CAPTURA_TA36, { custpage_par_1: '0.375', custpage_par_0: '4', custpage_par_2: '10' })));
+        expect(valoresAsignados.itemid).toBe('PLA36037410');
+        expect(valoresAsignados.displayname).toBe("Placa Acero TA36 3/8'' 4'x10'");
+    });
+
+    test('un espesor que no es múltiplo de 1/16 repite el paso 2 con mensaje y no guarda', () => {
+        const { copia } = prepararEscenario({ configuracion: CONFIGURACION_TA36, campos: CAMPOS_TA36 });
+        const formulario = ejecutar(solicitudCrear(Object.assign({}, CAPTURA_TA36, { custpage_par_1: '0.3' })));
+        expect(formulario.title).toContain('Paso 2 de 2');
+        expect(textosDeMensajes(formulario)).toEqual(['Espesor: el valor no corresponde a una fracción de 1/16 de pulgada.']);
+        expect(formulario.campos.custpage_par_1.defaultValue).toBe('0.3');
+        expect(copia.save).not.toHaveBeenCalled();
+        expect(consultaDeDuplicado()).toEqual([]);
+    });
+
+    test('un espesor de 10 o más repite el paso 2 con el mensaje de 3 dígitos', () => {
+        const { copia } = prepararEscenario({ configuracion: CONFIGURACION_TA36, campos: CAMPOS_TA36 });
+        const formulario = ejecutar(solicitudCrear(Object.assign({}, CAPTURA_TA36, { custpage_par_1: '10' })));
+        expect(textosDeMensajes(formulario)).toEqual(['Espesor: el valor no cabe en 3 dígitos de centésimas (de 0.01 a 9.99).']);
+        expect(copia.save).not.toHaveBeenCalled();
+    });
+
+    test('un lado con decimales en un campo entero repite el paso 2 (D-15)', () => {
+        const { copia } = prepararEscenario({ configuracion: CONFIGURACION_TA36, campos: CAMPOS_TA36 });
+        const formulario = ejecutar(solicitudCrear(Object.assign({}, CAPTURA_TA36, { custpage_par_0: '6.5' })));
+        expect(textosDeMensajes(formulario)).toEqual(['Ancho: capture un número entero mayor que 0.']);
+        expect(formulario.campos.custpage_par_0.type).toBe(FieldType.INTEGER);
+        expect(copia.save).not.toHaveBeenCalled();
+    });
+});
+
 describe('duplicados (RN-08)', () => {
     test('P-11: con un artículo existente muestra la página de duplicado sin guardar', () => {
         const { copia } = prepararEscenario({ duplicados: [{ id: ID_DUPLICADO, codigo: 'PL-0.25-4X2', inactivo: 'T' }] });

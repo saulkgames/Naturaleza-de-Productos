@@ -6,7 +6,7 @@ Un Suitelet crea artículos nuevos de una naturaleza a partir de sus parámetros
 
 | Dato | Valor |
 |---|---|
-| Fecha de actualización | 2026-11-13 |
+| Fecha de actualización | 2026-11-14 |
 | Tipo de proyecto | SuiteCloud SDF, Account Customization (`src/manifest.xml`) |
 | Nombre del proyecto | Naturaleza de Productos |
 | Plataforma | SuiteScript 2.1 |
@@ -63,15 +63,17 @@ flowchart LR
  └────────┬─────────┘          └──────────┬───────────┘        └──────────┬───────────┘
           │ lee                           │ lee y copia plantilla         │ valida
           ▼                               ▼                               ▼
- ┌────────────────────────────────────────────────────────────────────────────────────┐
- │ customrecord_sads_naturaleza_productos                                             │
- │ custrecord_sads_naturaleza_config     = ["custitem_pl_ancho","custitem_pl_largo"]  │
- │ custrecord_sads_naturaleza_plantilla  = ID interno del artículo plantilla          │
- │ custrecord_sads_naturaleza_patron_cod = PL-{custitem_pl_largo}X{custitem_pl_ancho} │
- └────────────────────────────────────────────────────────────────────────────────────┘
+ ┌───────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────┐
+ │ customrecord_sads_naturaleza_productos                                                                                                │
+ │ custrecord_sads_naturaleza_config     = ["custitem_pl_ancho","custitem_pl_espesor","custitem_pl_largo"]                               │
+ │ custrecord_sads_naturaleza_plantilla  = ID interno del artículo plantilla                                                             │
+ │ custrecord_sads_naturaleza_patron_cod = PLA36{custitem_pl_espesor:centesimas3}{custitem_pl_ancho}{custitem_pl_largo}                  │
+ │ custrecord_sads_naturaleza_patron_nom = Placa Acero TA36 {custitem_pl_espesor:fraccion16}'' {custitem_pl_ancho}'x{custitem_pl_largo}' │
+ └───────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────┘
 ```
 
-Los IDs de ejemplo son ficticios.
+Los IDs de ejemplo son ficticios. Con espesor 0.5, ancho 6 y largo 20 el código es `PLA36050620` y el nombre `Placa Acero TA36 1/2'' 6'x20'`.
+La sintaxis de los patrones y sus formatos está en la sección 4 de la documentación del Suitelet.
 
 ## 3. Objetos SDF
 | Objeto | Tipo | Archivo en src/Objects |
@@ -145,15 +147,15 @@ Comando: `npm test` o `npx jest`; no requiere cuenta NetSuite.
 
 | Suite | Pruebas | Alcance |
 |---|---|---|
-| `SADS_SL_crear_articulo_nat.test.js` | 64 | Entry point del Suitelet con `jest.mock` de `N/`. |
-| `SADS_UE_naturaleza_config.test.js` | 35 | Entry point del UE de configuración, incluido XEDIT. |
+| `SADS_SL_crear_articulo_nat.test.js` | 69 | Entry point del Suitelet con `jest.mock` de `N/`. |
+| `SADS_UE_naturaleza_config.test.js` | 38 | Entry point del UE de configuración, incluido XEDIT. |
 | `SADS_naturaleza_articulo_ns.test.js` | 7 | Adaptador de tipo de registro. |
 | `SADS_naturaleza_config_formato.test.js` | 109 | Contrato del JSON y compatibilidad con la lectura del CS y del UE. |
 | `SADS_naturaleza_parametros.test.js` | 59 | IDs, valores capturados y criterios de duplicado. |
-| `SADS_naturaleza_patron.test.js` | 63 | Marcadores, formato numérico y sustitución. |
+| `SADS_naturaleza_patron.test.js` | 115 | Marcadores, formatos `centesimas3` y `fraccion16`, y sustitución. |
 | `sample-test.js` | 2 | Plantilla de SuiteCloud. |
 
-Resultado del 2026-11-13: 7 suites aprobadas de 7; 339 pruebas aprobadas de 339.
+Resultado del 2026-11-14: 7 suites aprobadas de 7; 399 pruebas aprobadas de 399.
 `suitecloud project:validate` no se ejecutó para esta versión (sin cuenta en el entorno de desarrollo).
 El CS y el UE de artículo no tienen pruebas Jest.
 
