@@ -398,7 +398,7 @@
       <custrecord_sads_esp_texto>3/16&apos;&apos;</custrecord_sads_esp_texto>
       <custrecord_sads_esp_tipo>[scriptid=customlist_sads_tipo_espesor.val_sads_tesp_ptr]</custrecord_sads_esp_tipo>
       <isinactive>F</isinactive>
-      <name>3/16&quot;</name>
+      <name>3/16&quot; - E18</name>
     </instance>
     <instance scriptid="val_sads_esp_ptr_e25">
       <custrecord_sads_esp_codigo>E25</custrecord_sads_esp_codigo>
@@ -406,7 +406,7 @@
       <custrecord_sads_esp_texto>1/4&apos;&apos;</custrecord_sads_esp_texto>
       <custrecord_sads_esp_tipo>[scriptid=customlist_sads_tipo_espesor.val_sads_tesp_ptr]</custrecord_sads_esp_tipo>
       <isinactive>F</isinactive>
-      <name>1/4&quot;</name>
+      <name>1/4&quot; - E25</name>
     </instance>
     <instance scriptid="val_sads_esp_ptr_e31">
       <custrecord_sads_esp_codigo>E31</custrecord_sads_esp_codigo>
@@ -414,7 +414,7 @@
       <custrecord_sads_esp_texto>5/16&apos;&apos;</custrecord_sads_esp_texto>
       <custrecord_sads_esp_tipo>[scriptid=customlist_sads_tipo_espesor.val_sads_tesp_ptr]</custrecord_sads_esp_tipo>
       <isinactive>F</isinactive>
-      <name>5/16&quot;</name>
+      <name>5/16&quot; - E31</name>
     </instance>
     <instance scriptid="val_sads_esp_ptr_e37">
       <custrecord_sads_esp_codigo>E37</custrecord_sads_esp_codigo>
@@ -422,7 +422,7 @@
       <custrecord_sads_esp_texto>3/8&apos;&apos;</custrecord_sads_esp_texto>
       <custrecord_sads_esp_tipo>[scriptid=customlist_sads_tipo_espesor.val_sads_tesp_ptr]</custrecord_sads_esp_tipo>
       <isinactive>F</isinactive>
-      <name>3/8&quot;</name>
+      <name>3/8&quot; - E37</name>
     </instance>
     <instance scriptid="val_sads_esp_ptr_e50">
       <custrecord_sads_esp_codigo>E50</custrecord_sads_esp_codigo>
@@ -430,7 +430,7 @@
       <custrecord_sads_esp_texto>1/2&apos;&apos;</custrecord_sads_esp_texto>
       <custrecord_sads_esp_tipo>[scriptid=customlist_sads_tipo_espesor.val_sads_tesp_ptr]</custrecord_sads_esp_tipo>
       <isinactive>F</isinactive>
-      <name>1/2&quot;</name>
+      <name>1/2&quot; - E50</name>
     </instance>
   </instances>
 </customrecordtype>

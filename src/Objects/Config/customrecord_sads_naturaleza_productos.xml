@@ -332,7 +332,8 @@ Ejemplo: [&quot;custitem_pl_ancho&quot;,&quot;custitem_pl_espesor&quot;,&quot;cu
     </customrecordcustomfield>
   </customrecordcustomfields>
   <instances>
-    <instance scriptid="val_8427261_5490848_sb1_888">
+    <instance scriptid="val_sads_nat_config_record_pla36">
+      <custrecord_sads_naturaleza_campo_med></custrecord_sads_naturaleza_campo_med>
       <custrecord_sads_naturaleza_config>[&quot;custitem_sads_nat_pla_lado_a&quot;,&quot;custitem_sads_nat_pla_lado_b&quot;,&quot;custitem_sads_nat_espesor&quot;]</custrecord_sads_naturaleza_config>
       <custrecord_sads_naturaleza_lista>[scriptid=customlist_sads_naturaleza_productos.1]</custrecord_sads_naturaleza_lista>
       <custrecord_sads_naturaleza_patron_cod>PLA36{custitem_sads_nat_espesor:codigo}{custitem_sads_nat_pla_lado_a:entero1}{custitem_sads_nat_pla_lado_b:entero2}</custrecord_sads_naturaleza_patron_cod>
@@ -341,6 +342,28 @@ Ejemplo: [&quot;custitem_pl_ancho&quot;,&quot;custitem_pl_espesor&quot;,&quot;cu
       <custrecord_sads_naturaleza_tipo_esp>[scriptid=customlist_sads_tipo_espesor.val_sads_tesp_fraccion]</custrecord_sads_naturaleza_tipo_esp>
       <isinactive>F</isinactive>
       <name>Placas de Acero</name>
+    </instance>
+    <instance scriptid="val_sads_nat_config_record_ptrc">
+      <custrecord_sads_naturaleza_campo_med>custitem_sads_nat_ptr_lado</custrecord_sads_naturaleza_campo_med>
+      <custrecord_sads_naturaleza_config>[&quot;custitem_sads_nat_ptr_lado&quot;,&quot;custitem_sads_nat_ptr_largo&quot;,&quot;custitem_sads_nat_espesor&quot;]</custrecord_sads_naturaleza_config>
+      <custrecord_sads_naturaleza_lista>[scriptid=customlist_sads_naturaleza_productos.val_8427308_5490848_sb1_520]</custrecord_sads_naturaleza_lista>
+      <custrecord_sads_naturaleza_patron_cod>PTRC{custitem_sads_nat_ptr_lado:centesimas3}{custitem_sads_nat_espesor:codigo}</custrecord_sads_naturaleza_patron_cod>
+      <custrecord_sads_naturaleza_patron_nom>PTR {custitem_sads_nat_ptr_lado:fraccion16}&quot; x {custitem_sads_nat_ptr_lado:fraccion16}&quot; {custitem_sads_nat_espesor:texto} a {custitem_sads_nat_ptr_largo:decimal2}m</custrecord_sads_naturaleza_patron_nom>
+      <custrecord_sads_naturaleza_plantilla>11249</custrecord_sads_naturaleza_plantilla>
+      <custrecord_sads_naturaleza_tipo_esp>[scriptid=customlist_sads_tipo_espesor.val_sads_tesp_ptr]</custrecord_sads_naturaleza_tipo_esp>
+      <isinactive>F</isinactive>
+      <name>Perfiles Tubulares Cuadrados</name>
+    </instance>
+    <instance scriptid="val_sads_nat_config_record_mpptrc">
+      <custrecord_sads_naturaleza_campo_med>custitem_sads_nat_ptr_lado</custrecord_sads_naturaleza_campo_med>
+      <custrecord_sads_naturaleza_config>[&quot;custitem_sads_nat_ptr_lado&quot;,&quot;custitem_sads_nat_ptr_largo&quot;,&quot;custitem_sads_nat_espesor&quot;]</custrecord_sads_naturaleza_config>
+      <custrecord_sads_naturaleza_lista>[scriptid=customlist_sads_naturaleza_productos.val_sads_natlist_mpptrc]</custrecord_sads_naturaleza_lista>
+      <custrecord_sads_naturaleza_patron_cod>MPPTRC{custitem_sads_nat_ptr_lado:centesimas3}{custitem_sads_nat_espesor:codigo}</custrecord_sads_naturaleza_patron_cod>
+      <custrecord_sads_naturaleza_patron_nom>PTR Media Pieza {custitem_sads_nat_ptr_lado:fraccion16}&quot; x {custitem_sads_nat_ptr_lado:fraccion16}&quot; {custitem_sads_nat_espesor:texto} a {custitem_sads_nat_ptr_largo:decimal2}m</custrecord_sads_naturaleza_patron_nom>
+      <custrecord_sads_naturaleza_plantilla>25481</custrecord_sads_naturaleza_plantilla>
+      <custrecord_sads_naturaleza_tipo_esp>[scriptid=customlist_sads_tipo_espesor.val_sads_tesp_ptr]</custrecord_sads_naturaleza_tipo_esp>
+      <isinactive>F</isinactive>
+      <name>Perfiles Tubulares Cuadrados Media Pieza</name>
     </instance>
   </instances>
 </customrecordtype>
