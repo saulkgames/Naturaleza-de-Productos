@@ -89,7 +89,7 @@ La sintaxis de los patrones y sus formatos está en la sección 4 de la document
 | User Event de artículo con 6 deployments | `usereventscript` | customscript_sads_ue_item_dynamic_mandat.xml |
 | Suitelet de creación, deployment y parámetro `custscript_sads_sl_art_activo` | `suitelet` | customscript_sads_sl_crear_articulo_nat.xml |
 | User Event de configuración y deployment | `usereventscript` | customscript_sads_ue_naturaleza_config.xml |
-| Campos de parámetros de placa (lados y espesor decimal de iteración A) | `itemcustomfield` | custitem_sads_nat_pla_lado_a.xml, custitem_sads_nat_pla_lado_b.xml, custitem_sads_nat_pla_espesor.xml |
+| Campos de parámetros de placa (lados) | `itemcustomfield` | custitem_sads_nat_pla_lado_a.xml, custitem_sads_nat_pla_lado_b.xml |
 | Lista de tipos de espesor | `customlist` | customlist_sads_tipo_espesor.xml |
 | Registro de espesores | `customrecordtype` | customrecord_sads_espesor.xml |
 | Campo de espesor de artículo (SELECT al catálogo) | `itemcustomfield` | custitem_sads_nat_espesor.xml |
@@ -141,7 +141,6 @@ Manifiesto: CUSTOMRECORDS, SUBSIDIARIES y SERVERSIDESCRIPTING son obligatorias; 
     │   ├── SADS_UE_nat_familia.js
     │   ├── SADS_UE_naturaleza_config.js
     │   ├── SADS_item_dynamic_mandatory.md   # Notas originales del CS y del UE de artículo
-    │   ├── testt.js                         # Plantilla de Client Script 2.x sin Object XML
     │   ├── infra/
     │   │   └── SADS_naturaleza_articulo_ns.js
     │   └── domain/
@@ -149,11 +148,11 @@ Manifiesto: CUSTOMRECORDS, SUBSIDIARIES y SERVERSIDESCRIPTING son obligatorias; 
     │       ├── SADS_naturaleza_familias.js
     │       ├── SADS_naturaleza_patron.js
     │       └── SADS_naturaleza_parametros.js
-    └── Objects/                             # 16 Object XML (sección 3)
+    └── Objects/                             # 19 Object XML (sección 3)
 ```
 
 `SADS_item_dynamic_mandatory.md` cita nombres de archivo que no coinciden con los actuales.
-`testt.js` se sube al File Cabinet por `~/FileCabinet/*`, pero no tiene registro de script en el proyecto.
+Retirados del proyecto el 2026-11-18: `custitem_sads_nat_pla_espesor.xml` (reemplazado por `custitem_sads_nat_espesor`) y `testt.js` (plantilla sin registro de script). SDF no los borra de la cuenta; ver la sección 6.
 
 ## 5. Pruebas
 Comando: `npm test` o `npx jest`; no requiere cuenta NetSuite.
@@ -182,6 +181,7 @@ El CS y el UE de artículo no tienen pruebas Jest.
 5. Después de cada despliegue, re-aplicar en la UI la audiencia del Suitelet; el XML la deja vacía.
 6. Iteración B: capturar espesores, familias por espesor y la configuración de cada naturaleza (sección 4B de la documentación del Suitelet).
 7. `custscript_sads_sl_art_activo` se queda en F hasta que P3-12 confirme en sandbox el precio calculado por el workflow; después se cambia a T.
+8. Limpieza manual en la cuenta (SDF no borra): campo `custitem_sads_nat_pla_espesor` cuando ningún artículo ni configuración lo use; archivos `testt.js`, `SADS_SL_naturaleza_config.js`, `SADS_SL_naturaleza_config.md` y `domain/SADS_naturaleza_alta_reglas.js` del File Cabinet.
 
 El procedimiento completo, los supuestos por validar en sandbox, los riesgos y el troubleshooting están en la documentación del Suitelet.
 

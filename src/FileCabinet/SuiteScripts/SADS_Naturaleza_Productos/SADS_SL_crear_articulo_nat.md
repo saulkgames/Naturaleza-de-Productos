@@ -87,7 +87,6 @@ src/FileCabinet/SuiteScripts/SADS_Naturaleza_Productos/
 ├── SADS_SL_crear_articulo_nat.js
 ├── SADS_SL_crear_articulo_nat.md
 ├── SADS_UE_naturaleza_config.js
-├── testt.js
 ├── infra/
 │   └── SADS_naturaleza_articulo_ns.js
 └── domain/
@@ -257,7 +256,7 @@ Familias por rango (sublista de la configuración):
 
 Una naturaleza sin espesor no lleva el campo en el JSON ni tipo de espesor, y tiene una sola línea de familia sin rango (RN3-07).
 El marcador del espesor solo admite `:codigo` o `:texto`; `centesimas3` y `fraccion16` siguen disponibles para parámetros numéricos (RN3-09).
-El campo anterior `custitem_sads_nat_pla_espesor` (decimal) deja de usarse en la configuración de placas (R3-06).
+El campo anterior `custitem_sads_nat_pla_espesor` (decimal) deja de usarse en la configuración de placas (R3-06); su XML se retiró del proyecto el 2026-11-18, pero el campo sigue en la cuenta hasta que se borre a mano.
 
 ### Lo que escribe el Suitelet además de iteración A
 | Campo del artículo | Valor | Regla |
