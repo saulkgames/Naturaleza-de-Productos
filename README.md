@@ -1,200 +1,291 @@
-# Naturaleza-de-Productos
-Control de artículos por naturaleza de producto en NetSuite.
-Cada naturaleza tiene un registro de configuración con la lista de campos de artículo que la describen (parámetros).
-Esos campos son obligatorios en la interfaz y en el servidor.
-Un Suitelet crea artículos nuevos de una naturaleza a partir de sus parámetros, copiando un artículo plantilla.
+# Naturaleza de Productos
+Personalización de NetSuite para Almetal que controla los artículos por naturaleza de producto.
+Cada naturaleza define en un registro de configuración los campos de artículo que la describen (parámetros), un artículo plantilla y los patrones de código y nombre.
+Los parámetros son obligatorios al editar un artículo, en pantalla y en servidor.
+Un Suitelet crea artículos nuevos de una naturaleza con solo capturar sus parámetros: copia la plantilla, genera código y nombre, y asigna familias de precio y de margen según el espesor.
 
 | Dato | Valor |
 |---|---|
-| Fecha de actualización | 2026-11-18 |
 | Tipo de proyecto | SuiteCloud SDF, Account Customization (`src/manifest.xml`) |
-| Nombre del proyecto | Naturaleza de Productos |
 | Plataforma | SuiteScript 2.1 |
-| Ambiente de desarrollo | Sandbox `Almetal_SB` (`project.json`) |
-| Pruebas | Jest 30 con `@oracle/suitecloud-unit-testing` |
-| Iteración vigente | B: espesor por catálogo, familias de precio y margen por rango, peso, conversión y descripciones; artículos inactivos hasta validar precios (P3-12) |
+| Ambiente de desarrollo | Sandbox `Almetal_SB` (authId en `project.json`, excluido del control de versiones) |
+| Pruebas | Jest 30 con `@oracle/suitecloud-unit-testing`: 9 suites, 535 pruebas aprobadas (2026-11-18) |
+| Estado | Iteración B implementada; los artículos se crean inactivos hasta validar el precio en sandbox (P3-12) |
+| Diseño vigente | [Plan v5](planes/2026-11-17_creador-articulos-naturaleza_plan_v5.md) y [prompt v3](planes/2026-11-17_creador-articulos-naturaleza_prompt_v3.md) |
+| Actualización | 2026-11-18 |
 
-## 1. Resumen
-El campo de artículo `custitem_sads_naturaleza_producto` apunta a un registro de `customrecord_sads_naturaleza_productos`.
-Ese registro guarda en `custrecord_sads_naturaleza_config` un arreglo JSON de IDs de campo de artículo.
-Un Client Script marca esos campos como obligatorios en pantalla y un User Event bloquea el guardado si alguno viene vacío.
-El mismo registro guarda el ID interno de un artículo plantilla y los patrones de nombre y código.
-El Suitelet de creación pide los parámetros, el espesor (de un catálogo), el peso y la conversión; copia la plantilla y genera nombre y código con los patrones.
-Asigna familia de precio y de margen según el rango de espesor configurado; la cadena existente de fórmulas y workflow calcula el precio.
-Dos User Events validan la captura manual del registro de configuración y de sus familias por espesor.
+## 1. Alcance
+| Capacidad | Componente | Quién lo usa |
+|---|---|---|
+| Marcar como obligatorios los parámetros de la naturaleza al editar un artículo | Client Script `SADS_CS_item_dynamic_mandatory.js` | Usuario que edita artículos |
+| Bloquear en servidor el guardado de un artículo con parámetros vacíos | User Event `SADS_UE_item_dynamic_mandatory.js` | Toda vía de alta: UI, CSV, scripts |
+| Crear un artículo a partir de parámetros, espesor, peso y conversión | Suitelet `SADS_SL_crear_articulo_nat.js` | Usuario con permiso para crear artículos |
+| Validar la configuración capturada a mano | User Event `SADS_UE_naturaleza_config.js` | Usuario técnico |
+| Validar las familias de precio y margen por rango de espesor | User Event `SADS_UE_nat_familia.js` | Usuario técnico |
 
-| Componente | Archivo | Tipo | Entry points | Función |
-|---|---|---|---|---|
-| CS | `SADS_CS_item_dynamic_mandatory.js` | ClientScript 2.1 | `pageInit`, `fieldChanged`, `saveRecord` | Lee la configuración con `search.lookupFields`, marca obligatorios y bloquea el guardado en la UI. |
-| UE de artículo | `SADS_UE_item_dynamic_mandatory.js` | UserEventScript 2.1 | `beforeSubmit` (CREATE y EDIT) | Valida en servidor y lanza `MISSING_DYNAMIC_MANDATORY_FIELDS` si falta un campo. |
-| Suitelet | `SADS_SL_crear_articulo_nat.js` | Suitelet 2.1 | `onRequest` | Crea artículos de una naturaleza en dos pasos más confirmación. |
-| UE de configuración | `SADS_UE_naturaleza_config.js` | UserEventScript 2.1 | `beforeSubmit` (CREATE, EDIT y XEDIT) | Rechaza configuraciones con JSON, plantilla, patrones o tipo de espesor inválidos. |
-| UE de familias | `SADS_UE_nat_familia.js` | UserEventScript 2.1 | `beforeSubmit` (CREATE, EDIT y XEDIT) | Rechaza líneas de familia con rangos incompletos, invertidos, de otro tipo o traslapados. |
-| Dominio | `domain/SADS_naturaleza_config_formato.js` | Módulo AMD sin `N/` | — | Contrato del JSON y errores de dominio. |
-| Dominio | `domain/SADS_naturaleza_patron.js` | Módulo AMD sin `N/` | — | Marcadores `{id}` y `{id:formato}` de los patrones de nombre y código. |
-| Dominio | `domain/SADS_naturaleza_parametros.js` | Módulo AMD sin `N/` | — | IDs seguros, valores capturados, espesor, conversión y criterios de duplicado. |
-| Dominio | `domain/SADS_naturaleza_familias.js` | Módulo AMD sin `N/` | — | Rangos de familias por espesor y resolución de la familia. |
-| Adaptador | `infra/SADS_naturaleza_articulo_ns.js` | Módulo AMD con `N/search` | — | Tipo de registro de un artículo por ID interno. |
+| Fuera de alcance | Estado |
+|---|---|
+| Cálculo automático de la conversión de unidad desde la familia de precios | Pendiente (DA3-06); hoy se captura |
+| Cálculo automático del peso | Pendiente; hoy se captura |
+| Cálculo del precio | Lo resuelven campos fórmula y un workflow existentes; el proyecto no los modifica |
+| Formularios nativos por naturaleza | Descartado (D-01) |
+| Migración de artículos existentes al catálogo de espesores | No incluido |
 
-## 2. Arquitectura
+## 2. Funcionamiento
+### 2.1 Configuración (usuarios técnicos)
+| Registro | Qué guarda |
+|---|---|
+| `customrecord_sads_naturaleza_productos` | Por naturaleza: arreglo JSON con los IDs de los parámetros, ID interno del artículo plantilla, patrón de código, patrón de nombre y tipo de espesor. |
+| `customrecord_sads_nat_familia` | Sublista de la configuración: rangos de espesor con su familia de precio y su familia de margen. Una línea sin rango es familia única. |
+| `customrecord_sads_espesor` | Catálogo de espesores por tipo (fracción de pulgada, calibre, milímetros, cédula): texto para el nombre, segmento para el código y orden de grosor. |
 
+### 2.2 Creación de un artículo
+```mermaid
+flowchart TD
+  A[Paso 1: elegir naturaleza] --> B[Paso 2: parámetros, espesor del catálogo, peso y conversión]
+  B --> C{Validaciones de captura}
+  C -- Error --> B
+  C -- OK --> D[Resolver familia por el orden del espesor]
+  D --> E[Generar código y nombre con los patrones]
+  E --> F{¿Existe un artículo con la misma naturaleza y parámetros?}
+  F -- Sí --> G[Mostrar el artículo existente]
+  F -- No --> H[Copiar la plantilla, asignar campos y guardar]
+  H --> I[UE de artículo valida parámetros; fórmulas y workflow calculan el precio]
+  I --> J[Confirmación con enlace al artículo]
+```
+
+El Suitelet escribe solo estos campos sobre la copia; el resto se hereda de la plantilla.
+| Campo | Valor |
+|---|---|
+| `custitem_sads_naturaleza_producto` | Configuración elegida |
+| Parámetros del JSON (lados, espesor) | Valores capturados |
+| `weight` y `custitem_drt_ci_precio_teorico` | Peso capturado |
+| `custitem_alm_articulo_conversionunidad` | Conversión capturada |
+| `custitem_pfp_famprecios_` y `custitem_pfp_fammargenes_` | Familias de la línea cuyo rango contiene el espesor |
+| `itemid`, `purchasedescription` y `salesdescription` | Nombre generado (D-19) |
+| `displayname` y `vendorname` | Código generado (D-19) |
+| `upccode` y `mpn` | Vacíos |
+| `isinactive` | Según el parámetro `custscript_sads_sl_art_activo`; hoy F, el artículo se crea inactivo |
+
+### 2.3 Patrones de código y nombre
+Un marcador es `{id}` o `{id:formato}`; el `id` debe estar en el JSON de la configuración.
+| Formato | Resultado | Ejemplo |
+|---|---|---|
+| Sin formato | Número sin ceros a la derecha | 6 → `6` |
+| `centesimas3` | Centésimas truncadas, 3 dígitos | 0.375 → `037` |
+| `fraccion16` | Fracción reducida, hasta 1/16 | 1.25 → `1 1/4` |
+| `entero1` | Entero de 1 a 9 | 7 → `7` |
+| `entero2` | Entero de 1 a 99, con cero a la izquierda | 7 → `07` |
+| `decimal2` | Número mayor que 0 con 2 decimales | 6 → `6.00` |
+| `codigo` | Segmento de código del espesor elegido | 1/2" → `050` |
+| `texto` | Texto del espesor elegido | 1/2" → `1/2"` |
+
+`codigo` y `texto` solo aplican al campo de espesor; los demás formatos solo a campos numéricos.
+La sintaxis completa está en la [documentación del Suitelet](src/FileCabinet/SuiteScripts/SADS_Naturaleza_Productos/SADS_SL_crear_articulo_nat.md) y en el [prompt de patrones](planes/prompt_patrones_codigo_nombre.md).
+
+Configuración desplegada de Placas de Acero:
+| Campo | Valor |
+|---|---|
+| Parámetros | `["custitem_sads_nat_pla_lado_a","custitem_sads_nat_pla_lado_b","custitem_sads_nat_espesor"]` |
+| Patrón de código | `PLA36{custitem_sads_nat_espesor:codigo}{custitem_sads_nat_pla_lado_a:entero1}{custitem_sads_nat_pla_lado_b:entero2}` |
+| Patrón de nombre | `Placa Acero TA36 {custitem_sads_nat_espesor:texto} {custitem_sads_nat_pla_lado_a}'x{custitem_sads_nat_pla_lado_b}'` |
+| Resultado con espesor 1/2", lado A 6 y lado B 20 | Código `PLA36050620` en `displayname`; nombre `Placa Acero TA36 1/2" 6'x20'` en `itemid` |
+
+Con lados 7 y 7 los últimos 3 dígitos del código son `707`.
+El Suitelet rechaza un lado A mayor que el lado B (D-18).
+
+La documentación del Suitelet describe además la configuración de PTR cuadrado y PTR media pieza; no viaja como dato en los XML.
+Con lado 1", pared Cal.14 y largo 6 m produce el código `PTRC100C14` y el nombre `PTR 1" x 1" Cal.14 a 6.00m`.
+
+## 3. Arquitectura de Software
+### 3.1 Componentes y dependencias
 ```mermaid
 flowchart LR
-  subgraph Articulo["Registro de artículo"]
-    G["custitem_sads_naturaleza_producto"]
+  subgraph EP["Entry points (usan N/)"]
+    CS["CS artículo"]
+    UEA["UE artículo"]
+    SL["Suitelet de creación"]
+    UEC["UE configuración"]
+    UEF["UE familias"]
   end
-  CS["CS: SADS_CS_item_dynamic_mandatory.js"] -->|"lookupFields con el rol del usuario"| CR[("customrecord_sads_naturaleza_productos")]
-  UEA["UE: SADS_UE_item_dynamic_mandatory.js"] -->|"lookupFields con el rol del proyecto"| CR
-  G --> CR
-  SL["Suitelet: SADS_SL_crear_articulo_nat.js"] -->|"lee configuración y plantilla"| CR
-  SL -->|"record.copy + save"| Articulo
-  UEC["UE: SADS_UE_naturaleza_config.js"] -->|"valida beforeSubmit"| CR
-  SL --> DOM["domain/: formato, patrón, parámetros"]
-  UEC --> DOM
-  SL --> INF["infra/: articulo_ns"]
-  UEC --> INF
-  CR -->|"custrecord_sads_naturaleza_lista"| LN[("customlist_sads_naturaleza_productos")]
+  subgraph DOM["domain/ (sin N/)"]
+    PAT["patrón"]
+    PAR["parámetros"]
+    FAM["familias"]
+    FMT["formato"]
+  end
+  ART["infra/articulo_ns (N/search)"]
+  SL --> PAT & PAR & FAM & FMT & ART
+  UEC --> PAT & PAR & FMT & ART
+  UEF --> FAM & FMT
+  PAT --> FMT
+  PAR --> FMT
+  FAM --> FMT
+  CS & UEA -->|lookupFields| CR[("Registro de configuración")]
 ```
 
-```
- Usuario edita artículo         Usuario crea artículo          Usuario técnico configura
-          │                               │                               │
-          ▼                               ▼                               ▼
- ┌──────────────────┐          ┌──────────────────────┐        ┌──────────────────────┐
- │ CS (UI) y        │          │ Suitelet de creación │        │ UE de configuración  │
- │ UE de artículo   │          │ + domain/ + infra/   │        │ + domain/ + infra/   │
- └────────┬─────────┘          └──────────┬───────────┘        └──────────┬───────────┘
-          │ lee                           │ lee y copia plantilla         │ valida
-          ▼                               ▼                               ▼
- ┌───────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────┐
- │ customrecord_sads_naturaleza_productos                                                                                                │
- │ custrecord_sads_naturaleza_config     = ["custitem_pl_ancho","custitem_pl_espesor","custitem_pl_largo"]                               │
- │ custrecord_sads_naturaleza_plantilla  = ID interno del artículo plantilla                                                             │
- │ custrecord_sads_naturaleza_patron_cod = PLA36{custitem_pl_espesor:centesimas3}{custitem_pl_ancho}{custitem_pl_largo}                  │
- │ custrecord_sads_naturaleza_patron_nom = Placa Acero TA36 {custitem_pl_espesor:fraccion16}'' {custitem_pl_ancho}'x{custitem_pl_largo}' │
- └───────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────┘
-```
-
-Los IDs de ejemplo son ficticios. Con espesor 0.5, ancho 6 y largo 20 el código es `PLA36050620` y el nombre `Placa Acero TA36 1/2'' 6'x20'`.
-La sintaxis de los patrones y sus formatos está en la sección 4 de la documentación del Suitelet.
-
-## 3. Objetos SDF
-| Objeto | Tipo | Archivo en src/Objects |
+| Módulo | Capa | Responsabilidad |
 |---|---|---|
-| Campo gatillo de artículo | `itemcustomfield` | custitem_sads_naturaleza_producto.xml |
-| Lista de naturalezas | `customlist` | customlist_sads_naturaleza_productos.xml |
-| Registro de configuración (lista, JSON, plantilla y patrones) | `customrecordtype` | customrecord_sads_naturaleza_productos.xml |
-| Rol del proyecto (`runasrole` del UE de artículo; `LIST_CUSTRECORDENTRY` VIEW) | `role` | customrole_sads_naturaleza_config_exec.xml |
-| Client Script con 6 deployments | `clientscript` | customscript_sads_cs_item_dynamic_mandat.xml |
-| User Event de artículo con 6 deployments | `usereventscript` | customscript_sads_ue_item_dynamic_mandat.xml |
-| Suitelet de creación, deployment y parámetro `custscript_sads_sl_art_activo` | `suitelet` | customscript_sads_sl_crear_articulo_nat.xml |
-| User Event de configuración y deployment | `usereventscript` | customscript_sads_ue_naturaleza_config.xml |
-| Campos de parámetros de placa (lados) | `itemcustomfield` | custitem_sads_nat_pla_lado_a.xml, custitem_sads_nat_pla_lado_b.xml |
-| Campos de parámetros de PTR cuadrado (lado y largo) | `itemcustomfield` | custitem_sads_nat_ptr_lado.xml, custitem_sads_nat_ptr_largo.xml |
-| Lista de tipos de espesor | `customlist` | customlist_sads_tipo_espesor.xml |
-| Registro de espesores | `customrecordtype` | customrecord_sads_espesor.xml |
-| Campo de espesor de artículo (SELECT al catálogo) | `itemcustomfield` | custitem_sads_nat_espesor.xml |
-| Registro hijo de familias por espesor | `customrecordtype` | customrecord_sads_nat_familia.xml |
-| User Event de familias y deployment | `usereventscript` | customscript_sads_ue_nat_familia.xml |
+| `SADS_SL_crear_articulo_nat.js` | Entry point | Flujo de captura, consultas SuiteQL, copia de la plantilla y guardado. |
+| `SADS_UE_naturaleza_config.js` | Entry point | Valida JSON, plantilla, patrones y tipo de espesor al guardar la configuración. |
+| `SADS_UE_nat_familia.js` | Entry point | Valida cada línea de familia contra las demás líneas de su configuración. |
+| `SADS_CS_item_dynamic_mandatory.js`, `SADS_UE_item_dynamic_mandatory.js` | Entry point | Obligatoriedad de parámetros en UI y servidor; código original, sin capa de dominio. |
+| `domain/SADS_naturaleza_config_formato.js` | Dominio | Contrato del JSON de parámetros y errores de dominio. |
+| `domain/SADS_naturaleza_patron.js` | Dominio | Analiza, valida y aplica los patrones. |
+| `domain/SADS_naturaleza_parametros.js` | Dominio | IDs seguros, valores capturados, catálogo, orden de lados y criterios de duplicado. |
+| `domain/SADS_naturaleza_familias.js` | Dominio | Validación de rangos y resolución de la familia de un espesor. |
+| `infra/SADS_naturaleza_articulo_ns.js` | Adaptador | Tipo de registro de un artículo a partir de su ID interno. |
 
-Deployments del CS y del UE de artículo:
-| Tipo de artículo | Deployment CS | Deployment UE | Estado |
-|---|---|---|---|
-| Inventariable | `customdeploy_item_invprt_mandatory_flds` | `customdeploy_ue_item_invprt_mndry_flds` | RELEASED |
-| No inventariable | `customdeploy_cs_item_noninv_mndry_flds` | `customdeploy_ue_item_noninv_mndry_flds` | TESTING |
-| Otro cargo | `customdeploy_cs_item_othchg_mndry_flds` | `customdeploy_ue_item_othchg_mndry_flds` | TESTING |
-| Servicio | `customdeploy_cs_item_serv_mndry_flds` | `customdeploy_ue_item_serv_mndry_flds` | TESTING |
-| Kit | `customdeploy_cs_item_kit_mndry_flds` | `customdeploy_ue_item_kit_mndry_flds` | TESTING |
-| Grupo de artículos | `customdeploy_cs_item_group_mndry_flds` | `customdeploy_ue_item_group_mndry_flds` | TESTING |
+### 3.2 Nivel de arquitectura
+Nivel 1: reglas de negocio puras en `domain/` y entry points con acceso directo a los módulos `N/`.
+Lo justifican reglas verificables con Jest y compartidas entre el Suitelet y los User Events.
+Puertos y adaptadores formales (nivel 2) serían excesivos: hay una sola fuente de datos y ninguna integración externa.
+Regla de dependencia: ningún módulo de `domain/` importa `N/`; cada suite de dominio lo comprueba leyendo el archivo.
+Hacia el dominio solo cruzan objetos planos, nunca registros, resultados de búsqueda ni el `context` de NetSuite.
 
-Los 6 deployments del UE de artículo corren con `customrole_sads_naturaleza_config_exec`.
-El Suitelet (`customdeploy_sads_sl_crear_articulo_nat`) y el UE de configuración (`customdeploy_sads_ue_naturaleza_config`) corren con el rol del usuario.
+### 3.3 Decisiones implementadas
+| ID | Decisión | Motivo | Consecuencia | Referencia |
+|---|---|---|---|---|
+| AD-01 | Un Suitelet copia un artículo plantilla; no hay formularios nativos por naturaleza. | El usuario captura solo parámetros; cuentas, impuestos, claves SAT, subsidiarias y unidades se heredan sin listarlas en código. | La plantilla es la fuente de verdad, incluida la fiscal. | D-01, D-02, RN-09 |
+| AD-02 | La naturaleza es configuración, no código. | Una naturaleza nueva se agrega con campos y registros, sin desarrollo. | La captura manual exige validación en servidor (AD-04). | DA3-04 |
+| AD-03 | Un solo contrato para el JSON de parámetros: arreglo de IDs de campo. | Lo leen el CS, el UE de artículo, el Suitelet y el UE de configuración sin traducción. | Cambiar el formato afecta a 4 componentes; su dueño único es `formato`. | RN-12 |
+| AD-04 | La captura manual se valida en User Events. | Un JSON o patrón inválido desactivaría validaciones o haría fallar la creación. | Las familias tienen su propio UE: el UE de la configuración no ve las líneas del registro hijo. | RN-12 a RN-17, RN3-05 a RN3-09 |
+| AD-05 | Patrones con lista cerrada de formatos y analizador propio. | Código y nombre siguen la convención comercial sin programar cada naturaleza. | Sin `eval` ni expresiones regulares construidas con el patrón; un formato nuevo requiere cambio de código. | D-13 a D-18 |
+| AD-06 | Espesor como registro con texto, código y orden; familias por rango de orden. | Cubre fracciones, calibres, milímetros y cédulas; el orden permite rangos aunque el calibre sea inverso al grosor. | La familia se resuelve por rango inclusivo; un espesor sin rango es error de configuración. | RN3-01 a RN3-07 |
+| AD-07 | Una sola copia de la plantilla por solicitud, en modo estándar. | Ahorra gobernanza; el modo dinámico dispararía sourcing que alteraría valores copiados. | La misma copia describe los parámetros, se valida y se guarda. | PT-02 |
+| AD-08 | El tipo de registro de la plantilla se obtiene con `search.create` y `result.recordType`, en un adaptador único. | `record.copy` y `url.resolveRecord` exigen el tipo; la configuración solo guarda el ID. | El Suitelet y el UE de configuración comparten el adaptador. | PT-01, PT-10 |
+| AD-09 | Entrada no confiable mínima. | Del formulario solo se toman el ID de configuración, revalidado en cada envío, y las capturas. | Números por expresión regular, espesor contra catálogo, columnas SQL por lista blanca doble, valores como parámetros, y avisos, etiquetas y enlaces escapados. | RN-11, RN-13 |
+| AD-10 | Detección de duplicados por naturaleza y parámetros, incluidos inactivos. | Evita dos artículos de la misma medida; un doble envío no duplica. | Respaldo: NetSuite rechaza un `itemid` repetido; el nombre incluye los parámetros. | RN-08 |
+| AD-11 | Escritura mínima; el precio se delega a la cadena existente. | El Suitelet no replica fórmulas: asigna familias y conversión, y el workflow calcula. | Depende de que el workflow corra en la creación por script (P3-12). | RN3-13 |
+| AD-12 | Bandera de despliegue para crear artículos activos. | Los artículos quedan inactivos hasta validar el precio en sandbox. | Activarlos no requiere código: parámetro `custscript_sads_sl_art_activo` = T. | DA3-05 |
+| AD-13 | Errores de dominio separados de errores técnicos. | El usuario ve mensajes de negocio en español, nunca el error crudo de NetSuite. | `log.error` guarda el detalle; los errores técnicos muestran un mensaje genérico. | PT-03 |
+| AD-14 | El Suitelet y los UEs de configuración y familias corren con el rol del usuario; el UE de artículo con `customrole_sads_naturaleza_config_exec`. | Las system notes registran al usuario real; el UE de artículo lee la configuración sin dar permisos a cada rol. | La audiencia del Suitelet define quién crea artículos. | — |
+| AD-15 | El nombre generado va a `itemid` y a las descripciones; el código a `displayname` y `vendorname`. | Convención de la empresa: `itemid` guarda el nombre largo y el código se muestra aparte. | El límite de 60 caracteres de `itemid` aplica al nombre. | D-19 |
 
-Manifiesto: CUSTOMRECORDS, SUBSIDIARIES y SERVERSIDESCRIPTING son obligatorias; CRM y las demás funciones son opcionales.
+### 3.4 Compromisos y deuda técnica
+| ID | Hallazgo | Consecuencia |
+|---|---|---|
+| H3-01 | Lados de placa FLOAT sin `minvalue`; el mínimo comercial de 2 pies no se impone. | Se aceptan medidas de 1 pie. |
+| H3-02 | Audiencia del CS y del UE de artículo limitada a las subsidiarias 3 y 4. | Sin validación en otras subsidiarias. |
+| H3-03 | El rol tiene `LIST_ITEM`, `ADMI_CUSTITEMFIELD` y `LIST_OTHER_ADDRESS` FULL sin uso. | Privilegio mayor al necesario. |
+| RN3-03 | La unicidad de código y orden de espesor por tipo no se valida en código. | Pueden capturarse espesores duplicados. |
+| H-08 | El UE de artículo recorre el arreglo dos veces, registra un log por campo y deja guardar si el JSON es inválido. | Faltantes repetidos en el mensaje; validación desactivada ante un JSON inválido. |
+| H-07 | `formato` conserva dos nombres de error sin uso. | Menor. |
+| Duplicación | IDs de la configuración repetidos en el Suitelet y en el UE de configuración; utilidades repetidas en los dos UEs. | Un cambio de ID exige editar dos archivos. |
+| CS y UE de artículo | Sin pruebas Jest ni capa de dominio. | Las regresiones solo se detectan en sandbox. |
 
-## 4. Estructura de archivos
+## 4. Objetos SDF
+`src/Objects` contiene 22 Object XML: 17 del proyecto y 5 de otras personalizaciones.
+
+| Objeto del proyecto | Tipo | Relación |
+|---|---|---|
+| `custitem_sads_naturaleza_producto` | Campo de artículo SELECT, obligatorio | Apunta a la configuración; aplica a 6 tipos de artículo. |
+| `custitem_sads_nat_pla_lado_a`, `custitem_sads_nat_pla_lado_b` | Campos de artículo FLOAT | Lados de placa en pies. |
+| `custitem_sads_nat_ptr_lado`, `custitem_sads_nat_ptr_largo` | Campos de artículo FLOAT | Lado de PTR en pulgadas y largo en metros. |
+| `custitem_sads_nat_espesor` | Campo de artículo SELECT | Apunta al catálogo de espesores. |
+| `customrecord_sads_naturaleza_productos` | Registro de configuración | Apunta a la lista de naturalezas y al tipo de espesor. |
+| `customrecord_sads_nat_familia` | Registro hijo, sublista de la configuración | Apunta a espesores desde y hasta, y a las familias de precio y margen. |
+| `customrecord_sads_espesor` | Catálogo de espesores | Apunta al tipo de espesor. |
+| `customlist_sads_naturaleza_productos` | Lista | Placas de Acero, Perfiles Tubulares Cuadrados, Perfiles Tubulares Redondos. |
+| `customlist_sads_tipo_espesor` | Lista | Fracción de pulgada, Calibre, Milímetros, Cédula, Pared de PTR. |
+| `customrole_sads_naturaleza_config_exec` | Rol | `runasrole` del UE de artículo. |
+| `customscript_sads_cs_item_dynamic_mandat` | Client Script | 6 deployments, uno por tipo de artículo. |
+| `customscript_sads_ue_item_dynamic_mandat` | User Event | 6 deployments, uno por tipo de artículo. |
+| `customscript_sads_sl_crear_articulo_nat` | Suitelet | Parámetro `custscript_sads_sl_art_activo` = F; audiencia vacía en el XML. |
+| `customscript_sads_ue_naturaleza_config` | User Event | Sobre el registro de configuración. |
+| `customscript_sads_ue_nat_familia` | User Event | Sobre el registro de familias. |
+
+| Objeto de otra personalización | Uso en el proyecto |
+|---|---|
+| `custitem_pfp_famprecios_`, `custitem_pfp_fammargenes_` | El Suitelet escribe la familia de precio y la de margen. |
+| `customrecord_pfp_famprecios`, `customrecord_pfp_fammargenes_` | Destino de las familias por rango. |
+| `custitem_alm_art_preciofinal` | Fórmula de precio final de la cadena existente; ningún script lo usa. |
+
+Campos que el Suitelet escribe y no están en el repositorio: `custitem_alm_articulo_conversionunidad` y `custitem_drt_ci_precio_teorico`; deben existir en la cuenta.
+El manifiesto exige CUSTOMRECORDS, SUBSIDIARIES y SERVERSIDESCRIPTING, y declara como dependencias `customlist_alm_lista_unidadcotizacion` y `custitem_alm_art_preciofinal`.
+
+| Deployments del CS y del UE de artículo | Estado |
+|---|---|
+| Inventariable | RELEASED |
+| No inventariable, otro cargo, servicio, kit y grupo de artículos | TESTING |
+
+Los XML incluyen datos: la configuración de Placas de Acero, con la plantilla del sandbox, y 27 espesores: 14 de fracción de pulgada para placas (3/16" a 2") y 13 de pared de PTR (Cal.18 a Cal.07 y 3/16" a 1/2").
+
+## 5. Estructura del repositorio
 ```
 .
 ├── README.md
-├── __tests__/
-│   ├── SADS_SL_crear_articulo_nat.test.js
-│   ├── SADS_UE_nat_familia.test.js
-│   ├── SADS_UE_naturaleza_config.test.js
-│   ├── SADS_naturaleza_articulo_ns.test.js
-│   ├── SADS_naturaleza_config_formato.test.js
-│   ├── SADS_naturaleza_familias.test.js
-│   ├── SADS_naturaleza_parametros.test.js
-│   ├── SADS_naturaleza_patron.test.js
-│   └── sample-test.js                      # Plantilla de SuiteCloud
-├── planes/                                 # Planes y prompts de diseño
+├── __tests__/                         # 9 suites Jest
+├── planes/                            # Planes y prompts de diseño
 ├── jest.config.js
 ├── package.json
-├── project.json                            # authId de sandbox
-├── suitecloud.config.js                    # Ejecuta Jest antes de project:deploy
+├── suitecloud.config.js               # Ejecuta Jest antes de project:deploy
 └── src/
-    ├── deploy.xml                          # ~/FileCabinet/* y ~/Objects/*
+    ├── deploy.xml
     ├── manifest.xml
-    ├── FileCabinet/SuiteScripts/SADS_Naturaleza_Productos/
-    │   ├── SADS_CS_item_dynamic_mandatory.js
-    │   ├── SADS_UE_item_dynamic_mandatory.js
-    │   ├── SADS_SL_crear_articulo_nat.js
-    │   ├── SADS_SL_crear_articulo_nat.md    # Documentación del creador de artículos
-    │   ├── SADS_UE_nat_familia.js
-    │   ├── SADS_UE_naturaleza_config.js
-    │   ├── SADS_item_dynamic_mandatory.md   # Notas originales del CS y del UE de artículo
-    │   ├── infra/
-    │   │   └── SADS_naturaleza_articulo_ns.js
-    │   └── domain/
-    │       ├── SADS_naturaleza_config_formato.js
-    │       ├── SADS_naturaleza_familias.js
-    │       ├── SADS_naturaleza_patron.js
-    │       └── SADS_naturaleza_parametros.js
-    └── Objects/                             # 22 Object XML (sección 3)
+    ├── Objects/                       # 22 Object XML
+    └── FileCabinet/SuiteScripts/SADS_Naturaleza_Productos/
+        ├── SADS_CS_item_dynamic_mandatory.js
+        ├── SADS_UE_item_dynamic_mandatory.js
+        ├── SADS_SL_crear_articulo_nat.js
+        ├── SADS_SL_crear_articulo_nat.md
+        ├── SADS_UE_naturaleza_config.js
+        ├── SADS_UE_nat_familia.js
+        ├── SADS_item_dynamic_mandatory.md
+        ├── infra/SADS_naturaleza_articulo_ns.js
+        └── domain/
+            ├── SADS_naturaleza_config_formato.js
+            ├── SADS_naturaleza_familias.js
+            ├── SADS_naturaleza_parametros.js
+            └── SADS_naturaleza_patron.js
 ```
 
-`SADS_item_dynamic_mandatory.md` cita nombres de archivo que no coinciden con los actuales.
-Retirados del proyecto el 2026-11-18: `custitem_sads_nat_pla_espesor.xml` (reemplazado por `custitem_sads_nat_espesor`) y `testt.js` (plantilla sin registro de script). SDF no los borra de la cuenta; ver la sección 6.
-
-## 5. Pruebas
-Comando: `npm test` o `npx jest`; no requiere cuenta NetSuite.
-
+## 6. Pruebas
+Comando: `npm test`; no requiere cuenta NetSuite.
 | Suite | Pruebas | Alcance |
 |---|---|---|
-| `SADS_SL_crear_articulo_nat.test.js` | 91 | Entry point del Suitelet con `jest.mock` de `N/`, incluida la iteración B. |
-| `SADS_UE_nat_familia.test.js` | 12 | Entry point del UE de familias, incluido XEDIT. |
+| `SADS_SL_crear_articulo_nat.test.js` | 91 | Entry point del Suitelet con `jest.mock` de `N/`. |
 | `SADS_UE_naturaleza_config.test.js` | 44 | Entry point del UE de configuración, incluido XEDIT. |
-| `SADS_naturaleza_articulo_ns.test.js` | 7 | Adaptador de tipo de registro. |
-| `SADS_naturaleza_config_formato.test.js` | 109 | Contrato del JSON y compatibilidad con la lectura del CS y del UE. |
+| `SADS_UE_nat_familia.test.js` | 12 | Entry point del UE de familias, incluido XEDIT. |
+| `SADS_naturaleza_patron.test.js` | 158 | Marcadores, formatos (incluido `decimal2`), patrones de PTR y sustitución. |
+| `SADS_naturaleza_config_formato.test.js` | 109 | Contrato del JSON y compatibilidad con el CS y el UE de artículo. |
+| `SADS_naturaleza_parametros.test.js` | 83 | IDs, valores, catálogo, conversión, orden de lados y duplicados. |
 | `SADS_naturaleza_familias.test.js` | 29 | Rangos de familias y resolución por espesor. |
-| `SADS_naturaleza_parametros.test.js` | 83 | IDs, valores capturados, espesor, conversión, orden de lados y criterios de duplicado. |
-| `SADS_naturaleza_patron.test.js` | 158 | Marcadores, formatos `centesimas3`, `fraccion16`, `entero1`, `entero2`, `decimal2`, `codigo` y `texto`, y sustitución. |
+| `SADS_naturaleza_articulo_ns.test.js` | 7 | Adaptador de tipo de registro. |
 | `sample-test.js` | 2 | Plantilla de SuiteCloud. |
 
-Resultado del 2026-11-18: 9 suites aprobadas de 9; 535 pruebas aprobadas de 535.
-`suitecloud project:validate` no se ejecutó para esta versión (sin cuenta en el entorno de desarrollo).
-El CS y el UE de artículo no tienen pruebas Jest.
+Resultado del 2026-11-18: 9 de 9 suites y 535 de 535 pruebas aprobadas.
+`suitecloud project:validate` no se ejecutó en esta versión: el entorno de desarrollo no tiene cuenta.
 
-## 6. Despliegue
+## 7. Despliegue y operación
 1. `npm test` en verde; el hook de `suitecloud.config.js` lo repite antes de `project:deploy`.
-2. `project:deploy` envía todo `~/Objects/*`, incluidos los deployments del CS y del UE de artículo.
-3. Después del primer despliegue: inactivar en la cuenta el Suitelet retirado `customscript_sads_sl_naturaleza_config`, y borrar o inactivar el campo `custrecord_sads_naturaleza_tipo_art` y la lista `customlist_sads_tipos_articulo`; SDF no los borra.
-4. Usuarios técnicos: crear los `custitem` de parámetros y capturar JSON, plantilla y patrones en cada configuración.
-5. Después de cada despliegue, re-aplicar en la UI la audiencia del Suitelet; el XML la deja vacía.
-6. Iteración B: capturar espesores, familias por espesor y la configuración de cada naturaleza (sección 4B de la documentación del Suitelet).
-7. `custscript_sads_sl_art_activo` se queda en F hasta que P3-12 confirme en sandbox el precio calculado por el workflow; después se cambia a T.
-8. Limpieza manual en la cuenta (SDF no borra): campo `custitem_sads_nat_pla_espesor` cuando ningún artículo ni configuración lo use; archivos `testt.js`, `SADS_SL_naturaleza_config.js`, `SADS_SL_naturaleza_config.md` y `domain/SADS_naturaleza_alta_reglas.js` del File Cabinet.
+2. `project:deploy` envía `~/FileCabinet/*` y `~/Objects/*`, incluidos los objetos de otras personalizaciones y los datos de la sección 4.
+3. Re-aplicar en la UI la audiencia del Suitelet después de cada despliegue; el XML la deja vacía.
+4. Usuarios técnicos: capturar espesores, configuración y familias de cada naturaleza, según la guía de la documentación del Suitelet.
+5. Validar en sandbox que el workflow calcula el precio de un artículo creado por el Suitelet (P3-12); después, `custscript_sads_sl_art_activo` = T.
+6. Limpieza manual en la cuenta, porque SDF no borra objetos: script `customscript_sads_sl_naturaleza_config`, campo `custrecord_sads_naturaleza_tipo_art`, lista `customlist_sads_tipos_articulo`, campo `custitem_sads_nat_pla_espesor` y los archivos `testt.js`, `SADS_SL_naturaleza_config.js`, `SADS_SL_naturaleza_config.md` y `domain/SADS_naturaleza_alta_reglas.js`.
 
-El procedimiento completo, los supuestos por validar en sandbox, los riesgos y el troubleshooting están en la documentación del Suitelet.
+En producción, la plantilla, las familias y las subsidiarias tienen IDs distintos a los del sandbox.
 
-## 7. Documentación
+## 8. Riesgos vigentes
+| Enunciado | Fundamento | Consecuencia |
+|---|---|---|
+| El despliegue incluye 5 objetos de otras personalizaciones. | `deploy.xml` envía todo `~/Objects/*`. | Sobrescribe en la cuenta su definición (fórmula, obligatoriedad, nombres) con la versión del repositorio. |
+| La configuración y los espesores viajan como datos en los XML. | Elementos `instances` en los XML de los registros. | Un despliegue puede revertir cambios hechos en la UI. |
+| Hay IDs dependientes de la cuenta. | Plantilla 10928 en la instancia; subsidiarias 3 y 4 en los deployments. | En producción apuntarían a registros distintos. |
+| El precio depende de un workflow que no está en el repositorio. | AD-11; supuesto S3-05. | Si no corre en la creación por script, el artículo conserva el precio de la plantilla. |
+| El artículo hereda la configuración fiscal de la plantilla. | AD-01; Anexo 20 de CFDI 4.0, atributos `ClaveProdServ` y `ClaveUnidad`. | Una clave errónea en la plantilla se replica en cada artículo y en los CFDI que lo facturen. |
+| Peso y conversión se capturan a mano. | DA3-06. | Un error se propaga a la cadena de precios y, si la localización usa el peso, a `PesoEnKg` de Carta Porte. |
+| La plantilla se captura como ID interno. | D-12. | Un ID de otro artículo existente copia el artículo equivocado. |
+
+## 9. Documentación
 | Documento | Contenido |
 |---|---|
-| [SADS_SL_crear_articulo_nat.md](src/FileCabinet/SuiteScripts/SADS_Naturaleza_Productos/SADS_SL_crear_articulo_nat.md) | Suitelet y UE de configuración: arquitectura, flujo, guía técnica, SuiteQL, reglas, permisos, despliegue, supuestos, riesgos y troubleshooting. |
-| [SADS_item_dynamic_mandatory.md](src/FileCabinet/SuiteScripts/SADS_Naturaleza_Productos/SADS_item_dynamic_mandatory.md) | Notas originales del CS y del UE de artículo. |
-| [Plan v2](planes/2026-11-12_creador-articulos-naturaleza_plan_v2.md) | Diseño aprobado del creador de artículos. |
-| [Prompt v2](planes/2026-11-12_creador-articulos-naturaleza_prompt_v2.md) | Especificación de implementación de la iteración A. |
-| [Plan v5](planes/2026-11-17_creador-articulos-naturaleza_plan_v5.md) | Diseño aprobado de la iteración B. |
-| [Prompt v3](planes/2026-11-17_creador-articulos-naturaleza_prompt_v3.md) | Especificación de implementación de la iteración B. |
+| [SADS_SL_crear_articulo_nat.md](src/FileCabinet/SuiteScripts/SADS_Naturaleza_Productos/SADS_SL_crear_articulo_nat.md) | Suitelet y UEs de configuración y familias: flujo, guía técnica, consultas, reglas, permisos, supuestos, riesgos y troubleshooting. |
+| [Plan v5](planes/2026-11-17_creador-articulos-naturaleza_plan_v5.md) y [prompt v3](planes/2026-11-17_creador-articulos-naturaleza_prompt_v3.md) | Diseño e implementación de la iteración B. |
+| [Plan v2](planes/2026-11-12_creador-articulos-naturaleza_plan_v2.md) y [prompt v2](planes/2026-11-12_creador-articulos-naturaleza_prompt_v2.md) | Diseño e implementación de la iteración A. |
+| [Prompt de patrones](planes/prompt_patrones_codigo_nombre.md) | Guía para redactar patrones de código y nombre. |
+| [SADS_item_dynamic_mandatory.md](src/FileCabinet/SuiteScripts/SADS_Naturaleza_Productos/SADS_item_dynamic_mandatory.md) | Notas originales del CS y del UE de artículo; los nombres de archivo que cita están desactualizados. |
 
-## 8. Licencia
+## 10. Licencia
 Ver [LICENSE](LICENSE).
