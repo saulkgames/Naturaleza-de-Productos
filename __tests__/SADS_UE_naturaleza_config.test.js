@@ -266,7 +266,7 @@ describe('RN-17: formatos de marcador', () => {
             nuevos: configuracionCon({ custrecord_sads_naturaleza_patron_cod: 'PLA36{custitem_pl_espesor:centesimas}' })
         }));
         expect(errores).toEqual([
-            'Patrón de código: El formato centesimas del marcador {custitem_pl_espesor} no existe. Formatos válidos: centesimas3, fraccion16.'
+            'Patrón de código: El formato centesimas del marcador {custitem_pl_espesor} no existe. Formatos válidos: centesimas3, fraccion16, codigo, texto.'
         ]);
     });
 
@@ -348,5 +348,57 @@ describe('errores inesperados', () => {
         });
         expect(() => userEvent.beforeSubmit(contexto)).toThrow('lectura');
         expect(log.error).toHaveBeenCalledTimes(1);
+    });
+});
+
+describe('iteración B: tipo de espesor y formatos de catálogo (RN3-08, RN3-09)', () => {
+    const JSON_B = '["custitem_sads_nat_pla_lado_a","custitem_sads_nat_pla_lado_b","custitem_sads_nat_espesor"]';
+    const CONFIGURACION_B = Object.freeze({
+        custrecord_sads_naturaleza_config: JSON_B,
+        custrecord_sads_naturaleza_plantilla: ID_PLANTILLA,
+        custrecord_sads_naturaleza_patron_cod: 'PLA36{custitem_sads_nat_espesor:codigo}{custitem_sads_nat_pla_lado_a}{custitem_sads_nat_pla_lado_b}',
+        custrecord_sads_naturaleza_patron_nom: "Placa Acero TA36 {custitem_sads_nat_espesor:texto} {custitem_sads_nat_pla_lado_a}'x{custitem_sads_nat_pla_lado_b}'",
+        custrecord_sads_naturaleza_tipo_esp: '1'
+    });
+    const configuracionB = (ajuste) => Object.assign({}, CONFIGURACION_B, ajuste);
+
+    test('la configuración de placas con espesor por catálogo se acepta', () => {
+        expect(() => userEvent.beforeSubmit(crearContexto({ nuevos: CONFIGURACION_B }))).not.toThrow();
+    });
+
+    test('P3-13: JSON con espesor sin tipo de espesor se rechaza, con o sin plantilla', () => {
+        expect(esperarRechazo(crearContexto({ nuevos: configuracionB({ custrecord_sads_naturaleza_tipo_esp: '' }) })))
+            .toEqual(['La configuración usa espesor y requiere Tipo de Espesor.']);
+        jest.clearAllMocks();
+        prepararArticulos();
+        expect(esperarRechazo(crearContexto({ nuevos: { custrecord_sads_naturaleza_config: JSON_B } })))
+            .toEqual(['La configuración usa espesor y requiere Tipo de Espesor.']);
+    });
+
+    test('un tipo de espesor sin campo de espesor en el JSON se acepta', () => {
+        expect(() => userEvent.beforeSubmit(crearContexto({ nuevos: configuracionCon({ custrecord_sads_naturaleza_tipo_esp: '1' }) })))
+            .not.toThrow();
+    });
+
+    test('P3-16: el espesor sin formato y codigo en otro campo se rechazan', () => {
+        const errores = esperarRechazo(crearContexto({
+            nuevos: configuracionB({
+                custrecord_sads_naturaleza_patron_cod: 'PLA36{custitem_sads_nat_espesor}',
+                custrecord_sads_naturaleza_patron_nom: 'Placa {custitem_sads_nat_pla_lado_a:texto}'
+            })
+        }));
+        expect(errores).toEqual([
+            'Patrón de código: El marcador {custitem_sads_nat_espesor} es un catálogo y requiere el formato codigo o texto.',
+            'Patrón de nombre: El formato texto solo aplica al campo de espesor.'
+        ]);
+    });
+
+    test('XEDIT que solo cambia el tipo de espesor a vacío se rechaza con el JSON guardado', () => {
+        const errores = esperarRechazo(crearContexto({
+            tipo: TIPOS_EVENTO.XEDIT,
+            nuevos: { custrecord_sads_naturaleza_tipo_esp: '' },
+            anteriores: CONFIGURACION_B
+        }));
+        expect(errores).toEqual(['La configuración usa espesor y requiere Tipo de Espesor.']);
     });
 });

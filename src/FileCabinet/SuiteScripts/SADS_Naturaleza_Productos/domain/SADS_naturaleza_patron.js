@@ -19,11 +19,14 @@ define(['./SADS_naturaleza_config_formato'], (formato) => {
      * Formatos de marcador (D-13, D-14). Sin formato, el número se escribe en decimal (RN-07).
      * centesimas3: centésimas truncadas a 3 dígitos (0.5 → 050; 0.375 → 037).
      * fraccion16: fracción reducida hasta dieciseisavos (0.5 → 1/2; 1.25 → 1 1/4).
-     * @type {Readonly<{CENTESIMAS_3: string, FRACCION_16: string}>}
+     * codigo y texto: segmento de código y texto del espesor elegido en el catálogo (RN3-09); solo para el campo de espesor.
+     * @type {Readonly<{CENTESIMAS_3: string, FRACCION_16: string, CODIGO: string, TEXTO: string}>}
      */
     const FORMATOS = Object.freeze({
         CENTESIMAS_3: 'centesimas3',
-        FRACCION_16: 'fraccion16'
+        FRACCION_16: 'fraccion16',
+        CODIGO: 'codigo',
+        TEXTO: 'texto'
     });
 
     const APERTURA = '{';
@@ -52,8 +55,14 @@ define(['./SADS_naturaleza_config_formato'], (formato) => {
         VALOR_FALTANTE: 'Falta el valor de un marcador del patrón.',
         VALOR_FUERA_DE_FORMATO: 'El valor de un marcador no cabe en su formato.',
         RESULTADO_VACIO: 'El patrón generó un texto vacío.',
-        NUMERO_INVALIDO: 'El valor de un marcador debe ser un número finito.'
+        NUMERO_INVALIDO: 'El valor de un marcador debe ser un número finito.',
+        FORMATO_DE_CATALOGO: 'El formato codigo o texto requiere el espesor elegido.',
+        CATALOGO_SIN_FORMATO: 'Un marcador de catálogo requiere el formato codigo o texto.',
+        FORMATO_SOLO_CATALOGO: 'El formato codigo o texto solo aplica al campo de espesor.',
+        TEXTO_FALTANTE: 'Falta el texto del espesor elegido para un marcador del patrón.'
     });
+
+    const FORMATOS_DE_CATALOGO = [FORMATOS.CODIGO, FORMATOS.TEXTO];
 
     const FORMATOS_VALIDOS = Object.keys(FORMATOS).map((llave) => FORMATOS[llave]);
 
@@ -82,6 +91,20 @@ define(['./SADS_naturaleza_config_formato'], (formato) => {
         esCitable(id) && esCitable(nombre)
             ? `El formato ${nombre} del marcador {${id}} no existe. ${LISTA_DE_FORMATOS}`
             : `${MENSAJES.FORMATO_DESCONOCIDO} ${LISTA_DE_FORMATOS}`
+    );
+
+    const esFormatoDeCatalogo = (nombre) => FORMATOS_DE_CATALOGO.indexOf(nombre) !== -1;
+
+    const catalogoSinFormato = (id) => (
+        esCitable(id) ? `El marcador {${id}} es un catálogo y requiere el formato codigo o texto.` : MENSAJES.CATALOGO_SIN_FORMATO
+    );
+
+    const formatoSoloCatalogo = (nombre) => (
+        esCitable(nombre) ? `El formato ${nombre} solo aplica al campo de espesor.` : MENSAJES.FORMATO_SOLO_CATALOGO
+    );
+
+    const textoFaltante = (id) => (
+        esCitable(id) ? `Falta el texto del espesor para el marcador {${id}}.` : MENSAJES.TEXTO_FALTANTE
     );
 
     const valorFaltante = (id) => (esCitable(id) ? `Falta el valor del marcador {${id}}.` : MENSAJES.VALOR_FALTANTE);
@@ -199,14 +222,15 @@ define(['./SADS_naturaleza_config_formato'], (formato) => {
     /**
      * Escribe un número con un formato de marcador.
      * @param {number} numero - Número finito.
-     * @param {?string} nombre - Valor de FORMATOS o null para el decimal de RN-07.
+     * @param {?string} nombre - Formato numérico de FORMATOS o null para el decimal de RN-07.
      * @returns {?string} Texto formateado; null si el número no cabe en el formato.
-     * @throws {Error} PATRON_INVALIDO si numero no es un número finito o el formato no existe.
+     * @throws {Error} PATRON_INVALIDO si numero no es un número finito, el formato no existe o es de catálogo.
      */
     const formatearValor = (numero, nombre) => {
         validarNumero(numero);
         if (nombre === null) return formatearNumero(numero);
         if (!esFormatoValido(nombre)) throw errorDePatron(`${MENSAJES.FORMATO_DESCONOCIDO} ${LISTA_DE_FORMATOS}`);
+        if (esFormatoDeCatalogo(nombre)) throw errorDePatron(MENSAJES.FORMATO_DE_CATALOGO);
         return FORMATEADORES[nombre](numero);
     };
 
@@ -221,15 +245,16 @@ define(['./SADS_naturaleza_config_formato'], (formato) => {
         .map((marcador) => marcador.id);
 
     /**
-     * Valida un patrón contra los IDs de la configuración y los formatos (RN-14, RN-15, RN-17). No lanza errores.
+     * Valida un patrón contra los IDs de la configuración y los formatos (RN-14, RN-15, RN-17, RN3-09). No lanza errores.
      * @param {Object} datos
      * @param {string} datos.patron - Texto del patrón.
      * @param {string[]} datos.idsPermitidos - IDs del JSON de la configuración.
+     * @param {string[]} [datos.idsCatalogo] - IDs de parámetros de catálogo (el espesor); solo admiten codigo o texto.
      * @returns {{valido: boolean, errores: string[]}} Un mensaje por patrón vacío, por estructura inválida,
-     * por cada marcador que no está en idsPermitidos y por cada formato que no existe.
-     * Un ID o formato se cita solo si cumple ^[a-z0-9_]+$.
+     * por cada marcador que no está en idsPermitidos, por cada formato que no existe y por cada formato
+     * que no corresponde al tipo de parámetro. Un ID o formato se cita solo si cumple ^[a-z0-9_]+$.
      */
-    const validar = ({ patron, idsPermitidos } = {}) => {
+    const validar = ({ patron, idsPermitidos, idsCatalogo } = {}) => {
         if (typeof patron !== 'string' || patron.trim() === '') return { valido: false, errores: [MENSAJES.VACIO] };
         let marcadores;
         try {
@@ -242,10 +267,21 @@ define(['./SADS_naturaleza_config_formato'], (formato) => {
         const erroresDeId = unicosPor(marcadores, (marcador) => marcador.id)
             .filter((marcador) => permitidos.indexOf(marcador.id) === -1)
             .map((marcador) => marcadorNoPermitido(marcador.id));
-        const erroresDeFormato = unicosPor(marcadores, claveDeMarcador)
+        const catalogo = Array.isArray(idsCatalogo) ? idsCatalogo : [];
+        const unicos = unicosPor(marcadores, claveDeMarcador);
+        const erroresDeFormato = unicos
             .filter((marcador) => !esFormatoValido(marcador.formato))
             .map((marcador) => formatoDesconocido(marcador));
-        const errores = erroresDeId.concat(erroresDeFormato);
+        const erroresDeCatalogo = unicos
+            .filter((marcador) => esFormatoValido(marcador.formato))
+            .map((marcador) => {
+                const esCatalogo = catalogo.indexOf(marcador.id) !== -1;
+                if (esCatalogo && !esFormatoDeCatalogo(marcador.formato)) return catalogoSinFormato(marcador.id);
+                if (!esCatalogo && esFormatoDeCatalogo(marcador.formato)) return formatoSoloCatalogo(marcador.formato);
+                return null;
+            })
+            .filter((mensaje) => mensaje !== null);
+        const errores = erroresDeId.concat(erroresDeFormato, unicosPor(erroresDeCatalogo, (mensaje) => mensaje));
         return { valido: errores.length === 0, errores };
     };
 
@@ -270,6 +306,7 @@ define(['./SADS_naturaleza_config_formato'], (formato) => {
             .filter((marcador) => (
                 marcador.formato !== null
                 && esFormatoValido(marcador.formato)
+                && !esFormatoDeCatalogo(marcador.formato)
                 && tienePropiedad(valores, marcador.id)
                 && typeof valores[marcador.id] === 'number'
                 && Number.isFinite(valores[marcador.id])
@@ -283,20 +320,27 @@ define(['./SADS_naturaleza_config_formato'], (formato) => {
     };
 
     /**
-     * Sustituye cada marcador por el valor de su parámetro con su formato (RN-06, RN-07, RN-17).
+     * Sustituye cada marcador por el valor de su parámetro con su formato (RN-06, RN-07, RN-17, RN3-09).
      * Sustitución literal, sin evaluación.
      * @param {Object} datos
      * @param {string} datos.patron - Texto del patrón.
      * @param {Object<string, number>} datos.valores - Valor numérico por ID de campo.
+     * @param {Object<string, {codigo: string, texto: string}>} [datos.textos] - Textos del espesor elegido por ID de campo.
      * @returns {string} Texto resultante recortado.
      * @throws {Error} PATRON_INVALIDO si el patrón es inválido, falta el valor de un marcador, un valor no es número
-     * finito, un formato no existe, un valor no cabe en su formato o el resultado queda vacío.
+     * finito, un formato no existe, un valor no cabe en su formato, falta el texto de catálogo o el resultado queda vacío.
      */
-    const aplicar = ({ patron, valores } = {}) => {
+    const aplicar = ({ patron, valores, textos } = {}) => {
         const resultado = dividirPatron(patron).map((parte) => {
             if (!tienePropiedad(parte, 'id')) return parte.texto;
-            if (!tienePropiedad(valores, parte.id)) throw errorDePatron(valorFaltante(parte.id));
             if (!esFormatoValido(parte.formato)) throw errorDePatron(formatoDesconocido(parte));
+            if (esFormatoDeCatalogo(parte.formato)) {
+                const elegido = tienePropiedad(textos, parte.id) ? textos[parte.id] : null;
+                const texto = tienePropiedad(elegido, parte.formato) ? String(elegido[parte.formato]) : '';
+                if (texto.trim() === '') throw errorDePatron(textoFaltante(parte.id));
+                return texto;
+            }
+            if (!tienePropiedad(valores, parte.id)) throw errorDePatron(valorFaltante(parte.id));
             const texto = formatearValor(valores[parte.id], parte.formato);
             if (texto === null) throw errorDePatron(valorFueraDeFormato(parte));
             return texto;

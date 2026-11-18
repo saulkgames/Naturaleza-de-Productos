@@ -5,6 +5,7 @@
  * @description Crea artículos de una naturaleza de producto copiando el artículo plantilla de su configuración.
  * Paso 1: naturaleza con plantilla. Paso 2: parámetros de la naturaleza y peso. Creación: valida, genera
  * código y nombre con los patrones, busca duplicados y guarda la copia de la plantilla.
+ * Iteración B: espesor por catálogo, familias de precio y margen por rango de espesor, peso, conversión y descripciones.
  */
 define([
     'N/ui/serverWidget',
@@ -18,16 +19,23 @@ define([
     './domain/SADS_naturaleza_config_formato',
     './domain/SADS_naturaleza_patron',
     './domain/SADS_naturaleza_parametros',
+    './domain/SADS_naturaleza_familias',
     './infra/SADS_naturaleza_articulo_ns'
-], (serverWidget, message, search, query, record, runtime, url, log, formato, patron, parametros, articulos) => {
+], (serverWidget, message, search, query, record, runtime, url, log, formato, patron, parametros, familias, articulos) => {
     const REGISTRO_CONFIGURACION = 'customrecord_sads_naturaleza_productos';
 
     const CAMPOS_CONFIGURACION = Object.freeze({
         JSON: 'custrecord_sads_naturaleza_config',
         PLANTILLA: 'custrecord_sads_naturaleza_plantilla',
         PATRON_NOMBRE: 'custrecord_sads_naturaleza_patron_nom',
-        PATRON_CODIGO: 'custrecord_sads_naturaleza_patron_cod'
+        PATRON_CODIGO: 'custrecord_sads_naturaleza_patron_cod',
+        TIPO_ESPESOR: 'custrecord_sads_naturaleza_tipo_esp'
     });
+
+    // S3-06: el parámetro de catálogo (espesor) se identifica por el ID de su campo de artículo.
+    const CAMPO_ESPESOR = 'custitem_sads_nat_espesor';
+    const REGISTRO_ESPESOR = 'customrecord_sads_espesor';
+    const REGISTRO_FAMILIA = 'customrecord_sads_nat_familia';
 
     // Supuesto S-04: IDs de campo válidos en inventoryitem; S-15: vendorname como campo de cuerpo.
     const CAMPOS_ARTICULO = Object.freeze({
@@ -37,7 +45,13 @@ define([
         PESO: 'weight',
         UNIDAD_PESO: 'weightunit',
         INACTIVO: 'isinactive',
-        CODIGO_PROVEEDOR: 'vendorname'
+        CODIGO_PROVEEDOR: 'vendorname',
+        PESO_INFORMATIVO: 'custitem_drt_ci_precio_teorico',
+        CONVERSION: 'custitem_alm_articulo_conversionunidad',
+        FAMILIA_PRECIO: 'custitem_pfp_famprecios_',
+        FAMILIA_MARGEN: 'custitem_pfp_fammargenes_',
+        DESCRIPCION_COMPRA: 'purchasedescription',
+        DESCRIPCION_VENTA: 'salesdescription'
     });
 
     // D-11: campos de proveedor heredados de la plantilla que se dejan vacíos.
@@ -64,11 +78,15 @@ define([
         ACCION: 'custpage_accion',
         NATURALEZA_TEXTO: 'custpage_naturaleza_texto',
         PESO: 'custpage_peso',
+        CONVERSION: 'custpage_conversion',
         CODIGO: 'custpage_codigo',
         NOMBRE: 'custpage_nombre',
         ESTADO: 'custpage_estado',
         ENLACE_INICIO: 'custpage_enlace_inicio',
-        ENLACE_ARTICULO: 'custpage_enlace_articulo'
+        ENLACE_ARTICULO: 'custpage_enlace_articulo',
+        ESPESOR_TEXTO: 'custpage_espesor_texto',
+        FAMILIA_TEXTO: 'custpage_familia_texto',
+        CONVERSION_TEXTO: 'custpage_conversion_texto'
     });
 
     const PREFIJO_CAMPO_PARAMETRO = 'custpage_par_';
@@ -94,6 +112,31 @@ define([
     ];
     const SQL_DUPLICADO_ORDEN = 'ORDER BY art.id';
 
+    // C-3. Supuesto S3-11: columnas SuiteQL con el mismo nombre que el scriptid de los campos.
+    const SQL_ESPESORES = `
+        SELECT esp.id AS id, esp.name AS nombre, esp.custrecord_sads_esp_texto AS texto,
+               esp.custrecord_sads_esp_codigo AS codigo, esp.custrecord_sads_esp_orden AS orden
+        FROM ${REGISTRO_ESPESOR} esp
+        WHERE esp.isinactive = 'F'
+          AND esp.custrecord_sads_esp_tipo = ?
+        ORDER BY esp.custrecord_sads_esp_orden`;
+
+    // C-4. Líneas activas de familias por rango con orden y tipo de sus espesores.
+    const SQL_FAMILIAS = `
+        SELECT fam.id AS id,
+               fam.custrecord_sads_natfam_desde AS desde_id, des.custrecord_sads_esp_orden AS desde_orden,
+               des.custrecord_sads_esp_tipo AS desde_tipo,
+               fam.custrecord_sads_natfam_hasta AS hasta_id, has.custrecord_sads_esp_orden AS hasta_orden,
+               has.custrecord_sads_esp_tipo AS hasta_tipo,
+               fam.custrecord_sads_natfam_precio AS precio_id, fam.custrecord_sads_natfam_margen AS margen_id,
+               BUILTIN.DF(fam.custrecord_sads_natfam_precio) AS precio_nombre
+        FROM ${REGISTRO_FAMILIA} fam
+        LEFT JOIN ${REGISTRO_ESPESOR} des ON des.id = fam.custrecord_sads_natfam_desde
+        LEFT JOIN ${REGISTRO_ESPESOR} has ON has.id = fam.custrecord_sads_natfam_hasta
+        WHERE fam.isinactive = 'F'
+          AND fam.custrecord_sads_natfam_config = ?
+        ORDER BY des.custrecord_sads_esp_orden`;
+
     const TITULOS_FORMULARIO = Object.freeze({
         PASO_1: 'Crear artículo por naturaleza - Paso 1 de 2',
         PASO_2: 'Crear artículo por naturaleza - Paso 2 de 2',
@@ -107,6 +150,9 @@ define([
         ACCION: 'Acción',
         PESO_CON_UNIDAD: (unidad) => `Peso (${unidad})`,
         PESO_SIN_UNIDAD: 'Peso (unidad de la plantilla)',
+        CONVERSION: 'Conversión unidad de compra a base',
+        ESPESOR: 'Espesor',
+        FAMILIA_PRECIO: 'Familia de precio',
         CODIGO: 'Código',
         NOMBRE: 'Nombre',
         ESTADO: 'Estado',
@@ -134,6 +180,9 @@ define([
             + 'Contacte a un usuario técnico.',
         CONFIGURACION_INVALIDA: (errores) => `La configuración de esta naturaleza no es válida: ${errores.join('; ')}`,
         PLANTILLA_INEXISTENTE: 'El artículo plantilla de esta naturaleza no existe.',
+        SIN_TIPO_ESPESOR: 'La naturaleza usa espesor pero no tiene tipo de espesor.',
+        SIN_ESPESORES: 'No hay espesores activos para el tipo de esta naturaleza.',
+        SIN_FAMILIAS: 'La naturaleza no tiene familias de precio configuradas.',
         CODIGO_LARGO: `El código generado excede ${LONGITUD_MAXIMA_CODIGO} caracteres; revise el patrón de la naturaleza.`,
         COLUMNA_NO_PERMITIDA: 'La configuración de esta naturaleza contiene un ID de campo no válido para buscar duplicados.',
         DUPLICADO: 'Ya existe un artículo con esta naturaleza y estos parámetros.',
@@ -169,6 +218,24 @@ define([
 
     const ejecutarConsulta = (sql, valores) => query.runSuiteQL({ query: sql, params: valores }).asMappedResults();
 
+    const textoONulo = (valor) => {
+        const texto = aCadena(valor).trim();
+        return texto === '' ? null : texto;
+    };
+
+    const numeroONulo = (valor) => {
+        const texto = textoONulo(valor);
+        if (texto === null) return null;
+        const numero = Number(texto);
+        return Number.isFinite(numero) ? numero : null;
+    };
+
+    // search.lookupFields devuelve los SELECT como arreglo de {value, text}.
+    const valorDeSeleccion = (valor) => {
+        if (Array.isArray(valor)) return valor.length > 0 ? textoONulo(valor[0].value) : null;
+        return textoONulo(valor);
+    };
+
     /**
      * Carga las configuraciones activas con artículo plantilla (C-1, RN-01).
      * @returns {Array<{id: string, nombre: string}>} Objetos planos ordenados por nombre.
@@ -181,8 +248,8 @@ define([
     /**
      * Lee el JSON, la plantilla y los patrones de una configuración con search.lookupFields.
      * @param {string} configuracionId - ID interno validado contra C-1.
-     * @returns {{ids: string[], plantillaId: ?string, patronNombre: string, patronCodigo: string}}
-     * plantillaId es null si está vacía o no es un entero positivo.
+     * @returns {{ids: string[], plantillaId: ?string, patronNombre: string, patronCodigo: string, tipoEspesorId: ?string}}
+     * plantillaId es null si está vacía o no es un entero positivo; tipoEspesorId es null si no está capturado.
      * @throws {Error} CONFIGURACION_INVALIDA si el JSON no cumple el contrato de formato.
      */
     const leerConfiguracion = (configuracionId) => {
@@ -193,7 +260,8 @@ define([
                 CAMPOS_CONFIGURACION.JSON,
                 CAMPOS_CONFIGURACION.PLANTILLA,
                 CAMPOS_CONFIGURACION.PATRON_NOMBRE,
-                CAMPOS_CONFIGURACION.PATRON_CODIGO
+                CAMPOS_CONFIGURACION.PATRON_CODIGO,
+                CAMPOS_CONFIGURACION.TIPO_ESPESOR
             ]
         });
         const plantilla = aCadena(campos[CAMPOS_CONFIGURACION.PLANTILLA]).trim();
@@ -201,9 +269,41 @@ define([
             ids: formato.parsearConfiguracion(campos[CAMPOS_CONFIGURACION.JSON]),
             plantillaId: PATRON_ID_INTERNO.test(plantilla) ? plantilla : null,
             patronNombre: aCadena(campos[CAMPOS_CONFIGURACION.PATRON_NOMBRE]),
-            patronCodigo: aCadena(campos[CAMPOS_CONFIGURACION.PATRON_CODIGO])
+            patronCodigo: aCadena(campos[CAMPOS_CONFIGURACION.PATRON_CODIGO]),
+            tipoEspesorId: valorDeSeleccion(campos[CAMPOS_CONFIGURACION.TIPO_ESPESOR])
         };
     };
+
+    /**
+     * Carga el catálogo de espesores activos de un tipo (C-3, RN3-01).
+     * @param {string} tipoId - ID interno del tipo de espesor.
+     * @returns {Array<{id: string, nombre: string, texto: string, codigo: string, orden: ?number}>} Ordenado por orden.
+     */
+    const cargarEspesores = (tipoId) => ejecutarConsulta(SQL_ESPESORES, [tipoId]).map((fila) => ({
+        id: aCadena(fila.id),
+        nombre: aCadena(fila.nombre),
+        texto: aCadena(fila.texto),
+        codigo: aCadena(fila.codigo),
+        orden: numeroONulo(fila.orden)
+    }));
+
+    /**
+     * Carga las líneas activas de familias por rango de una configuración (C-4).
+     * @param {string} configuracionId - ID interno de la configuración.
+     * @returns {Object[]} Líneas planas para domain/SADS_naturaleza_familias.
+     */
+    const cargarFamilias = (configuracionId) => ejecutarConsulta(SQL_FAMILIAS, [configuracionId]).map((fila) => ({
+        id: aCadena(fila.id),
+        desdeId: textoONulo(fila.desde_id),
+        hastaId: textoONulo(fila.hasta_id),
+        desdeOrden: numeroONulo(fila.desde_orden),
+        hastaOrden: numeroONulo(fila.hasta_orden),
+        desdeTipo: textoONulo(fila.desde_tipo),
+        hastaTipo: textoONulo(fila.hasta_tipo),
+        familiaPrecioId: aCadena(fila.precio_id),
+        familiaMargenId: aCadena(fila.margen_id),
+        familiaPrecioNombre: aCadena(fila.precio_nombre)
+    }));
 
     /**
      * Resuelve el tipo de registro de un artículo con el adaptador compartido (PT-01, PT-10).
@@ -214,6 +314,7 @@ define([
 
     /**
      * Describe los parámetros de la naturaleza con los campos de la copia de la plantilla (S-03).
+     * El campo de espesor se describe como catálogo sin depender de Field.type (S3-06).
      * @param {record.Record} copia - Copia en memoria de la plantilla.
      * @param {string[]} ids - IDs del JSON de configuración.
      * @returns {Array<{id: string, etiqueta: string, tipo: ?string}>} tipo null si el campo no existe en la copia.
@@ -222,7 +323,7 @@ define([
         const campo = copia.getField({ fieldId: id });
         if (campo === null || campo === undefined) return { id, etiqueta: id, tipo: null };
         const etiqueta = aCadena(campo.label).trim();
-        const tipo = aCadena(campo.type).trim().toLowerCase();
+        const tipo = id === CAMPO_ESPESOR ? parametros.TIPOS_SOPORTADOS.CATALOGO : aCadena(campo.type).trim().toLowerCase();
         return { id, etiqueta: etiqueta === '' ? id : etiqueta, tipo: tipo === '' ? null : tipo };
     });
 
@@ -264,27 +365,35 @@ define([
     };
 
     /**
-     * Escribe en la copia de la plantilla los valores del artículo nuevo (RN-09, RN-10, PT-12).
+     * Escribe en la copia de la plantilla los valores del artículo nuevo (RN-09, RN-10, PT-12, RN3-10 a RN3-13).
      * @param {record.Record} copia - Copia en memoria de la plantilla.
      * @param {Object} datos
      * @param {string} datos.configuracionId - ID interno de la configuración.
      * @param {string[]} datos.ids - IDs de los parámetros.
      * @param {Object<string, number>} datos.valores - Valor por ID.
-     * @param {number} datos.peso - Peso capturado.
+     * @param {number} datos.peso - Peso capturado (kg).
+     * @param {number} datos.conversion - Conversión de unidad de compra a base.
+     * @param {{familiaPrecioId: string, familiaMargenId: string}} datos.familia - Línea resuelta por familias.resolver.
      * @param {string} datos.codigo - Código generado.
-     * @param {string} datos.nombre - Nombre generado; también se usa como código de proveedor (D-10).
+     * @param {string} datos.nombre - Nombre generado; también es código de proveedor (D-10) y descripciones (RN3-12).
      * @param {boolean} datos.activo - Resultado de leerCrearActivo.
      * @returns {void}
      */
-    const asignarValores = (copia, { configuracionId, ids, valores, peso, codigo, nombre, activo }) => {
+    const asignarValores = (copia, { configuracionId, ids, valores, peso, conversion, familia, codigo, nombre, activo }) => {
         copia.setValue({ fieldId: CAMPOS_ARTICULO.NATURALEZA, value: configuracionId });
         ids.forEach((id) => {
             copia.setValue({ fieldId: id, value: valores[id] });
         });
         copia.setValue({ fieldId: CAMPOS_ARTICULO.PESO, value: peso });
+        copia.setValue({ fieldId: CAMPOS_ARTICULO.PESO_INFORMATIVO, value: peso });
+        copia.setValue({ fieldId: CAMPOS_ARTICULO.CONVERSION, value: conversion });
+        copia.setValue({ fieldId: CAMPOS_ARTICULO.FAMILIA_PRECIO, value: familia.familiaPrecioId });
+        copia.setValue({ fieldId: CAMPOS_ARTICULO.FAMILIA_MARGEN, value: familia.familiaMargenId });
         copia.setValue({ fieldId: CAMPOS_ARTICULO.CODIGO, value: codigo });
         copia.setValue({ fieldId: CAMPOS_ARTICULO.NOMBRE, value: nombre });
         copia.setValue({ fieldId: CAMPOS_ARTICULO.CODIGO_PROVEEDOR, value: nombre });
+        copia.setValue({ fieldId: CAMPOS_ARTICULO.DESCRIPCION_COMPRA, value: nombre });
+        copia.setValue({ fieldId: CAMPOS_ARTICULO.DESCRIPCION_VENTA, value: nombre });
         CAMPOS_A_LIMPIAR.forEach((id) => {
             copia.setValue({ fieldId: id, value: '' });
         });
@@ -421,12 +530,16 @@ define([
      * @param {Array<{id: string, etiqueta: string, tipo: string}>} datos.definicion - Parámetros validados.
      * @param {?string} datos.unidadPeso - Unidad de peso de la plantilla o null.
      * @param {Array<*>} datos.valoresPrevios - Capturas previas alineadas por índice.
+     * @param {Array<{id: string, nombre: string}>} datos.espesores - Catálogo de C-3; vacío si la naturaleza no usa espesor.
      * @param {*} datos.pesoPrevio - Peso capturado antes.
+     * @param {*} datos.conversionPrevia - Conversión capturada antes.
      * @param {string[]} datos.errores - Mensajes de validación.
      * @param {string} datos.urlInicio - URL del paso 1.
      * @returns {serverWidget.Form}
      */
-    const construirPaso2 = ({ configuracion, definicion, unidadPeso, valoresPrevios, pesoPrevio, errores, urlInicio }) => {
+    const construirPaso2 = ({
+        configuracion, definicion, unidadPeso, espesores, valoresPrevios, pesoPrevio, conversionPrevia, errores, urlInicio
+    }) => {
         const form = crearFormulario(TITULOS_FORMULARIO.PASO_2);
         if (errores.length > 0) {
             agregarAviso(form, { tipo: message.Type.ERROR, titulo: TITULOS_AVISO.REVISAR, lineas: errores });
@@ -443,6 +556,15 @@ define([
         });
         agregarCampoOculto(form, { id: CAMPOS_FORMULARIO.ACCION, etiqueta: ETIQUETAS.ACCION, valor: ACCIONES.CREAR });
         definicion.forEach((parametro, posicion) => {
+            if (parametro.tipo === parametros.TIPOS_SOPORTADOS.CATALOGO) {
+                agregarSeleccion(form, {
+                    id: campoDeParametro(posicion),
+                    etiqueta: escaparHtml(parametro.etiqueta),
+                    opciones: espesores,
+                    valorPrevio: valoresPrevios[posicion]
+                });
+                return;
+            }
             agregarCampoNumerico(form, {
                 id: campoDeParametro(posicion),
                 etiqueta: parametro.etiqueta,
@@ -455,6 +577,12 @@ define([
             etiqueta: etiquetaDePeso(unidadPeso),
             entero: false,
             valorPrevio: pesoPrevio
+        });
+        agregarCampoNumerico(form, {
+            id: CAMPOS_FORMULARIO.CONVERSION,
+            etiqueta: ETIQUETAS.CONVERSION,
+            entero: false,
+            valorPrevio: conversionPrevia
         });
         agregarEnlace(form, { id: CAMPOS_FORMULARIO.ENLACE_INICIO, texto: ETIQUETAS.ENLACE_REGRESAR, destino: urlInicio });
         form.addSubmitButton({ label: ETIQUETAS.BOTON_CREAR });
@@ -482,14 +610,26 @@ define([
      * @param {string} datos.codigo - Código guardado.
      * @param {string} datos.nombre - Nombre guardado.
      * @param {boolean} datos.inactivo - Estado guardado.
+     * @param {?string} datos.espesor - Nombre del espesor elegido; null si la naturaleza no usa espesor.
+     * @param {string} datos.familiaPrecio - Nombre de la familia de precio asignada.
+     * @param {number} datos.conversion - Conversión guardada.
      * @param {string} datos.urlArticulo - URL del artículo creado.
      * @param {string} datos.urlInicio - URL del paso 1.
      * @returns {serverWidget.Form}
      */
-    const construirConfirmacion = ({ codigo, nombre, inactivo, urlArticulo, urlInicio }) => {
+    const construirConfirmacion = ({ codigo, nombre, inactivo, espesor, familiaPrecio, conversion, urlArticulo, urlInicio }) => {
         const form = crearFormulario(TITULOS_FORMULARIO.CONFIRMACION);
         agregarAviso(form, { tipo: message.Type.CONFIRMATION, titulo: TITULOS_AVISO.CREADO, lineas: [MENSAJES.CREADO] });
         agregarResumenDelArticulo(form, { codigo, nombre, inactivo });
+        if (espesor !== null) {
+            agregarTextoDeSoloLectura(form, { id: CAMPOS_FORMULARIO.ESPESOR_TEXTO, etiqueta: ETIQUETAS.ESPESOR, valor: espesor });
+        }
+        agregarTextoDeSoloLectura(form, { id: CAMPOS_FORMULARIO.FAMILIA_TEXTO, etiqueta: ETIQUETAS.FAMILIA_PRECIO, valor: familiaPrecio });
+        agregarTextoDeSoloLectura(form, {
+            id: CAMPOS_FORMULARIO.CONVERSION_TEXTO,
+            etiqueta: ETIQUETAS.CONVERSION,
+            valor: aCadena(conversion)
+        });
         agregarEnlacesFinales(form, { urlArticulo, urlInicio });
         return form;
     };
@@ -555,6 +695,20 @@ define([
         errores: [MENSAJES.NATURALEZA_INVALIDA]
     });
 
+    const parametroDeCatalogo = (definicion) => {
+        const encontrados = definicion.filter((parametro) => parametro.tipo === parametros.TIPOS_SOPORTADOS.CATALOGO);
+        return encontrados.length > 0 ? encontrados[0] : null;
+    };
+
+    // RN3-01, RN3-08: el catálogo solo se carga si la naturaleza usa espesor.
+    const cargarCatalogo = (definicion, tipoEspesorId) => {
+        if (parametroDeCatalogo(definicion) === null) return [];
+        if (tipoEspesorId === null) throw errorDeConfiguracion(MENSAJES.SIN_TIPO_ESPESOR);
+        const espesores = cargarEspesores(tipoEspesorId);
+        if (espesores.length === 0) throw errorDeConfiguracion(MENSAJES.SIN_ESPESORES);
+        return espesores;
+    };
+
     // Preparación común del paso 2 y de la creación: una sola copia de la plantilla por solicitud (PT-02).
     const prepararNaturaleza = (configuracion) => {
         const leida = leerConfiguracion(configuracion.id);
@@ -569,6 +723,9 @@ define([
         const definicion = describirParametros(copia, leida.ids);
         const revision = parametros.validarDefinicion(definicion);
         if (!revision.valido) throw errorDeConfiguracion(MENSAJES.CONFIGURACION_INVALIDA(revision.errores));
+        const espesores = cargarCatalogo(definicion, leida.tipoEspesorId);
+        const lineasDeFamilia = cargarFamilias(configuracion.id);
+        if (lineasDeFamilia.length === 0) throw errorDeConfiguracion(MENSAJES.SIN_FAMILIAS);
         return {
             configuracion,
             ids: leida.ids,
@@ -576,16 +733,20 @@ define([
             patronCodigo: leida.patronCodigo,
             tipoRegistro,
             copia,
-            definicion
+            definicion,
+            espesores,
+            lineasDeFamilia
         };
     };
 
-    const mostrarPaso2 = (preparacion, { valoresPrevios, pesoPrevio, errores }) => construirPaso2({
+    const mostrarPaso2 = (preparacion, { valoresPrevios, pesoPrevio, conversionPrevia, errores }) => construirPaso2({
         configuracion: preparacion.configuracion,
         definicion: preparacion.definicion,
         unidadPeso: leerUnidadDePeso(preparacion.copia),
+        espesores: preparacion.espesores,
         valoresPrevios,
         pesoPrevio,
+        conversionPrevia,
         errores,
         urlInicio: urlDelSuitelet()
     });
@@ -593,7 +754,9 @@ define([
     const atenderParametros = (solicitud) => {
         const eleccion = elegirConfiguracion(solicitud);
         if (eleccion.configuracion === null) return paso1ConNaturalezaInvalida(eleccion);
-        return mostrarPaso2(prepararNaturaleza(eleccion.configuracion), { valoresPrevios: [], pesoPrevio: '', errores: [] });
+        return mostrarPaso2(prepararNaturaleza(eleccion.configuracion), {
+            valoresPrevios: [], pesoPrevio: '', conversionPrevia: '', errores: []
+        });
     };
 
     const mostrarDuplicado = ({ configuracionId, duplicado }) => {
@@ -610,19 +773,26 @@ define([
         });
     };
 
-    const guardarArticulo = (preparacion, { valores, peso, codigo, nombre }) => {
+    const guardarArticulo = (preparacion, { valores, peso, conversion, espesor, familia, codigo, nombre }) => {
         const activo = leerCrearActivo();
         const configuracionId = preparacion.configuracion.id;
-        asignarValores(preparacion.copia, { configuracionId, ids: preparacion.ids, valores, peso, codigo, nombre, activo });
+        asignarValores(preparacion.copia, {
+            configuracionId, ids: preparacion.ids, valores, peso, conversion, familia, codigo, nombre, activo
+        });
         const articuloId = preparacion.copia.save({ ignoreMandatoryFields: false });
+        const nombreEspesor = espesor === null ? '' : espesor.nombre;
         log.audit({
             title: TITULOS_LOG.CREADO,
-            details: `ID: ${articuloId}. Código: ${codigo}. Configuración: ${configuracionId}. Estado: ${textoDeEstado(!activo)}.`
+            details: `ID: ${articuloId}. Código: ${codigo}. Configuración: ${configuracionId}. Estado: ${textoDeEstado(!activo)}. `
+                + `Espesor: ${nombreEspesor}. Familia de precio: ${familia.familiaPrecioNombre}. Conversión: ${conversion}.`
         });
         return construirConfirmacion({
             codigo,
             nombre,
             inactivo: !activo,
+            espesor: espesor === null ? null : espesor.nombre,
+            familiaPrecio: familia.familiaPrecioNombre,
+            conversion,
             urlArticulo: urlDelArticulo(preparacion.tipoRegistro, articuloId),
             urlInicio: urlDelSuitelet()
         });
@@ -640,25 +810,52 @@ define([
         return errores.filter((mensaje, posicion) => errores.indexOf(mensaje) === posicion);
     };
 
+    // RN3-02: el espesor elegido ya fue validado contra C-3; se buscan su orden y sus textos.
+    const espesorElegido = (preparacion, valores) => {
+        const catalogo = parametroDeCatalogo(preparacion.definicion);
+        if (catalogo === null) return null;
+        const elegido = String(valores[catalogo.id]);
+        const encontrados = preparacion.espesores.filter((espesor) => espesor.id === elegido);
+        return encontrados.length > 0 ? encontrados[0] : null;
+    };
+
+    const textosDelEspesor = (espesor) => (espesor === null ? {} : {
+        [CAMPO_ESPESOR]: { codigo: espesor.codigo, texto: espesor.texto }
+    });
+
     const atenderCreacion = (solicitud) => {
         const eleccion = elegirConfiguracion(solicitud);
         if (eleccion.configuracion === null) return paso1ConNaturalezaInvalida(eleccion);
         const preparacion = prepararNaturaleza(eleccion.configuracion);
         const valoresCrudos = preparacion.definicion.map((parametro, posicion) => leerParametro(solicitud, campoDeParametro(posicion)));
         const pesoCrudo = leerParametro(solicitud, CAMPOS_FORMULARIO.PESO);
-        const repetirPaso2 = (errores) => mostrarPaso2(preparacion, { valoresPrevios: valoresCrudos, pesoPrevio: pesoCrudo, errores });
-        const captura = parametros.validarValores({ parametros: preparacion.definicion, valoresCrudos, pesoCrudo });
+        const conversionCruda = aCadena(leerParametro(solicitud, CAMPOS_FORMULARIO.CONVERSION));
+        const repetirPaso2 = (errores) => mostrarPaso2(preparacion, {
+            valoresPrevios: valoresCrudos, pesoPrevio: pesoCrudo, conversionPrevia: conversionCruda, errores
+        });
+        const captura = parametros.validarValores({
+            parametros: preparacion.definicion,
+            valoresCrudos,
+            pesoCrudo,
+            conversionCruda,
+            opcionesCatalogo: preparacion.espesores.map((espesor) => espesor.id)
+        });
         if (!captura.valido) return repetirPaso2(captura.errores);
         const erroresDeFormato = validarFormatosDeCaptura(preparacion, captura.valores);
         if (erroresDeFormato.length > 0) return repetirPaso2(erroresDeFormato);
-        const codigo = patron.aplicar({ patron: preparacion.patronCodigo, valores: captura.valores });
-        const nombre = patron.aplicar({ patron: preparacion.patronNombre, valores: captura.valores });
+        const espesor = espesorElegido(preparacion, captura.valores);
+        const familia = familias.resolver({ lineas: preparacion.lineasDeFamilia, orden: espesor === null ? null : espesor.orden });
+        const textos = textosDelEspesor(espesor);
+        const codigo = patron.aplicar({ patron: preparacion.patronCodigo, valores: captura.valores, textos });
+        const nombre = patron.aplicar({ patron: preparacion.patronNombre, valores: captura.valores, textos });
         if (codigo.length > LONGITUD_MAXIMA_CODIGO) return repetirPaso2([MENSAJES.CODIGO_LARGO]);
         const criterios = parametros.armarCriteriosDuplicado({ ids: preparacion.ids, valores: captura.valores });
         asegurarColumnasPermitidas(criterios, preparacion.ids);
         const duplicado = buscarDuplicado(preparacion.configuracion.id, criterios);
         if (duplicado !== null) return mostrarDuplicado({ configuracionId: preparacion.configuracion.id, duplicado });
-        return guardarArticulo(preparacion, { valores: captura.valores, peso: captura.peso, codigo, nombre });
+        return guardarArticulo(preparacion, {
+            valores: captura.valores, peso: captura.peso, conversion: captura.conversion, espesor, familia, codigo, nombre
+        });
     };
 
     const atenderSolicitud = (solicitud) => {

@@ -2,20 +2,21 @@
 
 | Dato | Valor |
 |---|---|
-| Fecha de generación | 2026-11-13 (formatos de marcador: 2026-11-14) |
-| Iteración | A (creación sin cálculo de precios; artículos inactivos) |
+| Fecha de generación | 2026-11-13 (formatos: 2026-11-14; iteración B: 2026-11-18) |
+| Iteración | B: espesor por catálogo, familias de precio y margen por rango, peso, conversión y descripciones; artículos inactivos hasta pasar P3-12 |
 | Suitelet | `customscript_sads_sl_crear_articulo_nat` / `customdeploy_sads_sl_crear_articulo_nat` |
-| User Event | `customscript_sads_ue_naturaleza_config` / `customdeploy_sads_ue_naturaleza_config` |
+| User Events | `customscript_sads_ue_naturaleza_config` / `customdeploy_sads_ue_naturaleza_config`; `customscript_sads_ue_nat_familia` / `customdeploy_sads_ue_nat_familia` |
 | Plataforma | SuiteScript 2.1, `@NModuleScope SameAccount` |
 | Proyecto SDF | Account Customization "Naturaleza de Productos" (`src/manifest.xml`) |
-| Diseño de origen | `planes/2026-11-12_creador-articulos-naturaleza_plan_v2.md` y `planes/2026-11-12_creador-articulos-naturaleza_prompt_v2.md` |
-| Método | Implementación y pruebas Jest sin cuenta NetSuite; los supuestos S-01 a S-16 siguen abiertos hasta probar en `Almetal_SB` |
+| Diseño de origen | Iteración A: `planes/2026-11-12_creador-articulos-naturaleza_plan_v2.md` y `..._prompt_v2.md`. Iteración B: `planes/2026-11-17_creador-articulos-naturaleza_plan_v5.md` y `..._prompt_v3.md` |
+| Método | Implementación y pruebas Jest sin cuenta NetSuite; los supuestos S-01 a S-16 y S3-01 a S3-11 siguen abiertos hasta probar en `Almetal_SB` |
 
 ## Contenido
 1. [Resumen](#1-resumen)
 2. [Arquitectura](#2-arquitectura)
 3. [Flujo del Suitelet](#3-flujo-del-suitelet)
 4. [Guía para usuarios técnicos](#4-guía-para-usuarios-técnicos)
+4B. [Iteración B: espesores, familias, peso y conversión](#4b-iteración-b-espesores-familias-peso-y-conversión)
 5. [Campos del formulario](#5-campos-del-formulario)
 6. [Consultas SuiteQL](#6-consultas-suiteql)
 7. [User Event de configuración](#7-user-event-de-configuración)
@@ -36,13 +37,17 @@ Un usuario con permiso elige una naturaleza de producto, captura sus parámetros
 El Suitelet copia el artículo plantilla de la naturaleza y crea el artículo nuevo.
 El código (`itemid`) y el nombre (`displayname`) se generan con los patrones de la configuración.
 El código de proveedor (`vendorname`) recibe el nombre generado; UPC y MPN quedan vacíos.
-En iteración A el artículo se crea inactivo y conserva los precios de la plantilla (R-02).
-Un User Event sobre el registro de configuración impide guardar configuraciones que rompan el CS, el UE de artículo o el Suitelet.
+Iteración B: el espesor se elige de un catálogo; la familia de precio y la de margen se asignan por rango de espesor; peso y conversión se capturan; las descripciones de compra y venta reciben el nombre.
+La cadena existente de campos fórmula y workflow calcula el precio a partir de la familia y la conversión (supuesto S3-05).
+El artículo se crea inactivo hasta que P3-12 confirme el precio en sandbox (DA3-05).
+Un User Event sobre el registro de configuración y otro sobre las familias por espesor impiden guardar configuraciones inválidas.
 
 | Componente | Archivo | Tipo | Responsabilidad |
 |---|---|---|---|
 | Suitelet | `SADS_SL_crear_articulo_nat.js` | Suitelet 2.1 | Paso 1, paso 2, creación, duplicado y confirmación |
-| UE de configuración | `SADS_UE_naturaleza_config.js` | UserEventScript 2.1 | `beforeSubmit` CREATE, EDIT y XEDIT; RN-12 a RN-17 |
+| UE de configuración | `SADS_UE_naturaleza_config.js` | UserEventScript 2.1 | `beforeSubmit` CREATE, EDIT y XEDIT; RN-12 a RN-17, RN3-08, RN3-09 |
+| UE de familias | `SADS_UE_nat_familia.js` | UserEventScript 2.1 | `beforeSubmit` CREATE, EDIT y XEDIT del registro de familias; RN3-05 a RN3-07 |
+| Familias | `domain/SADS_naturaleza_familias.js` | Módulo AMD sin `N/` | Validar rangos y resolver la familia de un espesor |
 | Formato | `domain/SADS_naturaleza_config_formato.js` | Módulo AMD sin `N/` (existente) | Contrato del JSON y errores de dominio |
 | Patrones | `domain/SADS_naturaleza_patron.js` | Módulo AMD sin `N/` | Extraer, validar y aplicar marcadores `{id}` |
 | Parámetros | `domain/SADS_naturaleza_parametros.js` | Módulo AMD sin `N/` | IDs seguros, definición, valores capturados y criterios de duplicado |
@@ -199,6 +204,78 @@ En el código los lados van pegados sin separador: capture siempre el ancho como
 Unidades: largo y ancho en pies; espesor en pulgadas; el script no convierte unidades.
 Sin plantilla, la configuración sigue funcionando para el CS y el UE de artículo, pero no aparece en el paso 1 (R-09).
 
+## 4B. Iteración B: espesores, familias, peso y conversión
+### Objetos nuevos
+| Objeto | ID | Uso |
+|---|---|---|
+| Lista | `customlist_sads_tipo_espesor` | Fracción de pulgada, Calibre, Milímetros, Cédula |
+| Registro | `customrecord_sads_espesor` ("SADS - Espesor") | Catálogo de espesores |
+| Campo de artículo | `custitem_sads_nat_espesor` | SELECT al catálogo; compartido por todas las naturalezas |
+| Campo de configuración | `custrecord_sads_naturaleza_tipo_esp` | Tipo de espesor de la naturaleza |
+| Registro hijo | `customrecord_sads_nat_familia` ("SADS - Familia por Espesor") | Sublista de la configuración: familias por rango |
+| User Event | `customscript_sads_ue_nat_familia` | Valida cada línea de familia |
+
+Campos del espesor:
+| Campo | ID | Regla |
+|---|---|---|
+| Nombre | `name` | Texto del select en el Suitelet, por ejemplo `1/2"`. |
+| Tipo de Espesor | `custrecord_sads_esp_tipo` | Las naturalezas del mismo tipo ven los mismos espesores (RN3-01, DA3-04). |
+| Texto para Nombre | `custrecord_sads_esp_texto` | Lo escribe `{id:texto}`, por ejemplo `1/2''`. |
+| Segmento para Código | `custrecord_sads_esp_codigo` | Lo escribe `{id:codigo}`, por ejemplo `050`. Único por tipo (RN3-03). |
+| Orden (grosor) | `custrecord_sads_esp_orden` | Grosor equivalente; define los rangos. Fracciones: pulgadas decimales. Milímetros: el número. Calibres: grosor en mm (S3-04). Cédulas: número. |
+
+Familias por rango (sublista de la configuración):
+| Campo | ID | Regla |
+|---|---|---|
+| Espesor Desde | `custrecord_sads_natfam_desde` | Inclusivo; vacío junto con Hasta = familia única (RN3-05). |
+| Espesor Hasta | `custrecord_sads_natfam_hasta` | Inclusivo; Desde ≤ Hasta; del tipo de la naturaleza (RN3-06). |
+| Familia de Precio | `custrecord_sads_natfam_precio` | Se escribe en `custitem_pfp_famprecios_`. |
+| Familia de Margen | `custrecord_sads_natfam_margen` | Se escribe en `custitem_pfp_fammargenes_`. |
+
+### Configuración de placas
+1. Capturar los espesores de placa con tipo "Fracción de pulgada":
+   | Nombre | Texto | Código | Orden |
+   |---|---|---|---|
+   | 3/16" | 3/16'' | 018 | 0.1875 |
+   | 1/2" | 1/2'' | 050 | 0.5 |
+   | 5/8" | 5/8'' | 062 | 0.625 |
+   | 3/4" | 3/4'' | 075 | 0.75 |
+   | 1 1/2" | 1 1/2'' | 150 | 1.5 |
+2. En la configuración de placas:
+   | Campo | Valor |
+   |---|---|
+   | JSON | `["custitem_sads_nat_pla_lado_a","custitem_sads_nat_pla_lado_b","custitem_sads_nat_espesor"]` |
+   | Tipo de Espesor | Fracción de pulgada |
+   | Patrón de Código | `PLA36{custitem_sads_nat_espesor:codigo}{custitem_sads_nat_pla_lado_a}{custitem_sads_nat_pla_lado_b}` |
+   | Patrón de Nombre | `Placa Acero TA36 {custitem_sads_nat_espesor:texto} {custitem_sads_nat_pla_lado_a}'x{custitem_sads_nat_pla_lado_b}'` |
+3. En la sublista de familias: 3/16" a 5/8" → FAM68; 3/4" a 1 1/2" → FAM069, cada una con su familia de margen.
+4. Resultado con 1/2", 6, 20: código `PLA36050620`; nombre, descripción de compra y de venta `Placa Acero TA36 1/2'' 6'x20'`; familia FAM68.
+
+Una naturaleza sin espesor no lleva el campo en el JSON ni tipo de espesor, y tiene una sola línea de familia sin rango (RN3-07).
+El marcador del espesor solo admite `:codigo` o `:texto`; `centesimas3` y `fraccion16` siguen disponibles para parámetros numéricos (RN3-09).
+El campo anterior `custitem_sads_nat_pla_espesor` (decimal) deja de usarse en la configuración de placas (R3-06).
+
+### Lo que escribe el Suitelet además de iteración A
+| Campo del artículo | Valor | Regla |
+|---|---|---|
+| `custitem_sads_nat_espesor` | Espesor elegido | RN3-02 |
+| `weight` y `custitem_drt_ci_precio_teorico` | Peso capturado (kg; el segundo es informativo) | RN3-10 |
+| `custitem_alm_articulo_conversionunidad` | Conversión capturada, > 0 | RN3-11 |
+| `custitem_pfp_famprecios_` y `custitem_pfp_fammargenes_` | Familias de la línea del rango | RN3-04 |
+| `purchasedescription` y `salesdescription` | Nombre generado | RN3-12 |
+
+Nuevos campos del formulario: el espesor es un SELECT obligatorio en `custpage_par_<n>`; `custpage_conversion` (FLOAT, obligatorio); la confirmación agrega `custpage_espesor_texto`, `custpage_familia_texto` y `custpage_conversion_texto`.
+
+### Consultas nuevas
+| ID | Tabla | Filtros | Uso |
+|---|---|---|---|
+| C-3 | `customrecord_sads_espesor` | Activos; tipo = `?`; orden por `custrecord_sads_esp_orden` | Catálogo del paso 2 |
+| C-4 | `customrecord_sads_nat_familia` con dos LEFT JOIN a espesores | Activas; configuración = `?` | Resolver familia (Suitelet) |
+| C-5 | Configuración padre y líneas hermanas activas (excluye la propia) | Configuración = `?`; `id <> ?` | UE de familias |
+| C-6 | `customrecord_sads_espesor` | `id IN (?, ?)` | Orden y tipo de Desde y Hasta (UE de familias) |
+Supuesto S3-11: columnas SuiteQL con el mismo nombre que su scriptid.
+Gobernanza: paso 2 ~51 unidades; creación ~81 más el workflow; UE de familias ~30; límite 1,000.
+
 ## 5. Campos del formulario
 | ID | Tipo | Paso | Uso |
 |---|---|---|---|
@@ -276,7 +353,20 @@ Error inesperado: `log.error` con detalle y se relanza el error original.
 | RN-14 | Si la configuración tiene plantilla, los dos patrones son obligatorios. |
 | RN-15 | Cada marcador de un patrón es un ID del JSON; llaves sin cerrar o vacías son error. |
 | RN-16 | Si la configuración tiene plantilla, su valor es un entero positivo que corresponde a un artículo existente. |
-| RN-17 | Un marcador `{id:formato}` usa un formato de `FORMATOS` (`centesimas3`, `fraccion16`); el UE rechaza otro formato y el Suitelet rechaza en el paso 2 un valor que no cabe en su formato (D-13, D-14). |
+| RN-17 | Un marcador `{id:formato}` usa un formato de `FORMATOS` (`centesimas3`, `fraccion16`, `codigo`, `texto`); el UE rechaza otro formato y el Suitelet rechaza en el paso 2 un valor que no cabe en su formato (D-13, D-14). |
+| RN3-01 | El catálogo de espesores de una naturaleza son los espesores activos del tipo de espesor de su configuración; naturalezas del mismo tipo ven los mismos espesores. |
+| RN3-02 | El espesor del artículo se elige del catálogo de su naturaleza; un ID fuera del catálogo se rechaza. |
+| RN3-03 | En un mismo tipo, código y orden de espesor son únicos (responsabilidad de los técnicos). |
+| RN3-04 | Familia de precio y de margen del artículo = las de la única línea cuyo rango contiene el orden del espesor (inclusivo). |
+| RN3-05 | Una línea sin Desde ni Hasta es familia única y debe ser la única línea activa; Desde y Hasta van juntos o ninguno. |
+| RN3-06 | Rangos sin traslape; Desde ≤ Hasta por orden; ambos del tipo de espesor de la naturaleza. |
+| RN3-07 | Si la naturaleza no usa espesor, se exige una sola línea de familia única. |
+| RN3-08 | Si el JSON incluye `custitem_sads_nat_espesor`, la configuración requiere tipo de espesor. |
+| RN3-09 | `{id:codigo}` y `{id:texto}` escriben el código y el texto del espesor elegido; solo aplican al campo de espesor, y el campo de espesor solo admite esos formatos. |
+| RN3-10 | El peso capturado (kg) se escribe en `custitem_drt_ci_precio_teorico` (informativo) y en `weight`. |
+| RN3-11 | La conversión de unidad de compra a base es obligatoria y > 0; se escribe en `custitem_alm_articulo_conversionunidad`. |
+| RN3-12 | `purchasedescription` y `salesdescription` = nombre generado. |
+| RN3-13 | Ningún otro campo se escribe; el resto viene de la plantilla. |
 
 ## 9. Deployments, rol y permisos
 Suitelet (`customscript_sads_sl_crear_articulo_nat.xml`):
@@ -346,9 +436,15 @@ Iteración A (sandbox `Almetal_SB`):
 5. Configurar la audiencia del Suitelet (roles con `LIST_ITEM` CREATE y `LIST_CUSTRECORDENTRY` VIEW).
 6. Ejecutar P-14, P-15, P-19, P-20 y P-21; confirmar S-01 a S-16 (S-06 retirado).
 
-Iteración B (fuera de esta entrega): importar a SDF los campos fórmula de precios; plan v3; cálculo de precios; `custscript_sads_sl_art_activo` = T.
-Producción: solo después de la iteración B; re-aplicar la audiencia después de cada despliegue (R-10).
-Reversión: deployment del Suitelet a inactivo; los artículos creados se inactivan a mano; el UE de configuración se puede inactivar sin afectar al CS ni al UE de artículo.
+Iteración B (sandbox `Almetal_SB`):
+1. `npm test` en verde; `project:deploy` (lista de tipos, registro de espesores, campo `custitem_sads_nat_espesor`, registro de familias, campo de tipo en la configuración, UE de familias).
+2. Si `project:validate` rechaza las referencias a `customrecord_pfp_famprecios` o `customrecord_pfp_fammargenes_`, importarlos al proyecto (`object:import`) antes de desplegar.
+3. Técnicos: capturar espesores y familias de placas; actualizar la configuración de placas (sección 4B).
+4. Revisar que el workflow de precios se ejecute en la creación desde script (R3-01).
+5. Inactivar o borrar los artículos de prueba de iteración A (R3-06).
+6. Ejecutar P3-12 y P3-15; con P3-12 aprobado, cambiar `custscript_sads_sl_art_activo` a T en el deployment (sin código).
+Producción: después de sandbox; re-aplicar la audiencia después de cada despliegue (R-10); capturar espesores y familias (los IDs internos difieren entre cuentas).
+Reversión: configuración de placas con JSON y patrones de iteración A; inactivar `customdeploy_sads_ue_nat_familia`; deployment del Suitelet a inactivo; los artículos creados se inactivan a mano.
 
 ## 13. Supuestos
 | ID | Supuesto | Cómo se confirma |
@@ -369,6 +465,17 @@ Reversión: deployment del Suitelet a inactivo; los artículos creados se inacti
 | S-14 | Longitud máxima de `itemid` de 60 caracteres. | Prueba manual |
 | S-15 | `vendorname` existe como campo de cuerpo; con la función de múltiples proveedores el código vive en la sublista de proveedores. | P-14 |
 | S-16 | Mapa de respaldo de `weightunit`: 1 = lb, 2 = oz, 3 = kg, 4 = g. | Paso 2 en sandbox |
+| S3-01 | `purchasedescription` y `salesdescription` existen en `inventoryitem` y aceptan el nombre generado. | P3-15 |
+| S3-02 | `custitem_drt_ci_precio_teorico` es decimal. | P3-12 |
+| S3-03 | `custitem_alm_articulo_conversionunidad` es decimal. | P3-12 |
+| S3-04 | Orden de calibres = grosor nominal en mm. | Captura de catálogo |
+| S3-05 | El workflow de precios se ejecuta en la creación desde Suitelet. | P3-12 |
+| S3-06 | El parámetro de catálogo se identifica por el ID `custitem_sads_nat_espesor`. | Paso 2 en sandbox |
+| S3-07 | El UE de configuración no ve las líneas del registro hijo. | Captura de familias |
+| S3-08 | La audiencia del Suitelet tiene VIEW sobre familias de precio y de margen. | Creación en sandbox |
+| S3-09 | El UE del registro hijo se ejecuta al guardar líneas desde la sublista del padre. | Captura de familias con traslape |
+| S3-10 | `allowinlineediting` T permite editar las líneas desde la sublista del padre. | Captura de familias |
+| S3-11 | Columnas SuiteQL de los registros nuevos con nombre igual a su scriptid. | Paso 2 en sandbox |
 
 ## 14. Riesgos
 | ID | Enunciado | Consecuencia | Mitigación |
@@ -388,6 +495,12 @@ Reversión: deployment del Suitelet a inactivo; los artículos creados se inacti
 | R-13 | La copia hereda datos de proveedor de la plantilla (UPC, MPN, código de proveedor). | Códigos que no corresponden al artículo procesado. | `vendorname` = nombre; `upccode` y `mpn` vacíos (RN-09); P-14. |
 | R-14 | El ID de la plantilla se captura a mano (D-12). | Un ID de otro artículo existente pasa RN-16 y se copia el artículo equivocado. | P-14; los técnicos verifican el ID al capturarlo. |
 | R-15 | En el código TA36 los lados van pegados sin separador (D-15): `2'x12'` y `21'x2'` producen `212`. | Dos medidas distintas con el mismo código; `save` falla por `itemid` repetido (S-09) y el usuario ve el mensaje genérico. | Capturar siempre el ancho como el lado menor; C-2 compara valores, no códigos. |
+| R3-01 | El workflow de precios podría no ejecutarse cuando el artículo lo crea un script. | Artículo con el precio de la plantilla. | P3-12; revisar contexto del workflow; artículos inactivos hasta pasar P3-12. |
+| R3-03 | Rangos que no cubren un espesor del catálogo. | El Suitelet rechaza ese espesor. | Mensaje claro; los técnicos cubren todo el catálogo. |
+| R3-05 | Conversión capturada a mano. | Precio erróneo propagado por la cadena. | Validación > 0; la confirmación muestra el valor; cálculo automático posterior (DA3-06). |
+| R3-06 | Artículos de placa de iteración A usan `custitem_sads_nat_pla_espesor`. | La búsqueda de duplicados no los detecta. | Inactivar o migrar antes de liberar. |
+| R3-07 | Orden de calibres mal capturado. | Rangos invertidos. | Orden = grosor en mm. |
+| R3-08 | El peso se rotula con la unidad de la plantilla, pero `custitem_drt_ci_precio_teorico` es en kg. | Con una plantilla en otra unidad, el peso informativo queda en otra unidad. | Plantillas con unidad de peso kg. |
 
 ## 15. Troubleshooting y bitácora
 | Síntoma | Causa probable | Solución |
@@ -420,20 +533,35 @@ Bitácora:
 | Suitelet | ERROR | Crear artículo por naturaleza: error de dominio | Error de dominio capturado en `onRequest` |
 | Suitelet | ERROR | Crear artículo por naturaleza: error inesperado | Consulta, `record.copy`, `save` u otro |
 | UE de configuración | ERROR | Validación de configuración de naturaleza: error inesperado | Error no previsto; se relanza |
+| UE de familias | ERROR | Validación de familia por espesor: error inesperado | Error no previsto; se relanza |
+
+Mensajes de iteración B:
+| Mensaje | Causa | Solución |
+|---|---|---|
+| "La naturaleza usa espesor pero no tiene tipo de espesor." | JSON con `custitem_sads_nat_espesor` sin Tipo de Espesor. | Capturar el tipo en la configuración (RN3-08). |
+| "No hay espesores activos para el tipo de esta naturaleza." | Catálogo vacío o inactivo. | Capturar espesores del tipo. |
+| "La naturaleza no tiene familias de precio configuradas." | Sublista de familias vacía. | Capturar al menos una línea. |
+| "No hay una familia de precios única para este espesor en la naturaleza." | Ningún rango contiene el espesor, o hay traslape, o una familia única junto con rangos. | Revisar la sublista de familias (RN3-04 a RN3-07). |
+| Paso 2: "Espesor: elija un valor de la lista." | Espesor vacío o fuera del catálogo. | Elegir de la lista. |
+| Paso 2: "Conversión unidad de compra a base: capture…" | Conversión vacía o ≤ 0. | Capturar la conversión. |
+| `FAMILIA_NATURALEZA_INVALIDA` | Línea de familia con rango incompleto, invertido, de otro tipo o traslapado. | Corregir los campos citados. |
+| `CONFIGURACION_NATURALEZA_INVALIDA`: "…es un catálogo y requiere el formato codigo o texto." | Marcador del espesor sin formato. | Usar `{custitem_sads_nat_espesor:codigo}` o `:texto`. |
 
 Ver los logs: Customization > Scripting > Script Deployments > deployment > pestaña Execution Log; filtrar por Error o Audit.
 
 ## 16. Pruebas
 Comando: `npm test` (no requiere cuenta NetSuite).
-Resultado del 2026-11-14: 7 suites aprobadas de 7; 399 pruebas aprobadas de 399.
+Resultado del 2026-11-18: 9 suites aprobadas de 9; 487 pruebas aprobadas de 487.
 
 | Suite | Pruebas | Alcance |
 |---|---|---|
-| `SADS_naturaleza_patron.test.js` | 115 | P-01 a P-04; formatos `centesimas3` y `fraccion16`; ejemplo TA36; regla de dependencia |
-| `SADS_naturaleza_parametros.test.js` | 59 | P-05 a P-08; regla de dependencia |
+| `SADS_naturaleza_patron.test.js` | 123 | P-01 a P-04; formatos `centesimas3`, `fraccion16`, `codigo`, `texto` (P3-09, P3-16); regla de dependencia |
+| `SADS_naturaleza_parametros.test.js` | 77 | P-05 a P-08; catálogo y conversión (P3-08, P3-11); regla de dependencia |
+| `SADS_naturaleza_familias.test.js` | 29 | P3-01 a P3-07; regla de dependencia |
 | `SADS_naturaleza_articulo_ns.test.js` | 7 | Adaptador con y sin resultado |
-| `SADS_SL_crear_articulo_nat.test.js` | 69 | P-09 a P-13, P-16, P-22; alta TA36 y rechazo de formatos en el paso 2; estructura del entry point |
-| `SADS_UE_naturaleza_config.test.js` | 38 | P-17, P-18; formatos de marcador (RN-17); errores inesperados |
+| `SADS_SL_crear_articulo_nat.test.js` | 85 | P-09 a P-13, P-16, P-22; P3-08, P3-10, P3-11, P3-17, P3-18; estructura del entry point |
+| `SADS_UE_naturaleza_config.test.js` | 43 | P-17, P-18; RN-17; P3-13, P3-16; errores inesperados |
+| `SADS_UE_nat_familia.test.js` | 12 | P3-14, P3-19; RN3-07; errores inesperados |
 | `SADS_naturaleza_config_formato.test.js` | 109 | Contrato del JSON (sin cambios) |
 | `sample-test.js` | 2 | Plantilla de SuiteCloud |
 
@@ -485,7 +613,15 @@ Cambios posteriores al prompt v2 (decisiones del usuario del 2026-11-14):
 | D-14 | Espesor en el nombre: fracción de pulgada hasta 1/16. | Formato `fraccion16`; cierra DA-05 para el nombre. |
 | D-15 | Ancho y largo en pies enteros. | Los `custitem` de lados se crean como Entero; cierra DA-04. Sin cambio de código. |
 
+Desviaciones de la iteración B respecto del prompt v3:
+| Punto | Decisión | Motivo |
+|---|---|---|
+| `parametros.validarValores` con `conversionCruda` omitida (undefined). | No evalúa la conversión y devuelve `conversion` null. | Compatibilidad con las pruebas existentes; el Suitelet siempre envía texto (vacío si falta), así que la conversión siempre se valida al crear. |
+| Línea plana de familias. | Agrega `desdeId` y `hastaId`. | Distinguir "sin espesor" de "espesor sin orden" en `esUnica`. |
+| Mensajes de dominio con punto y coma. | Se usan dos puntos. | Los errores se unen con "; " en el mensaje del UE. |
+| Lista de formatos en el mensaje de formato desconocido. | Incluye `codigo` y `texto`. | Son formatos válidos de RN3-09. |
+
 Hallazgo fuera de alcance: `validarIds` no rechaza IDs repetidos en el JSON (no lo exige RN-13). Con un ID repetido el paso 2 muestra dos campos para el mismo `custitem` y prevalece el último valor.
 
 ## 18. Fuentes
-Plan v2 y prompt v2 del creador de artículos; Object XML y código del repositorio; pruebas Jest del 2026-11-13.
+Plan v2, prompt v2, plan v5 y prompt v3 del creador de artículos; Object XML y código del repositorio; pruebas Jest del 2026-11-18.

@@ -3,7 +3,7 @@
  * @NScriptType UserEventScript
  * @NModuleScope SameAccount
  * @description Valida la captura manual del registro de configuración de Naturaleza de Productos antes de guardarlo:
- * JSON de parámetros, artículo plantilla y patrones de nombre y código (RN-12 a RN-17).
+ * JSON de parámetros, artículo plantilla, patrones de nombre y código y tipo de espesor (RN-12 a RN-17, RN3-08, RN3-09).
  */
 define([
     'N/error',
@@ -22,8 +22,12 @@ define([
         JSON: 'custrecord_sads_naturaleza_config',
         PLANTILLA: 'custrecord_sads_naturaleza_plantilla',
         PATRON_NOMBRE: 'custrecord_sads_naturaleza_patron_nom',
-        PATRON_CODIGO: 'custrecord_sads_naturaleza_patron_cod'
+        PATRON_CODIGO: 'custrecord_sads_naturaleza_patron_cod',
+        TIPO_ESPESOR: 'custrecord_sads_naturaleza_tipo_esp'
     });
+
+    // S3-06: campo de artículo del catálogo de espesores; sus marcadores solo admiten codigo o texto (RN3-09).
+    const CAMPO_ESPESOR = 'custitem_sads_nat_espesor';
 
     const ETIQUETAS_PATRON = Object.freeze({
         CODIGO: 'Patrón de código',
@@ -33,7 +37,8 @@ define([
     const MENSAJES = Object.freeze({
         PLANTILLA_NO_NUMERICA: 'El artículo plantilla debe ser un ID interno numérico.',
         PLANTILLA_INEXISTENTE: (id) => `El artículo plantilla ${id} no existe.`,
-        PATRON_OBLIGATORIO: (etiqueta) => `${etiqueta}: es obligatorio cuando hay artículo plantilla.`
+        PATRON_OBLIGATORIO: (etiqueta) => `${etiqueta}: es obligatorio cuando hay artículo plantilla.`,
+        SIN_TIPO_ESPESOR: 'La configuración usa espesor y requiere Tipo de Espesor.'
     });
 
     const TITULO_LOG_ERROR = 'Validación de configuración de naturaleza: error inesperado';
@@ -61,9 +66,10 @@ define([
     /**
      * Lee el estado final de los campos validados.
      * @param {Object} context - Contexto de beforeSubmit.
-     * @returns {{json: *, plantilla: string, patronNombre: string, patronCodigo: string}} Objeto plano.
+     * @returns {{json: *, plantilla: string, patronNombre: string, patronCodigo: string, tipoEspesor: string}} Objeto plano.
      */
     const leerConfiguracion = (context) => ({
+        tipoEspesor: aCadena(leerValorFinal(context, CAMPOS_CONFIGURACION.TIPO_ESPESOR)).trim(),
         json: leerValorFinal(context, CAMPOS_CONFIGURACION.JSON),
         plantilla: aCadena(leerValorFinal(context, CAMPOS_CONFIGURACION.PLANTILLA)).trim(),
         patronNombre: aCadena(leerValorFinal(context, CAMPOS_CONFIGURACION.PATRON_NOMBRE)),
@@ -77,18 +83,24 @@ define([
         return [];
     };
 
-    // RN-14 y RN-15.
+    // RN-14, RN-15 y RN3-09.
     const validarPatron = (texto, etiqueta, ids) => {
         if (texto.trim() === '') return [MENSAJES.PATRON_OBLIGATORIO(etiqueta)];
-        return patron.validar({ patron: texto, idsPermitidos: ids }).errores.map((mensaje) => `${etiqueta}: ${mensaje}`);
+        const idsCatalogo = ids.indexOf(CAMPO_ESPESOR) === -1 ? [] : [CAMPO_ESPESOR];
+        return patron.validar({ patron: texto, idsPermitidos: ids, idsCatalogo }).errores.map((mensaje) => `${etiqueta}: ${mensaje}`);
     };
 
+    // RN3-08.
+    const validarTipoEspesor = (ids, tipoEspesor) => (
+        ids.indexOf(CAMPO_ESPESOR) !== -1 && tipoEspesor === '' ? [MENSAJES.SIN_TIPO_ESPESOR] : []
+    );
+
     /**
-     * Aplica RN-12 a RN-17 al estado final del registro.
-     * @param {{json: *, plantilla: string, patronNombre: string, patronCodigo: string}} configuracion
+     * Aplica RN-12 a RN-17, RN3-08 y RN3-09 al estado final del registro.
+     * @param {{json: *, plantilla: string, patronNombre: string, patronCodigo: string, tipoEspesor: string}} configuracion
      * @returns {string[]} Mensajes de error; vacío si la configuración es válida.
      */
-    const validarConfiguracion = ({ json, plantilla, patronNombre, patronCodigo }) => {
+    const validarConfiguracion = ({ json, plantilla, patronNombre, patronCodigo, tipoEspesor }) => {
         let ids;
         try {
             ids = formato.parsearConfiguracion(json);
@@ -96,7 +108,7 @@ define([
             if (!formato.esErrorDeDominio(errorDeFormato)) throw errorDeFormato;
             return [errorDeFormato.message];
         }
-        const errores = parametros.validarIds(ids).errores.slice();
+        const errores = parametros.validarIds(ids).errores.concat(validarTipoEspesor(ids, tipoEspesor));
         if (plantilla === '') return errores;
         return errores
             .concat(validarPlantilla(plantilla))
@@ -105,7 +117,7 @@ define([
     };
 
     /**
-     * Rechaza el guardado de una configuración que viole RN-12 a RN-17. Solo actúa en CREATE, EDIT y XEDIT.
+     * Rechaza el guardado de una configuración que viole RN-12 a RN-17, RN3-08 o RN3-09. Solo actúa en CREATE, EDIT y XEDIT.
      * Sin plantilla, los patrones se permiten sin validar.
      * @param {Object} context - Contexto de beforeSubmit.
      * @returns {void}

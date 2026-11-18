@@ -230,9 +230,9 @@ describe('formatos de marcador (D-13, D-14, RN-17)', () => {
     const NOMBRE_TA36 = "Placa Acero TA36 {custitem_pl_espesor:fraccion16}'' {custitem_pl_ancho}'x{custitem_pl_largo}'";
     const VALORES_TA36 = Object.freeze({ custitem_pl_espesor: 0.5, custitem_pl_ancho: 6, custitem_pl_largo: 20 });
 
-    test('FORMATOS está congelado con centesimas3 y fraccion16', () => {
+    test('FORMATOS está congelado con centesimas3, fraccion16, codigo y texto', () => {
         expect(Object.isFrozen(patron.FORMATOS)).toBe(true);
-        expect(patron.FORMATOS).toEqual({ CENTESIMAS_3: 'centesimas3', FRACCION_16: 'fraccion16' });
+        expect(patron.FORMATOS).toEqual({ CENTESIMAS_3: 'centesimas3', FRACCION_16: 'fraccion16', CODIGO: 'codigo', TEXTO: 'texto' });
     });
 
     test('ejemplo de placa TA36: código PLA36050620 y nombre con fracción', () => {
@@ -322,20 +322,20 @@ describe('formatos de marcador (D-13, D-14, RN-17)', () => {
         const resultado = patron.validar({ patron: 'PL{custitem_pl_espesor:fraccion}', idsPermitidos: IDS_TA36 });
         expect(resultado).toEqual({
             valido: false,
-            errores: ['El formato fraccion del marcador {custitem_pl_espesor} no existe. Formatos válidos: centesimas3, fraccion16.']
+            errores: ['El formato fraccion del marcador {custitem_pl_espesor} no existe. Formatos válidos: centesimas3, fraccion16, codigo, texto.']
         });
     });
 
     test('validar no cita un formato no citable', () => {
         const resultado = patron.validar({ patron: '{custitem_pl_espesor:<b>x</b>}', idsPermitidos: IDS_TA36 });
-        expect(resultado.errores).toEqual(['Un marcador del patrón tiene un formato que no existe. Formatos válidos: centesimas3, fraccion16.']);
+        expect(resultado.errores).toEqual(['Un marcador del patrón tiene un formato que no existe. Formatos válidos: centesimas3, fraccion16, codigo, texto.']);
     });
 
     test('validar reporta ID fuera del JSON y formato desconocido a la vez', () => {
         const resultado = patron.validar({ patron: '{custitem_otro:centesimas3}{custitem_pl_largo:xx}', idsPermitidos: IDS_TA36 });
         expect(resultado.errores).toEqual([
             'El marcador {custitem_otro} no es un ID de la configuración.',
-            'El formato xx del marcador {custitem_pl_largo} no existe. Formatos válidos: centesimas3, fraccion16.'
+            'El formato xx del marcador {custitem_pl_largo} no existe. Formatos válidos: centesimas3, fraccion16, codigo, texto.'
         ]);
     });
 
@@ -383,5 +383,60 @@ describe('formatos de marcador (D-13, D-14, RN-17)', () => {
             expect(patron.validarFormatos({ patron: NOMBRE_TA36, valores: {}, etiquetas })).toEqual({ valido: true, errores: [] });
             expect(patron.validarFormatos()).toEqual({ valido: true, errores: [] });
         });
+    });
+});
+
+describe('formatos de catálogo codigo y texto (RN3-09)', () => {
+    const IDS = ['custitem_sads_nat_pla_lado_a', 'custitem_sads_nat_pla_lado_b', 'custitem_sads_nat_espesor'];
+    const CATALOGO = ['custitem_sads_nat_espesor'];
+    const CODIGO = 'PLA36{custitem_sads_nat_espesor:codigo}{custitem_sads_nat_pla_lado_a}{custitem_sads_nat_pla_lado_b}';
+    const NOMBRE = "Placa Acero TA36 {custitem_sads_nat_espesor:texto} {custitem_sads_nat_pla_lado_a}'x{custitem_sads_nat_pla_lado_b}'";
+    const VALORES = Object.freeze({ custitem_sads_nat_pla_lado_a: 6, custitem_sads_nat_pla_lado_b: 20, custitem_sads_nat_espesor: 502 });
+    const TEXTOS = Object.freeze({ custitem_sads_nat_espesor: { codigo: '050', texto: "1/2''" } });
+
+    test('P3-09: código PLA36050620 y nombre con el texto del espesor', () => {
+        expect(patron.aplicar({ patron: CODIGO, valores: VALORES, textos: TEXTOS })).toBe('PLA36050620');
+        expect(patron.aplicar({ patron: NOMBRE, valores: VALORES, textos: TEXTOS })).toBe("Placa Acero TA36 1/2'' 6'x20'");
+    });
+
+    test('los patrones de placa son válidos con el espesor como catálogo', () => {
+        expect(patron.validar({ patron: CODIGO, idsPermitidos: IDS, idsCatalogo: CATALOGO })).toEqual({ valido: true, errores: [] });
+        expect(patron.validar({ patron: NOMBRE, idsPermitidos: IDS, idsCatalogo: CATALOGO })).toEqual({ valido: true, errores: [] });
+    });
+
+    test('P3-16: el campo de catálogo sin formato o con formato numérico se rechaza', () => {
+        expect(patron.validar({ patron: 'PL{custitem_sads_nat_espesor}', idsPermitidos: IDS, idsCatalogo: CATALOGO }).errores).toEqual([
+            'El marcador {custitem_sads_nat_espesor} es un catálogo y requiere el formato codigo o texto.'
+        ]);
+        expect(patron.validar({ patron: 'PL{custitem_sads_nat_espesor:centesimas3}', idsPermitidos: IDS, idsCatalogo: CATALOGO }).valido).toBe(false);
+    });
+
+    test('P3-16: codigo o texto en un campo que no es catálogo se rechaza una vez', () => {
+        const resultado = patron.validar({
+            patron: '{custitem_sads_nat_pla_lado_a:codigo}{custitem_sads_nat_pla_lado_b:codigo}',
+            idsPermitidos: IDS,
+            idsCatalogo: CATALOGO
+        });
+        expect(resultado.errores).toEqual(['El formato codigo solo aplica al campo de espesor.']);
+    });
+
+    test('sin idsCatalogo, codigo y texto se rechazan', () => {
+        expect(patron.validar({ patron: CODIGO, idsPermitidos: IDS }).errores).toEqual(['El formato codigo solo aplica al campo de espesor.']);
+    });
+
+    test('aplicar lanza PATRON_INVALIDO si falta el texto del espesor o viene vacío', () => {
+        const sinTextos = esperarPatronInvalido(() => patron.aplicar({ patron: CODIGO, valores: VALORES }));
+        expect(sinTextos.message).toBe('Falta el texto del espesor para el marcador {custitem_sads_nat_espesor}.');
+        esperarPatronInvalido(() => patron.aplicar({
+            patron: CODIGO, valores: VALORES, textos: { custitem_sads_nat_espesor: { codigo: ' ', texto: 'x' } }
+        }));
+    });
+
+    test('formatearValor no admite formatos de catálogo', () => {
+        esperarPatronInvalido(() => patron.formatearValor(1, 'codigo'));
+    });
+
+    test('validarFormatos ignora codigo y texto', () => {
+        expect(patron.validarFormatos({ patron: NOMBRE, valores: VALORES, etiquetas: {} })).toEqual({ valido: true, errores: [] });
     });
 });

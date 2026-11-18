@@ -39,9 +39,9 @@ describe('constantes', () => {
         expect(parametros.ERRORES).toEqual({ PARAMETRO_INVALIDO: 'PARAMETRO_INVALIDO' });
     });
 
-    test('TIPOS_SOPORTADOS está congelado con float e integer (S-03)', () => {
+    test('TIPOS_SOPORTADOS está congelado con float, integer y catalogo (S-03, S3-06)', () => {
         expect(Object.isFrozen(parametros.TIPOS_SOPORTADOS)).toBe(true);
-        expect(Object.values(parametros.TIPOS_SOPORTADOS).sort()).toEqual(['float', 'integer']);
+        expect(parametros.TIPOS_SOPORTADOS).toEqual({ FLOAT: 'float', INTEGER: 'integer', CATALOGO: 'catalogo' });
     });
 });
 
@@ -199,7 +199,83 @@ describe('validarValores', () => {
     });
 
     test('no lanza con argumentos ausentes', () => {
-        expect(parametros.validarValores()).toEqual({ valido: false, errores: [MENSAJE_NUMERO('Peso')], valores: {}, peso: null });
+        expect(parametros.validarValores()).toEqual({
+            valido: false, errores: [MENSAJE_NUMERO('Peso')], valores: {}, peso: null, conversion: null
+        });
+    });
+});
+
+describe('catálogo de espesor y conversión (iteración B)', () => {
+    const DEFINICION_PLACA = Object.freeze([
+        { id: 'custitem_sads_nat_pla_lado_a', etiqueta: 'Lado A', tipo: 'integer' },
+        { id: 'custitem_sads_nat_pla_lado_b', etiqueta: 'Lado B', tipo: 'integer' },
+        { id: 'custitem_sads_nat_espesor', etiqueta: 'Espesor', tipo: 'catalogo' }
+    ]);
+    const OPCIONES = Object.freeze(['501', '502', '503']);
+    const validar = (ajustes) => parametros.validarValores(Object.assign({
+        parametros: DEFINICION_PLACA,
+        valoresCrudos: ['6', '20', '502'],
+        pesoCrudo: '1225.5',
+        conversionCruda: '1225.5',
+        opcionesCatalogo: OPCIONES
+    }, ajustes));
+
+    test('validarDefinicion acepta un parámetro de catálogo', () => {
+        expect(parametros.validarDefinicion(DEFINICION_PLACA)).toEqual({ valido: true, errores: [] });
+    });
+
+    test('validarDefinicion rechaza más de un parámetro de catálogo', () => {
+        const resultado = parametros.validarDefinicion(DEFINICION_PLACA.concat([{ id: 'custitem_otro', etiqueta: 'Otro', tipo: 'catalogo' }]));
+        expect(resultado).toEqual({ valido: false, errores: ['La configuración admite un solo campo de espesor.'] });
+    });
+
+    test('RN3-02: un espesor del catálogo se guarda como número y la conversión se devuelve', () => {
+        const resultado = validar();
+        expect(resultado.valido).toBe(true);
+        expect(resultado.valores).toEqual({ custitem_sads_nat_pla_lado_a: 6, custitem_sads_nat_pla_lado_b: 20, custitem_sads_nat_espesor: 502 });
+        expect(resultado.peso).toBe(1225.5);
+        expect(resultado.conversion).toBe(1225.5);
+    });
+
+    test('RN3-02: acepta opciones numéricas y espacios alrededor', () => {
+        expect(validar({ valoresCrudos: ['6', '20', ' 503 '], opcionesCatalogo: [501, 503] }).valores.custitem_sads_nat_espesor).toBe(503);
+    });
+
+    test.each(['999', '', 'abc', undefined, '0.5'])('P3-08: espesor %p fuera del catálogo se rechaza', (crudo) => {
+        const resultado = validar({ valoresCrudos: ['6', '20', crudo] });
+        expect(resultado.valido).toBe(false);
+        expect(resultado.errores).toEqual(['Espesor: elija un valor de la lista.']);
+        expect(resultado.valores).not.toHaveProperty('custitem_sads_nat_espesor');
+    });
+
+    test('sin opciones de catálogo, cualquier espesor se rechaza', () => {
+        expect(validar({ opcionesCatalogo: undefined }).errores).toEqual(['Espesor: elija un valor de la lista.']);
+    });
+
+    test.each(['', '0', '-1', 'abc', '1,5', null])('P3-11: conversión %p se rechaza', (conversionCruda) => {
+        const resultado = validar({ conversionCruda });
+        expect(resultado.valido).toBe(false);
+        expect(resultado.conversion).toBeNull();
+        expect(resultado.errores).toEqual([
+            'Conversión unidad de compra a base: capture un número mayor que 0 con punto decimal, por ejemplo 0.25.'
+        ]);
+    });
+
+    test('conversión omitida (undefined) no se evalúa', () => {
+        const resultado = validar({ conversionCruda: undefined });
+        expect(resultado.valido).toBe(true);
+        expect(resultado.conversion).toBeNull();
+    });
+
+    test('los criterios de duplicado incluyen el ID del espesor', () => {
+        expect(parametros.armarCriteriosDuplicado({
+            ids: DEFINICION_PLACA.map((parametro) => parametro.id),
+            valores: validar().valores
+        })).toEqual([
+            { columna: 'custitem_sads_nat_pla_lado_a', valor: 6 },
+            { columna: 'custitem_sads_nat_pla_lado_b', valor: 20 },
+            { columna: 'custitem_sads_nat_espesor', valor: 502 }
+        ]);
     });
 });
 

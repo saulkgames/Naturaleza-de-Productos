@@ -77,7 +77,13 @@ const CAPTURA_VALIDA = Object.freeze({
     custpage_par_0: '2',
     custpage_par_1: '0.25',
     custpage_par_2: '4',
-    custpage_peso: '125.5'
+    custpage_peso: '125.5',
+    custpage_conversion: '125.5'
+});
+
+const FAMILIA_UNICA = Object.freeze({
+    id: 1, desde_id: null, desde_orden: null, desde_tipo: null, hasta_id: null, hasta_orden: null, hasta_tipo: null,
+    precio_id: 68, margen_id: 7, precio_nombre: 'FAM68'
 });
 
 const enlace = (destinoEscapado, texto) => `<p><a href="${destinoEscapado}">${texto}</a></p>`;
@@ -144,6 +150,8 @@ const filasPara = (sql, datos) => {
     const copiar = (filas) => filas.map((fila) => Object.assign({}, fila));
     if (/from\s+customrecord_sads_naturaleza_productos\b/i.test(sql)) return copiar(datos.configuraciones);
     if (/from\s+item\b/i.test(sql)) return copiar(datos.duplicados);
+    if (/from\s+customrecord_sads_nat_familia\b/i.test(sql)) return copiar(datos.familias);
+    if (/from\s+customrecord_sads_espesor\b/i.test(sql)) return copiar(datos.espesores);
     throw new Error(`Consulta no esperada en la prueba: ${sql}`);
 };
 
@@ -162,6 +170,8 @@ const prepararEscenario = (ajustes = {}) => {
         errorTextoUnidad: null,
         valorUnidad: '3',
         duplicados: [],
+        familias: [FAMILIA_UNICA],
+        espesores: [],
         crearActivo: false,
         errorDeConsulta: null,
         errorAlGuardar: null,
@@ -286,6 +296,7 @@ describe('estructura del módulo', () => {
             './domain/SADS_naturaleza_config_formato',
             './domain/SADS_naturaleza_patron',
             './domain/SADS_naturaleza_parametros',
+            './domain/SADS_naturaleza_familias',
             './infra/SADS_naturaleza_articulo_ns'
         ]);
     });
@@ -441,7 +452,8 @@ describe('paso 2 (POST parametros)', () => {
                 'custrecord_sads_naturaleza_config',
                 'custrecord_sads_naturaleza_plantilla',
                 'custrecord_sads_naturaleza_patron_nom',
-                'custrecord_sads_naturaleza_patron_cod'
+                'custrecord_sads_naturaleza_patron_cod',
+                'custrecord_sads_naturaleza_tipo_esp'
             ]
         });
         expect(record.copy).toHaveBeenCalledTimes(1);
@@ -575,9 +587,15 @@ describe('creación (POST crear)', () => {
             custitem_pl_espesor: 0.25,
             custitem_pl_largo: 4,
             weight: 125.5,
+            custitem_drt_ci_precio_teorico: 125.5,
+            custitem_alm_articulo_conversionunidad: 125.5,
+            custitem_pfp_famprecios_: '68',
+            custitem_pfp_fammargenes_: '7',
             itemid: 'PL-0.25-4X2',
             displayname: 'PLACA A36 0.25 IN 4 X 2 FT',
             vendorname: 'PLACA A36 0.25 IN 4 X 2 FT',
+            purchasedescription: 'PLACA A36 0.25 IN 4 X 2 FT',
+            salesdescription: 'PLACA A36 0.25 IN 4 X 2 FT',
             upccode: '',
             mpn: '',
             isinactive: true
@@ -598,7 +616,12 @@ describe('creación (POST crear)', () => {
         expect(formulario.campos.custpage_enlace_inicio.defaultValue).toBe(enlace(URL_SUITELET_ESCAPADA, 'Crear otro'));
 
         expect(log.audit).toHaveBeenCalledTimes(1);
-        expect(log.audit.mock.calls[0][0].details).toBe('ID: 777. Código: PL-0.25-4X2. Configuración: 11. Estado: Inactivo.');
+        expect(log.audit.mock.calls[0][0].details).toBe(
+            'ID: 777. Código: PL-0.25-4X2. Configuración: 11. Estado: Inactivo. Espesor: . Familia de precio: FAM68. Conversión: 125.5.'
+        );
+        expect(formulario.campos.custpage_familia_texto.defaultValue).toBe('FAM68');
+        expect(formulario.campos.custpage_conversion_texto.defaultValue).toBe('125.5');
+        expect(formulario.campos.custpage_espesor_texto).toBeUndefined();
         expect(log.error).not.toHaveBeenCalled();
     });
 
@@ -696,7 +719,7 @@ describe('creación (POST crear)', () => {
             custrecord_sads_naturaleza_patron_nom: 'N {custitem_pl_ancho}',
             custrecord_sads_naturaleza_patron_cod: `${'X'.repeat(59)}{custitem_pl_ancho}`
         } });
-        ejecutar(solicitudCrear({ custpage_configuracion: '11', custpage_par_0: '2', custpage_peso: '1' }));
+        ejecutar(solicitudCrear({ custpage_configuracion: '11', custpage_par_0: '2', custpage_peso: '1', custpage_conversion: '1' }));
         expect(copia.save).toHaveBeenCalledTimes(1);
     });
 
@@ -730,7 +753,8 @@ describe('formatos de marcador: placa TA36 (D-13 a D-15)', () => {
         custpage_par_0: '6',
         custpage_par_1: '0.5',
         custpage_par_2: '20',
-        custpage_peso: '1225.5'
+        custpage_peso: '1225.5',
+        custpage_conversion: '1225.5'
     });
 
     test('alta de placa 1/2 x 6 x 20: código PLA36050620 y nombre con fracción', () => {
@@ -857,5 +881,136 @@ describe('manejo global de errores', () => {
         const formulario = ejecutar(solicitudParametros({ custpage_configuracion: '11' }));
         esperarPaginaDeError(formulario, MENSAJES.GENERICO);
         expect(textoDePagina(formulario)).not.toContain('texto crudo');
+    });
+});
+
+describe('iteración B: espesor por catálogo, familias, peso, conversión y descripciones', () => {
+    const CONFIGURACION_B = Object.freeze({
+        custrecord_sads_naturaleza_config: '["custitem_sads_nat_pla_lado_a","custitem_sads_nat_pla_lado_b","custitem_sads_nat_espesor"]',
+        custrecord_sads_naturaleza_plantilla: ID_PLANTILLA,
+        custrecord_sads_naturaleza_patron_nom: "Placa Acero TA36 {custitem_sads_nat_espesor:texto} {custitem_sads_nat_pla_lado_a}'x{custitem_sads_nat_pla_lado_b}'",
+        custrecord_sads_naturaleza_patron_cod: 'PLA36{custitem_sads_nat_espesor:codigo}{custitem_sads_nat_pla_lado_a}{custitem_sads_nat_pla_lado_b}',
+        custrecord_sads_naturaleza_tipo_esp: [{ value: '1', text: 'Fracción de pulgada' }]
+    });
+    const CAMPOS_B = Object.freeze({
+        custitem_sads_nat_pla_lado_a: { label: 'Lado A', type: 'integer' },
+        custitem_sads_nat_pla_lado_b: { label: 'Lado B', type: 'integer' },
+        custitem_sads_nat_espesor: { label: 'Espesor', type: 'select' }
+    });
+    const ESPESORES = Object.freeze([
+        { id: 501, nombre: '3/16"', texto: "3/16''", codigo: '018', orden: 0.1875 },
+        { id: 502, nombre: '1/2"', texto: "1/2''", codigo: '050', orden: 0.5 },
+        { id: 504, nombre: '3/4"', texto: "3/4''", codigo: '075', orden: 0.75 },
+        { id: 509, nombre: '2"', texto: "2''", codigo: '200', orden: 2 }
+    ]);
+    const rango = (id, desde, hasta, precio, nombre) => ({
+        id, desde_id: desde, desde_orden: desde === 501 ? 0.1875 : 0.75, desde_tipo: 1,
+        hasta_id: hasta, hasta_orden: hasta === 503 ? 0.625 : 1.5, hasta_tipo: 1,
+        precio_id: precio, margen_id: precio + 100, precio_nombre: nombre
+    });
+    const FAMILIAS_PLACA = Object.freeze([rango(1, 501, 503, 68, 'FAM68'), rango(2, 504, 505, 69, 'FAM069')]);
+    const CAPTURA_B = Object.freeze({
+        custpage_configuracion: '11',
+        custpage_par_0: '6',
+        custpage_par_1: '20',
+        custpage_par_2: '502',
+        custpage_peso: '1225.5',
+        custpage_conversion: '1225.5'
+    });
+    const escenarioB = (ajustes = {}) => prepararEscenario(Object.assign({
+        configuracion: CONFIGURACION_B, campos: CAMPOS_B, espesores: ESPESORES, familias: FAMILIAS_PLACA
+    }, ajustes));
+    const consultaDe = (tabla) => consultasEjecutadas().filter((consulta) => new RegExp(`from\\s+${tabla}\\b`, 'i').test(consulta.query));
+
+    test('paso 2: el espesor es un select obligatorio del catálogo y se pide la conversión', () => {
+        escenarioB();
+        const formulario = ejecutar(solicitudParametros({ custpage_configuracion: '11' }));
+        expect(formulario.campos.custpage_par_2).toMatchObject({ type: FieldType.SELECT, isMandatory: true, label: 'Espesor' });
+        expect(formulario.campos.custpage_par_2.opciones.map((opcion) => opcion.text)).toEqual(['', '3/16"', '1/2"', '3/4"', '2"']);
+        expect(formulario.campos.custpage_par_0.type).toBe(FieldType.INTEGER);
+        expect(formulario.campos.custpage_conversion).toMatchObject({
+            type: FieldType.FLOAT, isMandatory: true, label: 'Conversión unidad de compra a base'
+        });
+        expect(consultaDe('customrecord_sads_espesor')[0].params).toEqual(['1']);
+        expect(consultaDe('customrecord_sads_nat_familia')[0].params).toEqual(['11']);
+    });
+
+    test('P3-10: alta de placa 1/2 × 6 × 20 asigna espesor, peso, conversión, familias y descripciones', () => {
+        const { copia, valoresAsignados } = escenarioB();
+        const formulario = ejecutar(solicitudCrear(CAPTURA_B));
+        expect(valoresAsignados).toMatchObject({
+            custitem_sads_nat_pla_lado_a: 6,
+            custitem_sads_nat_pla_lado_b: 20,
+            custitem_sads_nat_espesor: 502,
+            weight: 1225.5,
+            custitem_drt_ci_precio_teorico: 1225.5,
+            custitem_alm_articulo_conversionunidad: 1225.5,
+            custitem_pfp_famprecios_: '68',
+            custitem_pfp_fammargenes_: '168',
+            itemid: 'PLA36050620',
+            displayname: "Placa Acero TA36 1/2'' 6'x20'",
+            purchasedescription: "Placa Acero TA36 1/2'' 6'x20'",
+            salesdescription: "Placa Acero TA36 1/2'' 6'x20'",
+            isinactive: true
+        });
+        expect(copia.save).toHaveBeenCalledTimes(1);
+        expect(formulario.campos.custpage_espesor_texto.defaultValue).toBe('1/2"');
+        expect(formulario.campos.custpage_familia_texto.defaultValue).toBe('FAM68');
+        expect(consultaDeDuplicado()[0].params).toEqual(['11', 6, 20, 502]);
+    });
+
+    test('RN3-04: un espesor de 3/4 toma la segunda familia', () => {
+        const { valoresAsignados } = escenarioB();
+        ejecutar(solicitudCrear(Object.assign({}, CAPTURA_B, { custpage_par_2: '504' })));
+        expect(valoresAsignados.custitem_pfp_famprecios_).toBe('69');
+        expect(valoresAsignados.itemid).toBe('PLA36075620');
+    });
+
+    test('RN3-04: un espesor fuera de todos los rangos muestra error de configuración y no guarda', () => {
+        const { copia } = escenarioB();
+        const formulario = ejecutar(solicitudCrear(Object.assign({}, CAPTURA_B, { custpage_par_2: '509' })));
+        esperarPaginaDeError(formulario, 'No hay una familia de precios única para este espesor en la naturaleza.');
+        expect(copia.save).not.toHaveBeenCalled();
+    });
+
+    test.each(['999', '', '0.5'])('P3-08: espesor %p fuera del catálogo repite el paso 2 sin guardar', (espesor) => {
+        const { copia } = escenarioB();
+        const formulario = ejecutar(solicitudCrear(Object.assign({}, CAPTURA_B, { custpage_par_2: espesor })));
+        expect(formulario.title).toContain('Paso 2 de 2');
+        expect(textosDeMensajes(formulario)).toEqual(['Espesor: elija un valor de la lista.']);
+        expect(copia.save).not.toHaveBeenCalled();
+    });
+
+    test.each([undefined, '', '0', '-3'])('P3-11: conversión %p repite el paso 2 con el valor previo y sin guardar', (conversion) => {
+        const { copia } = escenarioB();
+        const formulario = ejecutar(solicitudCrear(Object.assign({}, CAPTURA_B, { custpage_conversion: conversion })));
+        expect(textosDeMensajes(formulario)).toEqual([
+            'Conversión unidad de compra a base: capture un número mayor que 0 con punto decimal, por ejemplo 0.25.'
+        ]);
+        expect(formulario.campos.custpage_par_2.opciones.filter((opcion) => opcion.isSelected).map((opcion) => opcion.value)).toEqual(['502']);
+        expect(copia.save).not.toHaveBeenCalled();
+    });
+
+    test.each([
+        ['sin familias', { familias: [] }, 'La naturaleza no tiene familias de precio configuradas.'],
+        ['sin espesores activos', { espesores: [] }, 'No hay espesores activos para el tipo de esta naturaleza.'],
+        ['sin tipo de espesor', { configuracion: Object.assign({}, CONFIGURACION_B, { custrecord_sads_naturaleza_tipo_esp: [] }) },
+            'La naturaleza usa espesor pero no tiene tipo de espesor.']
+    ])('P3-17: %s muestra la página de error de configuración', (descripcion, ajuste, mensaje) => {
+        escenarioB(ajuste);
+        esperarPaginaDeError(ejecutar(solicitudParametros({ custpage_configuracion: '11' })), mensaje);
+    });
+
+    test('P3-18: una naturaleza sin espesor usa su familia única', () => {
+        const { valoresAsignados } = prepararEscenario();
+        ejecutar(solicitudCrear(CAPTURA_VALIDA));
+        expect(valoresAsignados.custitem_pfp_famprecios_).toBe('68');
+        expect(consultaDe('customrecord_sads_espesor')).toEqual([]);
+    });
+
+    test('una naturaleza sin espesor con familias por rango no puede crear', () => {
+        const { copia } = prepararEscenario({ familias: FAMILIAS_PLACA });
+        esperarPaginaDeError(ejecutar(solicitudCrear(CAPTURA_VALIDA)), 'No hay una familia de precios única para este espesor en la naturaleza.');
+        expect(copia.save).not.toHaveBeenCalled();
     });
 });
