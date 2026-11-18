@@ -275,7 +275,7 @@ Ejemplo: [&quot;custitem_pl_ancho&quot;,&quot;custitem_pl_espesor&quot;,&quot;cu
       <maxlength></maxlength>
       <maxvalue></maxvalue>
       <minvalue></minvalue>
-      <onparentdelete></onparentdelete>
+      <onparentdelete>NO_ACTION</onparentdelete>
       <parentsubtab></parentsubtab>
       <rolerestrict>F</rolerestrict>
       <searchcomparefield></searchcomparefield>
@@ -290,4 +290,16 @@ Ejemplo: [&quot;custitem_pl_ancho&quot;,&quot;custitem_pl_espesor&quot;,&quot;cu
       <subtab></subtab>
     </customrecordcustomfield>
   </customrecordcustomfields>
+  <instances>
+    <instance scriptid="val_8427261_5490848_sb1_888">
+      <custrecord_sads_naturaleza_config>[&quot;custitem_sads_nat_pla_lado_a&quot;,&quot;custitem_sads_nat_pla_lado_b&quot;,&quot;custitem_sads_nat_espesor&quot;]</custrecord_sads_naturaleza_config>
+      <custrecord_sads_naturaleza_lista>[scriptid=customlist_sads_naturaleza_productos.1]</custrecord_sads_naturaleza_lista>
+      <custrecord_sads_naturaleza_patron_cod>PLA36{custitem_sads_nat_espesor:codigo}{custitem_sads_nat_pla_lado_a:entero1}{custitem_sads_nat_pla_lado_b:entero2}</custrecord_sads_naturaleza_patron_cod>
+      <custrecord_sads_naturaleza_patron_nom>Placa Acero TA36 {custitem_sads_nat_espesor:texto} {custitem_sads_nat_pla_lado_a}&apos;x{custitem_sads_nat_pla_lado_b}&apos;</custrecord_sads_naturaleza_patron_nom>
+      <custrecord_sads_naturaleza_plantilla>10928</custrecord_sads_naturaleza_plantilla>
+      <custrecord_sads_naturaleza_tipo_esp>[scriptid=customlist_sads_tipo_espesor.val_sads_tesp_fraccion]</custrecord_sads_naturaleza_tipo_esp>
+      <isinactive>F</isinactive>
+      <name>Placas de Acero</name>
+    </instance>
+  </instances>
 </customrecordtype>

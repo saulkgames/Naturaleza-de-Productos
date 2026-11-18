@@ -101,7 +101,7 @@
       <encryptatrest>F</encryptatrest>
       <fieldtype>TEXT</fieldtype>
       <globalsearch>F</globalsearch>
-      <help>Ejemplos: 1/2'', CAL 10, 10 MM, CED 40.</help>
+      <help>Ejemplos: 1/2&apos;&apos;, CAL 10, 10 MM, CED 40.</help>
       <isformula>F</isformula>
       <ismandatory>T</ismandatory>
       <isparent>F</isparent>
@@ -191,7 +191,7 @@
       <linktext></linktext>
       <maxlength></maxlength>
       <maxvalue></maxvalue>
-      <minvalue>0.0001</minvalue>
+      <minvalue>.0001</minvalue>
       <onparentdelete></onparentdelete>
       <parentsubtab></parentsubtab>
       <rolerestrict>F</rolerestrict>
@@ -207,4 +207,118 @@
       <subtab></subtab>
     </customrecordcustomfield>
   </customrecordcustomfields>
+  <instances>
+    <instance scriptid="val_sads_esp_fr018">
+      <custrecord_sads_esp_codigo>018</custrecord_sads_esp_codigo>
+      <custrecord_sads_esp_orden>.18</custrecord_sads_esp_orden>
+      <custrecord_sads_esp_texto>3/16&quot;</custrecord_sads_esp_texto>
+      <custrecord_sads_esp_tipo>[scriptid=customlist_sads_tipo_espesor.val_sads_tesp_fraccion]</custrecord_sads_esp_tipo>
+      <isinactive>F</isinactive>
+      <name>3/16&quot;</name>
+    </instance>
+    <instance scriptid="val_sads_esp_fr062">
+      <custrecord_sads_esp_codigo>062</custrecord_sads_esp_codigo>
+      <custrecord_sads_esp_orden>.62</custrecord_sads_esp_orden>
+      <custrecord_sads_esp_texto>5/8&quot;</custrecord_sads_esp_texto>
+      <custrecord_sads_esp_tipo>[scriptid=customlist_sads_tipo_espesor.val_sads_tesp_fraccion]</custrecord_sads_esp_tipo>
+      <isinactive>F</isinactive>
+      <name>5/8&quot;</name>
+    </instance>
+    <instance scriptid="val_sads_esp_fr075">
+      <custrecord_sads_esp_codigo>075</custrecord_sads_esp_codigo>
+      <custrecord_sads_esp_orden>.75</custrecord_sads_esp_orden>
+      <custrecord_sads_esp_texto>3/4&quot;</custrecord_sads_esp_texto>
+      <custrecord_sads_esp_tipo>[scriptid=customlist_sads_tipo_espesor.val_sads_tesp_fraccion]</custrecord_sads_esp_tipo>
+      <isinactive>F</isinactive>
+      <name>3/4&quot;</name>
+    </instance>
+    <instance scriptid="val_sads_esp_fr200">
+      <custrecord_sads_esp_codigo>200</custrecord_sads_esp_codigo>
+      <custrecord_sads_esp_orden>2</custrecord_sads_esp_orden>
+      <custrecord_sads_esp_texto>2&quot;</custrecord_sads_esp_texto>
+      <custrecord_sads_esp_tipo>[scriptid=customlist_sads_tipo_espesor.val_sads_tesp_fraccion]</custrecord_sads_esp_tipo>
+      <isinactive>F</isinactive>
+      <name>2&quot;</name>
+    </instance>
+    <instance scriptid="val_sads_esp_fr025">
+      <custrecord_sads_esp_codigo>025</custrecord_sads_esp_codigo>
+      <custrecord_sads_esp_orden>.25</custrecord_sads_esp_orden>
+      <custrecord_sads_esp_texto>1/4&quot;</custrecord_sads_esp_texto>
+      <custrecord_sads_esp_tipo>[scriptid=customlist_sads_tipo_espesor.val_sads_tesp_fraccion]</custrecord_sads_esp_tipo>
+      <isinactive>F</isinactive>
+      <name>1/4&quot;</name>
+    </instance>
+    <instance scriptid="val_sads_esp_fr031">
+      <custrecord_sads_esp_codigo>031</custrecord_sads_esp_codigo>
+      <custrecord_sads_esp_orden>.31</custrecord_sads_esp_orden>
+      <custrecord_sads_esp_texto>5/16&quot;</custrecord_sads_esp_texto>
+      <custrecord_sads_esp_tipo>[scriptid=customlist_sads_tipo_espesor.val_sads_tesp_fraccion]</custrecord_sads_esp_tipo>
+      <isinactive>F</isinactive>
+      <name>5/16&quot;</name>
+    </instance>
+    <instance scriptid="val_sads_esp_fr037">
+      <custrecord_sads_esp_codigo>037</custrecord_sads_esp_codigo>
+      <custrecord_sads_esp_orden>.37</custrecord_sads_esp_orden>
+      <custrecord_sads_esp_texto>3/8&quot;</custrecord_sads_esp_texto>
+      <custrecord_sads_esp_tipo>[scriptid=customlist_sads_tipo_espesor.val_sads_tesp_fraccion]</custrecord_sads_esp_tipo>
+      <isinactive>F</isinactive>
+      <name>3/8&quot;</name>
+    </instance>
+    <instance scriptid="val_sads_esp_fr043">
+      <custrecord_sads_esp_codigo>043</custrecord_sads_esp_codigo>
+      <custrecord_sads_esp_orden>.43</custrecord_sads_esp_orden>
+      <custrecord_sads_esp_texto>7/16&quot;</custrecord_sads_esp_texto>
+      <custrecord_sads_esp_tipo>[scriptid=customlist_sads_tipo_espesor.val_sads_tesp_fraccion]</custrecord_sads_esp_tipo>
+      <isinactive>F</isinactive>
+      <name>7/16&quot;</name>
+    </instance>
+    <instance scriptid="val_sads_esp_fr050">
+      <custrecord_sads_esp_codigo>050</custrecord_sads_esp_codigo>
+      <custrecord_sads_esp_orden>.5</custrecord_sads_esp_orden>
+      <custrecord_sads_esp_texto>1/2&quot;</custrecord_sads_esp_texto>
+      <custrecord_sads_esp_tipo>[scriptid=customlist_sads_tipo_espesor.val_sads_tesp_fraccion]</custrecord_sads_esp_tipo>
+      <isinactive>F</isinactive>
+      <name>1/2&quot;</name>
+    </instance>
+    <instance scriptid="val_sads_esp_fr087">
+      <custrecord_sads_esp_codigo>087</custrecord_sads_esp_codigo>
+      <custrecord_sads_esp_orden>.87</custrecord_sads_esp_orden>
+      <custrecord_sads_esp_texto>7/8&quot;</custrecord_sads_esp_texto>
+      <custrecord_sads_esp_tipo>[scriptid=customlist_sads_tipo_espesor.val_sads_tesp_fraccion]</custrecord_sads_esp_tipo>
+      <isinactive>F</isinactive>
+      <name>7/8&quot;</name>
+    </instance>
+    <instance scriptid="val_sads_esp_fr100">
+      <custrecord_sads_esp_codigo>100</custrecord_sads_esp_codigo>
+      <custrecord_sads_esp_orden>1</custrecord_sads_esp_orden>
+      <custrecord_sads_esp_texto>1&quot;</custrecord_sads_esp_texto>
+      <custrecord_sads_esp_tipo>[scriptid=customlist_sads_tipo_espesor.val_sads_tesp_fraccion]</custrecord_sads_esp_tipo>
+      <isinactive>F</isinactive>
+      <name>1&quot;</name>
+    </instance>
+    <instance scriptid="val_sads_esp_fr125">
+      <custrecord_sads_esp_codigo>125</custrecord_sads_esp_codigo>
+      <custrecord_sads_esp_orden>1.25</custrecord_sads_esp_orden>
+      <custrecord_sads_esp_texto>1 1/4&quot;</custrecord_sads_esp_texto>
+      <custrecord_sads_esp_tipo>[scriptid=customlist_sads_tipo_espesor.val_sads_tesp_fraccion]</custrecord_sads_esp_tipo>
+      <isinactive>F</isinactive>
+      <name>1 1/4&quot;</name>
+    </instance>
+    <instance scriptid="val_sads_esp_fr150">
+      <custrecord_sads_esp_codigo>150</custrecord_sads_esp_codigo>
+      <custrecord_sads_esp_orden>1.5</custrecord_sads_esp_orden>
+      <custrecord_sads_esp_texto>1 1/2&quot;</custrecord_sads_esp_texto>
+      <custrecord_sads_esp_tipo>[scriptid=customlist_sads_tipo_espesor.val_sads_tesp_fraccion]</custrecord_sads_esp_tipo>
+      <isinactive>F</isinactive>
+      <name>1 1/2&quot;</name>
+    </instance>
+    <instance scriptid="val_sads_esp_fr175">
+      <custrecord_sads_esp_codigo>175</custrecord_sads_esp_codigo>
+      <custrecord_sads_esp_orden>1.75</custrecord_sads_esp_orden>
+      <custrecord_sads_esp_texto>1 3/4&quot;</custrecord_sads_esp_texto>
+      <custrecord_sads_esp_tipo>[scriptid=customlist_sads_tipo_espesor.val_sads_tesp_fraccion]</custrecord_sads_esp_tipo>
+      <isinactive>F</isinactive>
+      <name>1 3/4&quot;</name>
+    </instance>
+  </instances>
 </customrecordtype>

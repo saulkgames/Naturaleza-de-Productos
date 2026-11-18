@@ -18,6 +18,7 @@
     </features>
     <objects>
       <object>customlist_alm_lista_unidadcotizacion</object>
+      <object>custitem_alm_art_preciofinal</object>
     </objects>
   </dependencies>
 </manifest>
