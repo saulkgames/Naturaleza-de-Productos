@@ -147,7 +147,7 @@ describe('beforeSubmit', () => {
     test('P3-14: una familia única con hermanas se rechaza', () => {
         expect(esperarRechazo(crearContexto({
             nuevos: lineaCon({ custrecord_sads_natfam_desde: '', custrecord_sads_natfam_hasta: '' })
-        }))).toEqual(['Una familia única (sin rango) debe ser la única línea activa de la naturaleza.']);
+        }))).toEqual(['El rango se traslapa con otra línea de la naturaleza.']);
     });
 
     test('P3-14: un espesor de otro tipo se rechaza', () => {
@@ -157,7 +157,7 @@ describe('beforeSubmit', () => {
 
     test('RN3-07: una naturaleza sin tipo de espesor solo admite familia única', () => {
         prepararConsultas({ tipo: null, hermanas: [] });
-        expect(esperarRechazo(crearContexto())).toEqual(['La naturaleza no usa espesor: solo admite una familia única sin rango.']);
+        expect(esperarRechazo(crearContexto())).toEqual(['La naturaleza no usa espesor: no admite rango de espesor.']);
         jest.clearAllMocks();
         prepararConsultas({ tipo: null, hermanas: [] });
         expect(() => userEvent.beforeSubmit(crearContexto({
@@ -195,5 +195,21 @@ describe('beforeSubmit', () => {
         expect(() => userEvent.beforeSubmit(crearContexto())).toThrow('SSS_SEARCH_ERROR');
         expect(log.error).toHaveBeenCalledTimes(1);
         expect(error.create).not.toHaveBeenCalled();
+    });
+});
+
+describe('rango de medida en la línea de familia (D-21)', () => {
+    test('mismo espesor con otro rango de lado se acepta', () => {
+        prepararConsultas({ hermanas: [Object.assign(hermana(1, 504, 505), { medida_desde: 0.5, medida_hasta: 3.5 })] });
+        expect(() => userEvent.beforeSubmit(crearContexto({
+            nuevos: lineaCon({ custrecord_sads_natfam_med_desde: 4, custrecord_sads_natfam_med_hasta: 6 })
+        }))).not.toThrow();
+    });
+
+    test('mismo espesor y lados traslapados se rechaza', () => {
+        prepararConsultas({ hermanas: [Object.assign(hermana(1, 504, 505), { medida_desde: 0.5, medida_hasta: 3.5 })] });
+        expect(esperarRechazo(crearContexto({
+            nuevos: lineaCon({ custrecord_sads_natfam_med_desde: 3, custrecord_sads_natfam_med_hasta: 6 })
+        }))).toEqual(['El rango se traslapa con otra línea de la naturaleza.']);
     });
 });

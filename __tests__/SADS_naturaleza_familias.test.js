@@ -106,12 +106,12 @@ describe('validarLinea (RN3-05, RN3-06, RN3-07)', () => {
 
     test('P3-04: una familia única con hermanas es inválida', () => {
         expect(familias.validarLinea({ linea: linea('1', null, null), hermanas: PLACAS, tipoNaturaleza: TIPO_FRACCION }).errores)
-            .toEqual(['Una familia única (sin rango) debe ser la única línea activa de la naturaleza.']);
+            .toEqual(['El rango se traslapa con otra línea de la naturaleza.']);
     });
 
     test('P3-04: un rango con una hermana única es inválido', () => {
         expect(familias.validarLinea({ linea: PLACAS[0], hermanas: [linea('1', null, null)], tipoNaturaleza: TIPO_FRACCION }).errores)
-            .toEqual(['La naturaleza ya tiene una familia única: inactívela antes de agregar rangos.']);
+            .toEqual(['El rango se traslapa con otra línea de la naturaleza.']);
     });
 
     test('P3-05: rangos [0.25–0.5] y [0.5–0.75] se traslapan', () => {
@@ -133,12 +133,12 @@ describe('validarLinea (RN3-05, RN3-06, RN3-07)', () => {
 
     test('RN3-05: desde sin hasta es inválido', () => {
         expect(familias.validarLinea({ linea: linea('1', 0.25, null), hermanas: [], tipoNaturaleza: TIPO_FRACCION }).errores)
-            .toEqual(['Capture espesor desde y espesor hasta, o deje ambos vacíos para una familia única.']);
+            .toEqual(['Capture espesor desde y espesor hasta, o deje ambos vacíos.']);
     });
 
     test('RN3-07: una naturaleza sin espesor no admite rangos', () => {
         expect(familias.validarLinea({ linea: PLACAS[0], hermanas: [], tipoNaturaleza: null }).errores)
-            .toEqual(['La naturaleza no usa espesor: solo admite una familia única sin rango.']);
+            .toEqual(['La naturaleza no usa espesor: no admite rango de espesor.']);
     });
 
     test('familias de precio y margen son obligatorias', () => {
@@ -168,5 +168,52 @@ describe('regla de dependencia', () => {
 
     test('exporta las funciones de la especificación', () => {
         expect(Object.keys(familias).sort()).toEqual(['ERRORES', 'esUnica', 'resolver', 'validarLinea']);
+    });
+});
+
+describe('rango de medida (D-21)', () => {
+    const conMedida = (id, desde, hasta, medidaDesde, medidaHasta) => linea(id, desde, hasta, { medidaDesde, medidaHasta });
+
+    test('resolver usa espesor y medida', () => {
+        const lineas = [conMedida('23', 0.1875, 0.625, 0.5, 3.5), conMedida('24', 0.1875, 0.625, 4, 6)];
+        expect(familias.resolver({ lineas, orden: 0.5, medida: 1 }).id).toBe('23');
+        expect(familias.resolver({ lineas, orden: 0.5, medida: 4 }).id).toBe('24');
+        esperarFamiliaInvalida(() => familias.resolver({ lineas, orden: 0.5, medida: 3.75 }));
+        esperarFamiliaInvalida(() => familias.resolver({ lineas, orden: 0.5, medida: null }));
+    });
+
+    test('una naturaleza sin espesor puede usar solo rangos de medida', () => {
+        const lineas = [conMedida('1', null, null, 0.5, 2), conMedida('2', null, null, 2.5, 6)];
+        expect(familias.resolver({ lineas, orden: null, medida: 3 }).id).toBe('2');
+        expect(familias.validarLinea({ linea: lineas[0], hermanas: [lineas[1]], tipoNaturaleza: null })).toEqual({ valido: true, errores: [] });
+    });
+
+    test('mismo rango de espesor con medidas distintas no se traslapa', () => {
+        expect(familias.validarLinea({
+            linea: conMedida('2', 0.1875, 0.625, 4, 6), hermanas: [conMedida('1', 0.1875, 0.625, 0.5, 3.5)], tipoNaturaleza: TIPO_FRACCION
+        }).valido).toBe(true);
+    });
+
+    test('traslape en espesor y en medida se rechaza', () => {
+        expect(familias.validarLinea({
+            linea: conMedida('2', 0.25, 0.75, 3, 6), hermanas: [conMedida('1', 0.1875, 0.625, 0.5, 3.5)], tipoNaturaleza: TIPO_FRACCION
+        }).errores).toEqual(['El rango se traslapa con otra línea de la naturaleza.']);
+    });
+
+    test('una línea sin rango de medida cubre todas las medidas', () => {
+        expect(familias.validarLinea({
+            linea: linea('2', 0.25, 0.5), hermanas: [conMedida('1', 0.1875, 0.625, 0.5, 3.5)], tipoNaturaleza: TIPO_FRACCION
+        }).errores).toEqual(['El rango se traslapa con otra línea de la naturaleza.']);
+    });
+
+    test('medida incompleta o invertida se rechaza', () => {
+        expect(familias.validarLinea({ linea: conMedida('1', 0.25, 0.5, 1, null), hermanas: [], tipoNaturaleza: TIPO_FRACCION }).errores)
+            .toEqual(['Capture medida desde y medida hasta, o deje ambas vacías.']);
+        expect(familias.validarLinea({ linea: conMedida('1', 0.25, 0.5, 4, 2), hermanas: [], tipoNaturaleza: TIPO_FRACCION }).errores)
+            .toEqual(['La medida desde debe ser menor o igual que la medida hasta.']);
+    });
+
+    test('esUnica considera también la medida', () => {
+        expect(familias.esUnica(conMedida('1', null, null, 1, 2))).toBe(false);
     });
 });

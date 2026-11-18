@@ -244,17 +244,18 @@ Los XML incluyen datos: la configuración de Placas de Acero, con la plantilla d
 Comando: `npm test`; no requiere cuenta NetSuite.
 | Suite | Pruebas | Alcance |
 |---|---|---|
-| `SADS_SL_crear_articulo_nat.test.js` | 91 | Entry point del Suitelet con `jest.mock` de `N/`. |
-| `SADS_UE_naturaleza_config.test.js` | 44 | Entry point del UE de configuración, incluido XEDIT. |
-| `SADS_UE_nat_familia.test.js` | 12 | Entry point del UE de familias, incluido XEDIT. |
+| `SADS_SL_crear_articulo_nat.test.js` | 97 | Entry point del Suitelet con `jest.mock` de `N/`. |
+| `SADS_UE_naturaleza_config.test.js` | 46 | Entry point del UE de configuración, incluido XEDIT. |
+| `SADS_UE_nat_familia.test.js` | 14 | Entry point del UE de familias, incluido XEDIT. |
 | `SADS_naturaleza_patron.test.js` | 158 | Marcadores, formatos (incluido `decimal2`), patrones de PTR y sustitución. |
 | `SADS_naturaleza_config_formato.test.js` | 109 | Contrato del JSON y compatibilidad con el CS y el UE de artículo. |
 | `SADS_naturaleza_parametros.test.js` | 83 | IDs, valores, catálogo, conversión, orden de lados y duplicados. |
-| `SADS_naturaleza_familias.test.js` | 29 | Rangos de familias y resolución por espesor. |
+| `SADS_naturaleza_familias.test.js` | 36 | Rangos de familias por espesor y medida, y resolución. |
+| `SADS_naturaleza_familias_ptr.test.js` | 6 | Rangos de familias de PTR contra los artículos existentes. |
 | `SADS_naturaleza_articulo_ns.test.js` | 7 | Adaptador de tipo de registro. |
 | `sample-test.js` | 2 | Plantilla de SuiteCloud. |
 
-Resultado del 2026-11-18: 9 de 9 suites y 535 de 535 pruebas aprobadas.
+Resultado del 2026-11-18: 10 de 10 suites y 558 de 558 pruebas aprobadas.
 `suitecloud project:validate` no se ejecutó en esta versión: el entorno de desarrollo no tiene cuenta.
 
 ## 7. Despliegue y operación

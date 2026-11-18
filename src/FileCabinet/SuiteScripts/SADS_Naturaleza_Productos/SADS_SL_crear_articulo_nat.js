@@ -29,7 +29,8 @@ define([
         PLANTILLA: 'custrecord_sads_naturaleza_plantilla',
         PATRON_NOMBRE: 'custrecord_sads_naturaleza_patron_nom',
         PATRON_CODIGO: 'custrecord_sads_naturaleza_patron_cod',
-        TIPO_ESPESOR: 'custrecord_sads_naturaleza_tipo_esp'
+        TIPO_ESPESOR: 'custrecord_sads_naturaleza_tipo_esp',
+        CAMPO_MEDIDA: 'custrecord_sads_naturaleza_campo_med'
     });
 
     // S3-06: el parámetro de catálogo (espesor) se identifica por el ID de su campo de artículo.
@@ -134,6 +135,7 @@ define([
                des.custrecord_sads_esp_tipo AS desde_tipo,
                fam.custrecord_sads_natfam_hasta AS hasta_id, has.custrecord_sads_esp_orden AS hasta_orden,
                has.custrecord_sads_esp_tipo AS hasta_tipo,
+               fam.custrecord_sads_natfam_med_desde AS medida_desde, fam.custrecord_sads_natfam_med_hasta AS medida_hasta,
                fam.custrecord_sads_natfam_precio AS precio_id, fam.custrecord_sads_natfam_margen AS margen_id,
                BUILTIN.DF(fam.custrecord_sads_natfam_precio) AS precio_nombre
         FROM ${REGISTRO_FAMILIA} fam
@@ -189,6 +191,7 @@ define([
         SIN_TIPO_ESPESOR: 'La naturaleza usa espesor pero no tiene tipo de espesor.',
         SIN_ESPESORES: 'No hay espesores activos para el tipo de esta naturaleza.',
         SIN_FAMILIAS: 'La naturaleza no tiene familias de precio configuradas.',
+        CAMPO_MEDIDA_INVALIDO: 'El campo de medida para familias debe ser un parámetro numérico de la configuración.',
         NOMBRE_LARGO: `El nombre generado excede ${LONGITUD_MAXIMA_ITEMID} caracteres; revise el patrón de nombre de la naturaleza.`,
         COLUMNA_NO_PERMITIDA: 'La configuración de esta naturaleza contiene un ID de campo no válido para buscar duplicados.',
         DUPLICADO: 'Ya existe un artículo con esta naturaleza y estos parámetros.',
@@ -254,7 +257,8 @@ define([
     /**
      * Lee el JSON, la plantilla y los patrones de una configuración con search.lookupFields.
      * @param {string} configuracionId - ID interno validado contra C-1.
-     * @returns {{ids: string[], plantillaId: ?string, patronNombre: string, patronCodigo: string, tipoEspesorId: ?string}}
+     * @returns {{ids: string[], plantillaId: ?string, patronNombre: string, patronCodigo: string, tipoEspesorId: ?string,
+     * campoMedida: ?string}}
      * plantillaId es null si está vacía o no es un entero positivo; tipoEspesorId es null si no está capturado.
      * @throws {Error} CONFIGURACION_INVALIDA si el JSON no cumple el contrato de formato.
      */
@@ -267,7 +271,8 @@ define([
                 CAMPOS_CONFIGURACION.PLANTILLA,
                 CAMPOS_CONFIGURACION.PATRON_NOMBRE,
                 CAMPOS_CONFIGURACION.PATRON_CODIGO,
-                CAMPOS_CONFIGURACION.TIPO_ESPESOR
+                CAMPOS_CONFIGURACION.TIPO_ESPESOR,
+                CAMPOS_CONFIGURACION.CAMPO_MEDIDA
             ]
         });
         const plantilla = aCadena(campos[CAMPOS_CONFIGURACION.PLANTILLA]).trim();
@@ -276,7 +281,8 @@ define([
             plantillaId: PATRON_ID_INTERNO.test(plantilla) ? plantilla : null,
             patronNombre: aCadena(campos[CAMPOS_CONFIGURACION.PATRON_NOMBRE]),
             patronCodigo: aCadena(campos[CAMPOS_CONFIGURACION.PATRON_CODIGO]),
-            tipoEspesorId: valorDeSeleccion(campos[CAMPOS_CONFIGURACION.TIPO_ESPESOR])
+            tipoEspesorId: valorDeSeleccion(campos[CAMPOS_CONFIGURACION.TIPO_ESPESOR]),
+            campoMedida: textoONulo(campos[CAMPOS_CONFIGURACION.CAMPO_MEDIDA])
         };
     };
 
@@ -306,6 +312,8 @@ define([
         hastaOrden: numeroONulo(fila.hasta_orden),
         desdeTipo: textoONulo(fila.desde_tipo),
         hastaTipo: textoONulo(fila.hasta_tipo),
+        medidaDesde: numeroONulo(fila.medida_desde),
+        medidaHasta: numeroONulo(fila.medida_hasta),
         familiaPrecioId: aCadena(fila.precio_id),
         familiaMargenId: aCadena(fila.margen_id),
         familiaPrecioNombre: aCadena(fila.precio_nombre)
@@ -718,6 +726,14 @@ define([
         return espesores;
     };
 
+    // D-21: el campo de medida para familias debe ser un parámetro numérico del JSON.
+    const validarCampoMedida = (campoMedida, definicion) => {
+        if (campoMedida === null) return;
+        const numericos = [parametros.TIPOS_SOPORTADOS.FLOAT, parametros.TIPOS_SOPORTADOS.INTEGER];
+        const valido = definicion.some((parametro) => parametro.id === campoMedida && numericos.indexOf(parametro.tipo) !== -1);
+        if (!valido) throw errorDeConfiguracion(MENSAJES.CAMPO_MEDIDA_INVALIDO);
+    };
+
     // Preparación común del paso 2 y de la creación: una sola copia de la plantilla por solicitud (PT-02).
     const prepararNaturaleza = (configuracion) => {
         const leida = leerConfiguracion(configuracion.id);
@@ -735,6 +751,7 @@ define([
         const espesores = cargarCatalogo(definicion, leida.tipoEspesorId);
         const lineasDeFamilia = cargarFamilias(configuracion.id);
         if (lineasDeFamilia.length === 0) throw errorDeConfiguracion(MENSAJES.SIN_FAMILIAS);
+        validarCampoMedida(leida.campoMedida, definicion);
         return {
             configuracion,
             ids: leida.ids,
@@ -744,7 +761,8 @@ define([
             copia,
             definicion,
             espesores,
-            lineasDeFamilia
+            lineasDeFamilia,
+            campoMedida: leida.campoMedida
         };
     };
 
@@ -862,7 +880,11 @@ define([
         const erroresDeFormato = validarFormatosDeCaptura(preparacion, captura.valores);
         if (erroresDeFormato.length > 0) return repetirPaso2(erroresDeFormato);
         const espesor = espesorElegido(preparacion, captura.valores);
-        const familia = familias.resolver({ lineas: preparacion.lineasDeFamilia, orden: espesor === null ? null : espesor.orden });
+        const familia = familias.resolver({
+            lineas: preparacion.lineasDeFamilia,
+            orden: espesor === null ? null : espesor.orden,
+            medida: preparacion.campoMedida === null ? null : captura.valores[preparacion.campoMedida]
+        });
         const textos = textosDelEspesor(espesor);
         const codigo = patron.aplicar({ patron: preparacion.patronCodigo, valores: captura.valores, textos });
         const nombre = patron.aplicar({ patron: preparacion.patronNombre, valores: captura.valores, textos });

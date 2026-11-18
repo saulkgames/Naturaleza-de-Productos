@@ -23,7 +23,8 @@ define([
         PLANTILLA: 'custrecord_sads_naturaleza_plantilla',
         PATRON_NOMBRE: 'custrecord_sads_naturaleza_patron_nom',
         PATRON_CODIGO: 'custrecord_sads_naturaleza_patron_cod',
-        TIPO_ESPESOR: 'custrecord_sads_naturaleza_tipo_esp'
+        TIPO_ESPESOR: 'custrecord_sads_naturaleza_tipo_esp',
+        CAMPO_MEDIDA: 'custrecord_sads_naturaleza_campo_med'
     });
 
     // S3-06: campo de artículo del catálogo de espesores; sus marcadores solo admiten codigo o texto (RN3-09).
@@ -38,7 +39,8 @@ define([
         PLANTILLA_NO_NUMERICA: 'El artículo plantilla debe ser un ID interno numérico.',
         PLANTILLA_INEXISTENTE: (id) => `El artículo plantilla ${id} no existe.`,
         PATRON_OBLIGATORIO: (etiqueta) => `${etiqueta}: es obligatorio cuando hay artículo plantilla.`,
-        SIN_TIPO_ESPESOR: 'La configuración usa espesor y requiere Tipo de Espesor.'
+        SIN_TIPO_ESPESOR: 'La configuración usa espesor y requiere Tipo de Espesor.',
+        CAMPO_MEDIDA_FUERA: 'El Campo de Medida para Familias debe ser uno de los IDs de la configuración.'
     });
 
     const TITULO_LOG_ERROR = 'Validación de configuración de naturaleza: error inesperado';
@@ -70,6 +72,7 @@ define([
      */
     const leerConfiguracion = (context) => ({
         tipoEspesor: aCadena(leerValorFinal(context, CAMPOS_CONFIGURACION.TIPO_ESPESOR)).trim(),
+        campoMedida: aCadena(leerValorFinal(context, CAMPOS_CONFIGURACION.CAMPO_MEDIDA)).trim(),
         json: leerValorFinal(context, CAMPOS_CONFIGURACION.JSON),
         plantilla: aCadena(leerValorFinal(context, CAMPOS_CONFIGURACION.PLANTILLA)).trim(),
         patronNombre: aCadena(leerValorFinal(context, CAMPOS_CONFIGURACION.PATRON_NOMBRE)),
@@ -90,6 +93,11 @@ define([
         return patron.validar({ patron: texto, idsPermitidos: ids, idsCatalogo }).errores.map((mensaje) => `${etiqueta}: ${mensaje}`);
     };
 
+    // D-21: el campo de medida para familias, si existe, es un ID del JSON.
+    const validarCampoMedida = (ids, campoMedida) => (
+        campoMedida !== '' && ids.indexOf(campoMedida) === -1 ? [MENSAJES.CAMPO_MEDIDA_FUERA] : []
+    );
+
     // RN3-08.
     const validarTipoEspesor = (ids, tipoEspesor) => (
         ids.indexOf(CAMPO_ESPESOR) !== -1 && tipoEspesor === '' ? [MENSAJES.SIN_TIPO_ESPESOR] : []
@@ -100,7 +108,7 @@ define([
      * @param {{json: *, plantilla: string, patronNombre: string, patronCodigo: string, tipoEspesor: string}} configuracion
      * @returns {string[]} Mensajes de error; vacío si la configuración es válida.
      */
-    const validarConfiguracion = ({ json, plantilla, patronNombre, patronCodigo, tipoEspesor }) => {
+    const validarConfiguracion = ({ json, plantilla, patronNombre, patronCodigo, tipoEspesor, campoMedida }) => {
         let ids;
         try {
             ids = formato.parsearConfiguracion(json);
@@ -108,7 +116,9 @@ define([
             if (!formato.esErrorDeDominio(errorDeFormato)) throw errorDeFormato;
             return [errorDeFormato.message];
         }
-        const errores = parametros.validarIds(ids).errores.concat(validarTipoEspesor(ids, tipoEspesor));
+        const errores = parametros.validarIds(ids).errores
+            .concat(validarTipoEspesor(ids, tipoEspesor))
+            .concat(validarCampoMedida(ids, campoMedida));
         if (plantilla === '') return errores;
         return errores
             .concat(validarPlantilla(plantilla))

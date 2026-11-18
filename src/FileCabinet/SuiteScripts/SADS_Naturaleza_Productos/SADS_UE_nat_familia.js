@@ -3,7 +3,8 @@
  * @NScriptType UserEventScript
  * @NModuleScope SameAccount
  * @description Valida cada línea de familias de precio y margen por rango de espesor antes de guardarla
- * (registro hijo de la configuración de naturaleza): rango completo, del tipo de la naturaleza y sin traslape (RN3-05 a RN3-07).
+ * (registro hijo de la configuración de naturaleza): rangos completos de espesor y de medida, del tipo de la naturaleza
+ * y sin traslape en ambas dimensiones (RN3-05 a RN3-07, D-21).
  */
 define([
     'N/error',
@@ -26,6 +27,8 @@ define([
         CONFIGURACION: 'custrecord_sads_natfam_config',
         DESDE: 'custrecord_sads_natfam_desde',
         HASTA: 'custrecord_sads_natfam_hasta',
+        MEDIDA_DESDE: 'custrecord_sads_natfam_med_desde',
+        MEDIDA_HASTA: 'custrecord_sads_natfam_med_hasta',
         PRECIO: 'custrecord_sads_natfam_precio',
         MARGEN: 'custrecord_sads_natfam_margen',
         INACTIVO: 'isinactive'
@@ -43,6 +46,7 @@ define([
                des.custrecord_sads_esp_tipo AS desde_tipo,
                fam.custrecord_sads_natfam_hasta AS hasta_id, has.custrecord_sads_esp_orden AS hasta_orden,
                has.custrecord_sads_esp_tipo AS hasta_tipo,
+               fam.custrecord_sads_natfam_med_desde AS medida_desde, fam.custrecord_sads_natfam_med_hasta AS medida_hasta,
                fam.custrecord_sads_natfam_precio AS precio_id, fam.custrecord_sads_natfam_margen AS margen_id
         FROM ${REGISTRO_FAMILIA} fam
         LEFT JOIN ${REGISTRO_ESPESOR} des ON des.id = fam.custrecord_sads_natfam_desde
@@ -97,6 +101,7 @@ define([
      * Lee el estado final de la línea.
      * @param {Object} context - Contexto de beforeSubmit.
      * @returns {{id: ?string, configuracionId: ?string, desdeId: ?string, hastaId: ?string,
+     * medidaDesde: ?number, medidaHasta: ?number,
      * familiaPrecioId: ?string, familiaMargenId: ?string, inactiva: boolean}} Objeto plano.
      */
     const leerLinea = (context) => {
@@ -106,6 +111,8 @@ define([
             configuracionId: textoONulo(leerValorFinal(context, CAMPOS_FAMILIA.CONFIGURACION)),
             desdeId: textoONulo(leerValorFinal(context, CAMPOS_FAMILIA.DESDE)),
             hastaId: textoONulo(leerValorFinal(context, CAMPOS_FAMILIA.HASTA)),
+            medidaDesde: numeroONulo(leerValorFinal(context, CAMPOS_FAMILIA.MEDIDA_DESDE)),
+            medidaHasta: numeroONulo(leerValorFinal(context, CAMPOS_FAMILIA.MEDIDA_HASTA)),
             familiaPrecioId: textoONulo(leerValorFinal(context, CAMPOS_FAMILIA.PRECIO)),
             familiaMargenId: textoONulo(leerValorFinal(context, CAMPOS_FAMILIA.MARGEN)),
             inactiva: inactivo === true || aCadena(inactivo) === CASILLA_MARCADA
@@ -139,6 +146,8 @@ define([
             hastaOrden: numeroONulo(fila.hasta_orden),
             desdeTipo: textoONulo(fila.desde_tipo),
             hastaTipo: textoONulo(fila.hasta_tipo),
+            medidaDesde: numeroONulo(fila.medida_desde),
+            medidaHasta: numeroONulo(fila.medida_hasta),
             familiaPrecioId: aCadena(fila.precio_id),
             familiaMargenId: aCadena(fila.margen_id)
         }));

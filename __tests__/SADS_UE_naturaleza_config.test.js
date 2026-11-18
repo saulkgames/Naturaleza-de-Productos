@@ -415,3 +415,17 @@ describe('formatos entero1 y entero2 en la configuración (D-16, D-17)', () => {
         expect(() => userEvent.beforeSubmit(contexto)).not.toThrow();
     });
 });
+
+describe('campo de medida para familias (D-21)', () => {
+    test('un campo de medida del JSON se acepta', () => {
+        expect(() => userEvent.beforeSubmit(crearContexto({
+            nuevos: configuracionCon({ custrecord_sads_naturaleza_campo_med: 'custitem_pl_largo' })
+        }))).not.toThrow();
+    });
+
+    test('un campo de medida fuera del JSON se rechaza', () => {
+        expect(esperarRechazo(crearContexto({
+            nuevos: configuracionCon({ custrecord_sads_naturaleza_campo_med: 'custitem_otro' })
+        }))).toEqual(['El Campo de Medida para Familias debe ser uno de los IDs de la configuración.']);
+    });
+});

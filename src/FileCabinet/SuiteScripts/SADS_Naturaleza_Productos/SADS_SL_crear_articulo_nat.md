@@ -291,7 +291,7 @@ Objetos en el proyecto:
 | Tipo de espesor | `val_sads_tesp_ptr` "Pared de PTR" | Agrupa calibres y fracciones de pared de PTR |
 | Campo | `custitem_sads_nat_ptr_lado` (FLOAT, pulgadas) | Lado de la sección |
 | Campo | `custitem_sads_nat_ptr_largo` (FLOAT, metros) | Largo de la pieza |
-| Espesores | Instancias `val_sads_esp_ptr_*` de "SADS - Espesor" | Cal.18 a Cal.07 (C18…C07) y 3/16" a 1/2" (E18…E50); orden = espesor en pulgadas. Calibres según calibre estándar de lámina de acero (supuesto S4-01). |
+| Espesores | Instancias `val_sads_esp_ptr_*` de "SADS - Espesor" | Cal.20 a Cal.07 (C20…C07) y 3/16" a 1/2" (E18…E50); orden = espesor en pulgadas (calibre estándar de lámina de acero). Lista confirmada por el usuario el 2026-11-18. |
 
 Configuraciones a capturar en la UI:
 | Campo | PTR Cuadrado | PTR Cuadrado Media Pieza |
@@ -299,13 +299,50 @@ Configuraciones a capturar en la UI:
 | Nombre | Perfiles Tubulares Cuadrados | Perfiles Tubulares Cuadrados Media Pieza |
 | Naturaleza (lista) | Perfiles Tubulares Cuadrados | Perfiles Tubulares Cuadrados |
 | JSON | `["custitem_sads_nat_ptr_lado","custitem_sads_nat_ptr_largo","custitem_sads_nat_espesor"]` | igual |
-| Artículo plantilla | 11249 | ID de un PTR media pieza |
+| Artículo plantilla | 11249 | 25481 |
+| Campo de Medida para Familias | `custitem_sads_nat_ptr_lado` | `custitem_sads_nat_ptr_lado` |
 | Tipo de Espesor | Pared de PTR | Pared de PTR |
 | Patrón de Código | `PTRC{custitem_sads_nat_ptr_lado:centesimas3}{custitem_sads_nat_espesor:codigo}` | `MPPTRC{custitem_sads_nat_ptr_lado:centesimas3}{custitem_sads_nat_espesor:codigo}` |
 | Patrón de Nombre | `PTR {custitem_sads_nat_ptr_lado:fraccion16}" x {custitem_sads_nat_ptr_lado:fraccion16}" {custitem_sads_nat_espesor:texto} a {custitem_sads_nat_ptr_largo:decimal2}m` | `PTR Media Pieza {custitem_sads_nat_ptr_lado:fraccion16}" x {custitem_sads_nat_ptr_lado:fraccion16}" {custitem_sads_nat_espesor:texto} a {custitem_sads_nat_ptr_largo:decimal2}m` |
-| Familias | Rangos de espesor de "Pared de PTR" | igual |
+| Familias | Tabla "Familias PTRC" | Tabla "Familias MPPTRC" |
 
 Captura en el Suitelet: lado en pulgadas decimales (1 1/4 = 1.25, múltiplo de 1/16); largo en metros con hasta 2 decimales (6, 6.1, 3).
+
+### Familias por espesor y lado (D-21, D-22)
+En PTR la familia de precio depende del espesor y del lado. Cada línea de la sublista lleva rango de espesor y rango de "Medida" (el lado, en pulgadas, según el Campo de Medida para Familias). Los rangos reproducen la familia que hoy tienen los artículos de la cuenta (búsquedas del 2026-11-18; prueba `__tests__/SADS_naturaleza_familias_ptr.test.js`).
+
+Familias PTRC (margen "PTR" en todas); los 69 artículos de la búsqueda reciben su familia actual:
+| Espesor Desde | Espesor Hasta | Medida Desde | Medida Hasta | Familia de precio |
+|---|---|---|---|---|
+| Cal.20 | Cal.18 | 0.5 | 0.625 | FAM 020 |
+| Cal.20 | Cal.18 | 0.75 | 6 | FAM 022 |
+| Cal.16 | Cal.16 | 0.5 | 6 | FAM 098 |
+| Cal.14 | Cal.14 | 0.5 | 3.5 | FAM 023 |
+| Cal.14 | Cal.14 | 4 | 6 | FAM 024 |
+| Cal.12 | Cal.10 | 0.5 | 3 | FAM 023 |
+| Cal.12 | Cal.10 | 3.5 | 6 | FAM 024 |
+| Cal.09 | Cal.09 | 0.5 | 1.75 | FAM 023 |
+| Cal.09 | 1/2" | 2 | 6 | FAM 024 |
+
+Familias MPPTRC (margen "PTR Media Pieza" en todas); 24 de 26 artículos reciben su familia actual:
+| Espesor Desde | Espesor Hasta | Medida Desde | Medida Hasta | Familia de precio |
+|---|---|---|---|---|
+| Cal.14 | Cal.14 | 0.5 | 6 | FAM 023 |
+| Cal.12 | Cal.09 | 0.5 | 3 | FAM 023 |
+| Cal.12 | Cal.09 | 3.5 | 6 | FAM 024 |
+| Cal.07 | 1/2" | 0.5 | 6 | FAM 024 |
+Excepciones: 1486 (Media Pieza 1 1/2" Cal.10, hoy FAM 024, la regla da FAM 023) y 12912 (Media Pieza 3" 3/16", hoy FAM 023, la regla da FAM 024).
+
+Huecos sin familia (el Suitelet no crea y avisa): lados entre rangos (por ejemplo 3 1/4" en Cal.10–12, 3 3/4" en Cal.14, 1 7/8" en Cal.09); en PTRC, Cal.07 y fracciones con lado menor que 2"; en MPPTRC, Cal.16 a Cal.20.
+
+Hallazgos en los datos existentes (no los corrige el sistema):
+| Hallazgo | Ejemplo |
+|---|---|
+| Artículos de 1 metro nombrados "a 1 Metro"; el Suitelet escribiría "a 1.00m" | 1481, 1490, 13018, 18700 |
+| Código con sufijo de largo | 18700 `PTRC175C141M` |
+| Código con espesor incorrecto | 12896 `MPPTRC200C25` (es 1/4", debería ser `E25`) |
+| Formatos de nombre distintos | "Cal.9" contra "Cal.09"; `3/16"` contra `3/16''`; "Media Pieza PTR…" contra "PTR Media Pieza…" |
+| Margen distinto de la regla | MU25 (11563, 35663), MU PEDACERIA (13018), Perfileria (11807), PTR en media pieza (39404, 14267) |
 
 ## 5. Campos del formulario
 | ID | Tipo | Paso | Uso |
@@ -388,10 +425,10 @@ Error inesperado: `log.error` con detalle y se relanza el error original.
 | RN3-01 | El catálogo de espesores de una naturaleza son los espesores activos del tipo de espesor de su configuración; naturalezas del mismo tipo ven los mismos espesores. |
 | RN3-02 | El espesor del artículo se elige del catálogo de su naturaleza; un ID fuera del catálogo se rechaza. |
 | RN3-03 | En un mismo tipo, código y orden de espesor son únicos (responsabilidad de los técnicos). |
-| RN3-04 | Familia de precio y de margen del artículo = las de la única línea cuyo rango contiene el orden del espesor (inclusivo). |
-| RN3-05 | Una línea sin Desde ni Hasta es familia única y debe ser la única línea activa; Desde y Hasta van juntos o ninguno. |
+| RN3-04 | Familia de precio y de margen del artículo = las de la única línea cuyo rango de espesor contiene el orden del espesor y cuyo rango de medida contiene la medida (inclusivos; un rango vacío cubre todo) (D-21). |
+| RN3-05 | Desde y Hasta (de espesor y de medida) van juntos o ninguno; una línea sin rangos es familia única y choca con cualquier otra. |
 | RN3-06 | Rangos sin traslape; Desde ≤ Hasta por orden; ambos del tipo de espesor de la naturaleza. |
-| RN3-07 | Si la naturaleza no usa espesor, se exige una sola línea de familia única. |
+| RN3-07 | Si la naturaleza no usa espesor, sus líneas no llevan rango de espesor (pueden llevar rango de medida). Dos líneas no pueden traslaparse en espesor y medida a la vez. |
 | RN3-08 | Si el JSON incluye `custitem_sads_nat_espesor`, la configuración requiere tipo de espesor. |
 | RN3-09 | `{id:codigo}` y `{id:texto}` escriben el código y el texto del espesor elegido; solo aplican al campo de espesor, y el campo de espesor solo admite esos formatos. |
 | RN3-10 | El peso capturado (kg) se escribe en `custitem_drt_ci_precio_teorico` (informativo) y en `weight`. |
@@ -586,17 +623,18 @@ Ver los logs: Customization > Scripting > Script Deployments > deployment > pest
 
 ## 16. Pruebas
 Comando: `npm test` (no requiere cuenta NetSuite).
-Resultado del 2026-11-18: 9 suites aprobadas de 9; 535 pruebas aprobadas de 535.
+Resultado del 2026-11-18: 10 suites aprobadas de 10; 558 pruebas aprobadas de 558.
 
 | Suite | Pruebas | Alcance |
 |---|---|---|
 | `SADS_naturaleza_patron.test.js` | 158 | P-01 a P-04; formatos `centesimas3`, `fraccion16`, `entero1`, `entero2`, `decimal2`, `codigo`, `texto` (P3-09, P3-16); patrones de PTR; regla de dependencia |
 | `SADS_naturaleza_parametros.test.js` | 83 | P-05 a P-08; catálogo y conversión (P3-08, P3-11); orden de lados (RN3-14); regla de dependencia |
-| `SADS_naturaleza_familias.test.js` | 29 | P3-01 a P3-07; regla de dependencia |
+| `SADS_naturaleza_familias.test.js` | 36 | P3-01 a P3-07; rango de medida (D-21); regla de dependencia |
+| `SADS_naturaleza_familias_ptr.test.js` | 6 | Rangos de PTRC y MPPTRC contra las 69 + 26 filas de las búsquedas |
 | `SADS_naturaleza_articulo_ns.test.js` | 7 | Adaptador con y sin resultado |
-| `SADS_SL_crear_articulo_nat.test.js` | 91 | P-09 a P-13, P-16, P-22; P3-08, P3-10, P3-11, P3-17, P3-18; medidas 707/620 y orden de lados; estructura del entry point |
-| `SADS_UE_naturaleza_config.test.js` | 44 | P-17, P-18; RN-17; P3-13, P3-16; formatos de lados; errores inesperados |
-| `SADS_UE_nat_familia.test.js` | 12 | P3-14, P3-19; RN3-07; errores inesperados |
+| `SADS_SL_crear_articulo_nat.test.js` | 97 | P-09 a P-13, P-16, P-22; P3-08, P3-10, P3-11, P3-17, P3-18; medidas 707/620 y orden de lados; estructura del entry point |
+| `SADS_UE_naturaleza_config.test.js` | 46 | P-17, P-18; RN-17; P3-13, P3-16; formatos de lados; errores inesperados |
+| `SADS_UE_nat_familia.test.js` | 14 | P3-14, P3-19; RN3-07; errores inesperados |
 | `SADS_naturaleza_config_formato.test.js` | 109 | Contrato del JSON (sin cambios) |
 | `sample-test.js` | 2 | Plantilla de SuiteCloud |
 
@@ -652,6 +690,10 @@ Cambios posteriores al prompt v2 (decisiones del usuario del 2026-11-14):
 | D-18 | Lado A no puede ser mayor que Lado B (2026-11-18). | RN3-14; cierra R-15. |
 | D-19 | `itemid` guarda el nombre largo; `displayname` y `vendorname` guardan el código (convención de la empresa, 2026-11-18). | El límite de 60 caracteres se aplica al nombre. La página de duplicado muestra código y nombre. |
 | D-20 | Largo con 2 decimales en el nombre (2026-11-18). | Formato `decimal2`. |
+| D-21 | Familias por espesor y por una medida (2026-11-18). | Campos `custrecord_sads_natfam_med_desde/hasta` y `custrecord_sads_naturaleza_campo_med`; traslape en dos dimensiones. |
+| D-22 | Los rangos reproducen la familia actual de los artículos (2026-11-18). | Tablas de la sección 4C. |
+| D-23 | Margen "PTR" en piezas y "PTR Media Pieza" en medias piezas (2026-11-18). | Excepciones a mano. |
+| D-24 | Cal.20 en el catálogo "Pared de PTR" (2026-11-18). | Instancia `val_sads_esp_ptr_c20`. |
 
 Desviaciones de la iteración B respecto del prompt v3:
 | Punto | Decisión | Motivo |

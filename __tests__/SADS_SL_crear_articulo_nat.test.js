@@ -453,7 +453,8 @@ describe('paso 2 (POST parametros)', () => {
                 'custrecord_sads_naturaleza_plantilla',
                 'custrecord_sads_naturaleza_patron_nom',
                 'custrecord_sads_naturaleza_patron_cod',
-                'custrecord_sads_naturaleza_tipo_esp'
+                'custrecord_sads_naturaleza_tipo_esp',
+                'custrecord_sads_naturaleza_campo_med'
             ]
         });
         expect(record.copy).toHaveBeenCalledTimes(1);
@@ -1084,5 +1085,86 @@ describe('medidas de placa con ancho fijo y orden de lados (D-16 a D-18)', () =>
         const { copia } = prepararEscenario();
         ejecutar(solicitudCrear(CAPTURA_VALIDA));
         expect(copia.save).toHaveBeenCalledTimes(1);
+    });
+});
+
+describe('PTR cuadrado con familias por espesor y lado (D-19 a D-21)', () => {
+    const CONFIGURACION_PTR = Object.freeze({
+        custrecord_sads_naturaleza_config: '["custitem_sads_nat_ptr_lado","custitem_sads_nat_ptr_largo","custitem_sads_nat_espesor"]',
+        custrecord_sads_naturaleza_plantilla: ID_PLANTILLA,
+        custrecord_sads_naturaleza_patron_cod: 'PTRC{custitem_sads_nat_ptr_lado:centesimas3}{custitem_sads_nat_espesor:codigo}',
+        custrecord_sads_naturaleza_patron_nom: 'PTR {custitem_sads_nat_ptr_lado:fraccion16}" x {custitem_sads_nat_ptr_lado:fraccion16}" '
+            + '{custitem_sads_nat_espesor:texto} a {custitem_sads_nat_ptr_largo:decimal2}m',
+        custrecord_sads_naturaleza_tipo_esp: [{ value: '5', text: 'Pared de PTR' }],
+        custrecord_sads_naturaleza_campo_med: 'custitem_sads_nat_ptr_lado'
+    });
+    const CAMPOS_PTR = Object.freeze({
+        custitem_sads_nat_ptr_lado: { label: 'Lado', type: 'float' },
+        custitem_sads_nat_ptr_largo: { label: 'Largo', type: 'float' },
+        custitem_sads_nat_espesor: { label: 'Espesor', type: 'select' }
+    });
+    const ESPESORES_PTR = Object.freeze([
+        { id: 31, nombre: 'Cal.14', texto: 'Cal.14', codigo: 'C14', orden: 0.0747 },
+        { id: 40, nombre: '1/4"', texto: "1/4''", codigo: 'E25', orden: 0.25 }
+    ]);
+    const linea = (id, desdeOrden, hastaOrden, medidaDesde, medidaHasta, precio) => ({
+        id, desde_id: id * 10, desde_orden: desdeOrden, desde_tipo: 5, hasta_id: id * 10 + 1, hasta_orden: hastaOrden, hasta_tipo: 5,
+        medida_desde: medidaDesde, medida_hasta: medidaHasta, precio_id: precio, margen_id: 900, precio_nombre: `FAM ${precio}`
+    });
+    const FAMILIAS_PTR = Object.freeze([
+        linea(1, 0.0747, 0.0747, 0.5, 3.5, 23),
+        linea(2, 0.0747, 0.0747, 4, 6, 24),
+        linea(3, 0.1495, 0.5, 2, 6, 24)
+    ]);
+    const CAPTURA = Object.freeze({
+        custpage_configuracion: '11', custpage_par_0: '1', custpage_par_1: '6', custpage_par_2: '31',
+        custpage_peso: '10', custpage_conversion: '10'
+    });
+    const escenario = (ajustes = {}) => prepararEscenario(Object.assign({
+        configuracion: CONFIGURACION_PTR, campos: CAMPOS_PTR, espesores: ESPESORES_PTR, familias: FAMILIAS_PTR
+    }, ajustes));
+
+    test('PTR 1" Cal.14 a 6.00m: itemid = nombre, displayname = código, FAM 23', () => {
+        const { valoresAsignados } = escenario();
+        ejecutar(solicitudCrear(CAPTURA));
+        expect(valoresAsignados.itemid).toBe('PTR 1" x 1" Cal.14 a 6.00m');
+        expect(valoresAsignados.displayname).toBe('PTRC100C14');
+        expect(valoresAsignados.vendorname).toBe('PTRC100C14');
+        expect(valoresAsignados.custitem_pfp_famprecios_).toBe('23');
+    });
+
+    test('PTR 4" Cal.14 toma FAM 24 por el lado', () => {
+        const { valoresAsignados } = escenario();
+        ejecutar(solicitudCrear(Object.assign({}, CAPTURA, { custpage_par_0: '4' })));
+        expect(valoresAsignados.displayname).toBe('PTRC400C14');
+        expect(valoresAsignados.custitem_pfp_famprecios_).toBe('24');
+    });
+
+    test('PTR 3" 1/4" a 6.10m', () => {
+        const { valoresAsignados } = escenario();
+        ejecutar(solicitudCrear(Object.assign({}, CAPTURA, { custpage_par_0: '3', custpage_par_1: '6.1', custpage_par_2: '40' })));
+        expect(valoresAsignados.itemid).toBe("PTR 3\" x 3\" 1/4'' a 6.10m");
+        expect(valoresAsignados.displayname).toBe('PTRC300E25');
+        expect(valoresAsignados.custitem_pfp_famprecios_).toBe('24');
+    });
+
+    test('un lado sin rango de familia muestra error y no guarda', () => {
+        const { copia } = escenario();
+        esperarPaginaDeError(ejecutar(solicitudCrear(Object.assign({}, CAPTURA, { custpage_par_0: '3.75' }))),
+            'No hay una familia de precios única para este espesor en la naturaleza.');
+        expect(copia.save).not.toHaveBeenCalled();
+    });
+
+    test('un largo con más de 2 decimales repite el paso 2', () => {
+        const { copia } = escenario();
+        const formulario = ejecutar(solicitudCrear(Object.assign({}, CAPTURA, { custpage_par_1: '6.125' })));
+        expect(textosDeMensajes(formulario)).toEqual(['Largo: capture un número mayor que 0 con máximo 2 decimales.']);
+        expect(copia.save).not.toHaveBeenCalled();
+    });
+
+    test('un campo de medida que no es parámetro numérico es error de configuración', () => {
+        escenario({ configuracion: Object.assign({}, CONFIGURACION_PTR, { custrecord_sads_naturaleza_campo_med: 'custitem_sads_nat_espesor' }) });
+        esperarPaginaDeError(ejecutar(solicitudParametros({ custpage_configuracion: '11' })),
+            'El campo de medida para familias debe ser un parámetro numérico de la configuración.');
     });
 });

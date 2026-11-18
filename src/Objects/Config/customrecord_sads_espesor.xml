@@ -320,6 +320,14 @@
       <isinactive>F</isinactive>
       <name>1 3/4&quot;</name>
     </instance>
+    <instance scriptid="val_sads_esp_ptr_c20">
+      <custrecord_sads_esp_codigo>C20</custrecord_sads_esp_codigo>
+      <custrecord_sads_esp_orden>.0359</custrecord_sads_esp_orden>
+      <custrecord_sads_esp_texto>Cal.20</custrecord_sads_esp_texto>
+      <custrecord_sads_esp_tipo>[scriptid=customlist_sads_tipo_espesor.val_sads_tesp_ptr]</custrecord_sads_esp_tipo>
+      <isinactive>F</isinactive>
+      <name>Cal.20</name>
+    </instance>
     <instance scriptid="val_sads_esp_ptr_c18">
       <custrecord_sads_esp_codigo>C18</custrecord_sads_esp_codigo>
       <custrecord_sads_esp_orden>.0478</custrecord_sads_esp_orden>
