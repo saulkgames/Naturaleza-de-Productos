@@ -329,7 +329,39 @@ describe('regla de dependencia', () => {
             'esIdentificadorSeguro',
             'validarDefinicion',
             'validarIds',
+            'validarOrdenDeLados',
             'validarValores'
         ]);
+    });
+});
+
+describe('validarOrdenDeLados (D-18)', () => {
+    const PARES = [{ menor: 'custitem_sads_nat_pla_lado_a', mayor: 'custitem_sads_nat_pla_lado_b' }];
+    const ETIQUETAS = { custitem_sads_nat_pla_lado_a: 'Lado A', custitem_sads_nat_pla_lado_b: 'Lado B' };
+    const validar = (a, b, ajustes = {}) => parametros.validarOrdenDeLados(Object.assign({
+        valores: { custitem_sads_nat_pla_lado_a: a, custitem_sads_nat_pla_lado_b: b },
+        etiquetas: ETIQUETAS,
+        pares: PARES
+    }, ajustes));
+
+    test.each([[6, 20], [7, 7]])('A = %p y B = %p es válido', (a, b) => {
+        expect(validar(a, b)).toEqual({ valido: true, errores: [] });
+    });
+
+    test('A mayor que B se rechaza con las etiquetas', () => {
+        expect(validar(8, 6)).toEqual({ valido: false, errores: ['Lado A no puede ser mayor que Lado B.'] });
+    });
+
+    test('sin etiquetas usa los IDs', () => {
+        expect(validar(8, 6, { etiquetas: undefined }).errores)
+            .toEqual(['custitem_sads_nat_pla_lado_a no puede ser mayor que custitem_sads_nat_pla_lado_b.']);
+    });
+
+    test('un par con un valor faltante no se evalúa', () => {
+        expect(parametros.validarOrdenDeLados({ valores: { custitem_sads_nat_pla_lado_a: 8 }, etiquetas: ETIQUETAS, pares: PARES }).valido).toBe(true);
+    });
+
+    test('no lanza con argumentos ausentes', () => {
+        expect(parametros.validarOrdenDeLados()).toEqual({ valido: true, errores: [] });
     });
 });

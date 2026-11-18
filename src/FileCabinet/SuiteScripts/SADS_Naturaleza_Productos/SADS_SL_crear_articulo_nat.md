@@ -187,6 +187,8 @@ Formatos de marcador (RN-17):
 |---|---|---|---|
 | `centesimas3` | Centésimas de pulgada truncadas, 3 dígitos con ceros a la izquierda (D-13) | 0.5 → `050`; 0.375 → `037`; 0.1875 → `018`; 1.25 → `125` | Menos de 0.01 o 10 o más |
 | `fraccion16` | Fracción de pulgada reducida, hasta dieciseisavos (D-14) | 0.5 → `1/2`; 0.1875 → `3/16`; 1 → `1`; 1.25 → `1 1/4` | Un valor que no es múltiplo de 1/16 |
+| `entero1` | Entero de 1 dígito (D-17) | 7 → `7` | No entero, menor que 1 o mayor que 9 |
+| `entero2` | Entero de 2 dígitos con cero a la izquierda (D-16) | 7 → `07`; 20 → `20` | No entero, menor que 1 o mayor que 99 |
 
 Con espesores múltiplos de 1/16, `centesimas3` da un código distinto para cada uno (1/16 → `006` … 15/16 → `093`; 1 → `100`).
 
@@ -199,7 +201,8 @@ Ejemplo real de placa TA36 (IDs de campo ficticios):
 | Resultado con espesor 0.5, ancho 6, largo 20 | Código `PLA36050620`; nombre `Placa Acero TA36 1/2'' 6'x20'` |
 | Resultado con espesor 0.375, ancho 4, largo 10 | Código `PLA36037410`; nombre `Placa Acero TA36 3/8'' 4'x10'` |
 
-En el código los lados van pegados sin separador: capture siempre el ancho como el lado menor (R-15).
+En el código de placas, Lado A va con `entero1` y Lado B con `entero2`: los últimos 3 dígitos siempre son las medidas (7 × 7 → `707`; 6 × 20 → `620`).
+El Suitelet rechaza Lado A mayor que Lado B (D-18).
 
 Unidades: largo y ancho en pies; espesor en pulgadas; el script no convierte unidades.
 Sin plantilla, la configuración sigue funcionando para el CS y el UE de artículo, pero no aparece en el paso 1 (R-09).
@@ -246,10 +249,11 @@ Familias por rango (sublista de la configuración):
    |---|---|
    | JSON | `["custitem_sads_nat_pla_lado_a","custitem_sads_nat_pla_lado_b","custitem_sads_nat_espesor"]` |
    | Tipo de Espesor | Fracción de pulgada |
-   | Patrón de Código | `PLA36{custitem_sads_nat_espesor:codigo}{custitem_sads_nat_pla_lado_a}{custitem_sads_nat_pla_lado_b}` |
+   | Patrón de Código | `PLA36{custitem_sads_nat_espesor:codigo}{custitem_sads_nat_pla_lado_a:entero1}{custitem_sads_nat_pla_lado_b:entero2}` |
    | Patrón de Nombre | `Placa Acero TA36 {custitem_sads_nat_espesor:texto} {custitem_sads_nat_pla_lado_a}'x{custitem_sads_nat_pla_lado_b}'` |
 3. En la sublista de familias: 3/16" a 5/8" → FAM68; 3/4" a 1 1/2" → FAM069, cada una con su familia de margen.
 4. Resultado con 1/2", 6, 20: código `PLA36050620`; nombre, descripción de compra y de venta `Placa Acero TA36 1/2'' 6'x20'`; familia FAM68.
+   Con 1/2", 7, 7: código `PLA36050707`.
 
 Una naturaleza sin espesor no lleva el campo en el JSON ni tipo de espesor, y tiene una sola línea de familia sin rango (RN3-07).
 El marcador del espesor solo admite `:codigo` o `:texto`; `centesimas3` y `fraccion16` siguen disponibles para parámetros numéricos (RN3-09).
@@ -353,7 +357,7 @@ Error inesperado: `log.error` con detalle y se relanza el error original.
 | RN-14 | Si la configuración tiene plantilla, los dos patrones son obligatorios. |
 | RN-15 | Cada marcador de un patrón es un ID del JSON; llaves sin cerrar o vacías son error. |
 | RN-16 | Si la configuración tiene plantilla, su valor es un entero positivo que corresponde a un artículo existente. |
-| RN-17 | Un marcador `{id:formato}` usa un formato de `FORMATOS` (`centesimas3`, `fraccion16`, `codigo`, `texto`); el UE rechaza otro formato y el Suitelet rechaza en el paso 2 un valor que no cabe en su formato (D-13, D-14). |
+| RN-17 | Un marcador `{id:formato}` usa un formato de `FORMATOS` (`centesimas3`, `fraccion16`, `entero1`, `entero2`, `codigo`, `texto`); el UE rechaza otro formato y el Suitelet rechaza en el paso 2 un valor que no cabe en su formato (D-13, D-14, D-16, D-17). |
 | RN3-01 | El catálogo de espesores de una naturaleza son los espesores activos del tipo de espesor de su configuración; naturalezas del mismo tipo ven los mismos espesores. |
 | RN3-02 | El espesor del artículo se elige del catálogo de su naturaleza; un ID fuera del catálogo se rechaza. |
 | RN3-03 | En un mismo tipo, código y orden de espesor son únicos (responsabilidad de los técnicos). |
@@ -367,6 +371,7 @@ Error inesperado: `log.error` con detalle y se relanza el error original.
 | RN3-11 | La conversión de unidad de compra a base es obligatoria y > 0; se escribe en `custitem_alm_articulo_conversionunidad`. |
 | RN3-12 | `purchasedescription` y `salesdescription` = nombre generado. |
 | RN3-13 | Ningún otro campo se escribe; el resto viene de la plantilla. |
+| RN3-14 | Si el JSON incluye `custitem_sads_nat_pla_lado_a` y `custitem_sads_nat_pla_lado_b`, Lado A no puede ser mayor que Lado B (D-18; constante `PARES_DE_LADOS`). |
 
 ## 9. Deployments, rol y permisos
 Suitelet (`customscript_sads_sl_crear_articulo_nat.xml`):
@@ -494,7 +499,7 @@ Reversión: configuración de placas con JSON y patrones de iteración A; inacti
 | R-12 | Un parámetro no aplica al tipo de la plantilla. | El campo no existe en la copia. | Error de configuración con el ID del campo (P-12). |
 | R-13 | La copia hereda datos de proveedor de la plantilla (UPC, MPN, código de proveedor). | Códigos que no corresponden al artículo procesado. | `vendorname` = nombre; `upccode` y `mpn` vacíos (RN-09); P-14. |
 | R-14 | El ID de la plantilla se captura a mano (D-12). | Un ID de otro artículo existente pasa RN-16 y se copia el artículo equivocado. | P-14; los técnicos verifican el ID al capturarlo. |
-| R-15 | En el código TA36 los lados van pegados sin separador (D-15): `2'x12'` y `21'x2'` producen `212`. | Dos medidas distintas con el mismo código; `save` falla por `itemid` repetido (S-09) y el usuario ve el mensaje genérico. | Capturar siempre el ancho como el lado menor; C-2 compara valores, no códigos. |
+| R-15 | En el código TA36 los lados van pegados sin separador (D-15): `2'x12'` y `21'x2'` producen `212`. | Dos medidas distintas con el mismo código; `save` falla por `itemid` repetido (S-09) y el usuario ve el mensaje genérico. | Cerrado: `entero1`/`entero2` fijan el ancho y RN3-14 exige Lado A ≤ Lado B. |
 | R3-01 | El workflow de precios podría no ejecutarse cuando el artículo lo crea un script. | Artículo con el precio de la plantilla. | P3-12; revisar contexto del workflow; artículos inactivos hasta pasar P3-12. |
 | R3-03 | Rangos que no cubren un espesor del catálogo. | El Suitelet rechaza ese espesor. | Mensaje claro; los técnicos cubren todo el catálogo. |
 | R3-05 | Conversión capturada a mano. | Precio erróneo propagado por la cadena. | Validación > 0; la confirmación muestra el valor; cálculo automático posterior (DA3-06). |
@@ -538,6 +543,9 @@ Bitácora:
 Mensajes de iteración B:
 | Mensaje | Causa | Solución |
 |---|---|---|
+| Paso 2: "Lado A: capture un número entero de 1 a 9." | Lado A fuera de 1 a 9 o con decimales (`entero1`). | Capturar un entero de 1 dígito. |
+| Paso 2: "Lado B: capture un número entero de 1 a 99." | Lado B fuera de 1 a 99 o con decimales (`entero2`). | Capturar un entero de hasta 2 dígitos. |
+| Paso 2: "Lado A no puede ser mayor que Lado B." | Lados capturados al revés (RN3-14). | Capturar el lado menor en Lado A. |
 | "La naturaleza usa espesor pero no tiene tipo de espesor." | JSON con `custitem_sads_nat_espesor` sin Tipo de Espesor. | Capturar el tipo en la configuración (RN3-08). |
 | "No hay espesores activos para el tipo de esta naturaleza." | Catálogo vacío o inactivo. | Capturar espesores del tipo. |
 | "La naturaleza no tiene familias de precio configuradas." | Sublista de familias vacía. | Capturar al menos una línea. |
@@ -551,16 +559,16 @@ Ver los logs: Customization > Scripting > Script Deployments > deployment > pest
 
 ## 16. Pruebas
 Comando: `npm test` (no requiere cuenta NetSuite).
-Resultado del 2026-11-18: 9 suites aprobadas de 9; 487 pruebas aprobadas de 487.
+Resultado del 2026-11-18: 9 suites aprobadas de 9; 518 pruebas aprobadas de 518.
 
 | Suite | Pruebas | Alcance |
 |---|---|---|
-| `SADS_naturaleza_patron.test.js` | 123 | P-01 a P-04; formatos `centesimas3`, `fraccion16`, `codigo`, `texto` (P3-09, P3-16); regla de dependencia |
-| `SADS_naturaleza_parametros.test.js` | 77 | P-05 a P-08; catálogo y conversión (P3-08, P3-11); regla de dependencia |
+| `SADS_naturaleza_patron.test.js` | 141 | P-01 a P-04; formatos `centesimas3`, `fraccion16`, `entero1`, `entero2`, `codigo`, `texto` (P3-09, P3-16); regla de dependencia |
+| `SADS_naturaleza_parametros.test.js` | 83 | P-05 a P-08; catálogo y conversión (P3-08, P3-11); orden de lados (RN3-14); regla de dependencia |
 | `SADS_naturaleza_familias.test.js` | 29 | P3-01 a P3-07; regla de dependencia |
 | `SADS_naturaleza_articulo_ns.test.js` | 7 | Adaptador con y sin resultado |
-| `SADS_SL_crear_articulo_nat.test.js` | 85 | P-09 a P-13, P-16, P-22; P3-08, P3-10, P3-11, P3-17, P3-18; estructura del entry point |
-| `SADS_UE_naturaleza_config.test.js` | 43 | P-17, P-18; RN-17; P3-13, P3-16; errores inesperados |
+| `SADS_SL_crear_articulo_nat.test.js` | 91 | P-09 a P-13, P-16, P-22; P3-08, P3-10, P3-11, P3-17, P3-18; medidas 707/620 y orden de lados; estructura del entry point |
+| `SADS_UE_naturaleza_config.test.js` | 44 | P-17, P-18; RN-17; P3-13, P3-16; formatos de lados; errores inesperados |
 | `SADS_UE_nat_familia.test.js` | 12 | P3-14, P3-19; RN3-07; errores inesperados |
 | `SADS_naturaleza_config_formato.test.js` | 109 | Contrato del JSON (sin cambios) |
 | `sample-test.js` | 2 | Plantilla de SuiteCloud |
@@ -612,6 +620,9 @@ Cambios posteriores al prompt v2 (decisiones del usuario del 2026-11-14):
 | D-13 | Espesor en el código: centésimas de pulgada, 3 dígitos, truncado. | Formato `centesimas3`; cierra DA-05 para el código. |
 | D-14 | Espesor en el nombre: fracción de pulgada hasta 1/16. | Formato `fraccion16`; cierra DA-05 para el nombre. |
 | D-15 | Ancho y largo en pies enteros. | Los `custitem` de lados se crean como Entero; cierra DA-04. Sin cambio de código. |
+| D-16 | Lado B siempre en 2 dígitos con cero a la izquierda (2026-11-18). | Formato `entero2`. |
+| D-17 | Lado A de 1 a 9 y Lado B de 1 a 99 (2026-11-18). | Formatos `entero1` y `entero2`; el paso 2 rechaza fuera de rango o con decimales. |
+| D-18 | Lado A no puede ser mayor que Lado B (2026-11-18). | RN3-14; cierra R-15. |
 
 Desviaciones de la iteración B respecto del prompt v3:
 | Punto | Decisión | Motivo |

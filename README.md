@@ -160,17 +160,17 @@ Comando: `npm test` o `npx jest`; no requiere cuenta NetSuite.
 
 | Suite | Pruebas | Alcance |
 |---|---|---|
-| `SADS_SL_crear_articulo_nat.test.js` | 85 | Entry point del Suitelet con `jest.mock` de `N/`, incluida la iteración B. |
+| `SADS_SL_crear_articulo_nat.test.js` | 91 | Entry point del Suitelet con `jest.mock` de `N/`, incluida la iteración B. |
 | `SADS_UE_nat_familia.test.js` | 12 | Entry point del UE de familias, incluido XEDIT. |
-| `SADS_UE_naturaleza_config.test.js` | 43 | Entry point del UE de configuración, incluido XEDIT. |
+| `SADS_UE_naturaleza_config.test.js` | 44 | Entry point del UE de configuración, incluido XEDIT. |
 | `SADS_naturaleza_articulo_ns.test.js` | 7 | Adaptador de tipo de registro. |
 | `SADS_naturaleza_config_formato.test.js` | 109 | Contrato del JSON y compatibilidad con la lectura del CS y del UE. |
 | `SADS_naturaleza_familias.test.js` | 29 | Rangos de familias y resolución por espesor. |
-| `SADS_naturaleza_parametros.test.js` | 77 | IDs, valores capturados, espesor, conversión y criterios de duplicado. |
-| `SADS_naturaleza_patron.test.js` | 123 | Marcadores, formatos `centesimas3`, `fraccion16`, `codigo` y `texto`, y sustitución. |
+| `SADS_naturaleza_parametros.test.js` | 83 | IDs, valores capturados, espesor, conversión, orden de lados y criterios de duplicado. |
+| `SADS_naturaleza_patron.test.js` | 141 | Marcadores, formatos `centesimas3`, `fraccion16`, `entero1`, `entero2`, `codigo` y `texto`, y sustitución. |
 | `sample-test.js` | 2 | Plantilla de SuiteCloud. |
 
-Resultado del 2026-11-18: 9 suites aprobadas de 9; 487 pruebas aprobadas de 487.
+Resultado del 2026-11-18: 9 suites aprobadas de 9; 518 pruebas aprobadas de 518.
 `suitecloud project:validate` no se ejecutó para esta versión (sin cuenta en el entorno de desarrollo).
 El CS y el UE de artículo no tienen pruebas Jest.
 

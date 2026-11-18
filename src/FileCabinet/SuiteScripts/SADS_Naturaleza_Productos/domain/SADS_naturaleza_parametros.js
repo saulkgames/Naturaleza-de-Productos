@@ -178,6 +178,25 @@ define(['./SADS_naturaleza_config_formato'], (formato) => {
     };
 
     /**
+     * Valida que en cada par de lados el menor no supere al mayor (D-18). No lanza errores.
+     * Un par se evalúa solo si ambos IDs tienen valor numérico.
+     * @param {Object} datos
+     * @param {Object<string, number>} datos.valores - Valores validados por ID.
+     * @param {Object<string, string>} datos.etiquetas - Etiqueta visible por ID; si falta se usa el ID.
+     * @param {Array<{menor: string, mayor: string}>} datos.pares - IDs del lado menor y del lado mayor.
+     * @returns {{valido: boolean, errores: string[]}}
+     */
+    const validarOrdenDeLados = ({ valores, etiquetas, pares } = {}) => {
+        const listaDePares = Array.isArray(pares) ? pares : [];
+        const tieneNumero = (id) => tienePropiedad(valores, id) && typeof valores[id] === 'number' && Number.isFinite(valores[id]);
+        const etiquetaDe = (id) => (tienePropiedad(etiquetas, id) ? etiquetaVisible({ id, etiqueta: etiquetas[id] }) : id);
+        const errores = listaDePares
+            .filter((par) => tieneNumero(par.menor) && tieneNumero(par.mayor) && valores[par.menor] > valores[par.mayor])
+            .map((par) => `${etiquetaDe(par.menor)} no puede ser mayor que ${etiquetaDe(par.mayor)}.`);
+        return { valido: errores.length === 0, errores };
+    };
+
+    /**
      * Arma los criterios de la consulta de duplicados (RN-08) en el orden del JSON.
      * @param {Object} datos
      * @param {string[]} datos.ids - IDs del JSON recalculado.
@@ -203,6 +222,7 @@ define(['./SADS_naturaleza_config_formato'], (formato) => {
         validarIds,
         validarDefinicion,
         validarValores,
+        validarOrdenDeLados,
         armarCriteriosDuplicado
     };
 });

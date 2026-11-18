@@ -1014,3 +1014,72 @@ describe('iteración B: espesor por catálogo, familias, peso, conversión y des
         expect(copia.save).not.toHaveBeenCalled();
     });
 });
+
+describe('medidas de placa con ancho fijo y orden de lados (D-16 a D-18)', () => {
+    const CONFIGURACION_LADOS = Object.freeze({
+        custrecord_sads_naturaleza_config: '["custitem_sads_nat_pla_lado_a","custitem_sads_nat_pla_lado_b","custitem_sads_nat_espesor"]',
+        custrecord_sads_naturaleza_plantilla: ID_PLANTILLA,
+        custrecord_sads_naturaleza_patron_nom: "Placa Acero TA36 {custitem_sads_nat_espesor:texto} {custitem_sads_nat_pla_lado_a}'x{custitem_sads_nat_pla_lado_b}'",
+        custrecord_sads_naturaleza_patron_cod: 'PLA36{custitem_sads_nat_espesor:codigo}{custitem_sads_nat_pla_lado_a:entero1}{custitem_sads_nat_pla_lado_b:entero2}',
+        custrecord_sads_naturaleza_tipo_esp: [{ value: '1', text: 'Fracción de pulgada' }]
+    });
+    const CAMPOS_LADOS = Object.freeze({
+        custitem_sads_nat_pla_lado_a: { label: 'Lado A', type: 'float' },
+        custitem_sads_nat_pla_lado_b: { label: 'Lado B', type: 'float' },
+        custitem_sads_nat_espesor: { label: 'Espesor', type: 'select' }
+    });
+    const ESPESORES_LADOS = Object.freeze([{ id: 9, nombre: '1/2"', texto: "1/2''", codigo: '050', orden: 0.5 }]);
+    const CAPTURA = Object.freeze({
+        custpage_configuracion: '11',
+        custpage_par_0: '7',
+        custpage_par_1: '7',
+        custpage_par_2: '9',
+        custpage_peso: '500',
+        custpage_conversion: '500'
+    });
+    const escenario = () => prepararEscenario({ configuracion: CONFIGURACION_LADOS, campos: CAMPOS_LADOS, espesores: ESPESORES_LADOS });
+
+    test('placa 1/2 x 7 x 7 genera el código con terminación 707', () => {
+        const { valoresAsignados, copia } = escenario();
+        ejecutar(solicitudCrear(CAPTURA));
+        expect(valoresAsignados.itemid).toBe('PLA36050707');
+        expect(valoresAsignados.displayname).toBe("Placa Acero TA36 1/2'' 7'x7'");
+        expect(copia.save).toHaveBeenCalledTimes(1);
+    });
+
+    test('placa 1/2 x 6 x 20 conserva la terminación 620', () => {
+        const { valoresAsignados } = escenario();
+        ejecutar(solicitudCrear(Object.assign({}, CAPTURA, { custpage_par_0: '6', custpage_par_1: '20' })));
+        expect(valoresAsignados.itemid).toBe('PLA36050620');
+    });
+
+    test('D-17: Lado A de 10 repite el paso 2 sin guardar', () => {
+        const { copia } = escenario();
+        const formulario = ejecutar(solicitudCrear(Object.assign({}, CAPTURA, { custpage_par_0: '10', custpage_par_1: '20' })));
+        expect(formulario.title).toContain('Paso 2 de 2');
+        expect(textosDeMensajes(formulario)).toEqual(['Lado A: capture un número entero de 1 a 9.']);
+        expect(copia.save).not.toHaveBeenCalled();
+    });
+
+    test('D-17: Lado B con decimales repite el paso 2', () => {
+        const { copia } = escenario();
+        const formulario = ejecutar(solicitudCrear(Object.assign({}, CAPTURA, { custpage_par_1: '7.5' })));
+        expect(textosDeMensajes(formulario)).toEqual(['Lado B: capture un número entero de 1 a 99.']);
+        expect(copia.save).not.toHaveBeenCalled();
+    });
+
+    test('D-18: Lado A mayor que Lado B repite el paso 2 con valores previos y sin buscar duplicados', () => {
+        const { copia } = escenario();
+        const formulario = ejecutar(solicitudCrear(Object.assign({}, CAPTURA, { custpage_par_0: '8', custpage_par_1: '6' })));
+        expect(textosDeMensajes(formulario)).toEqual(['Lado A no puede ser mayor que Lado B.']);
+        expect(formulario.campos.custpage_par_0.defaultValue).toBe('8');
+        expect(consultaDeDuplicado()).toEqual([]);
+        expect(copia.save).not.toHaveBeenCalled();
+    });
+
+    test('el orden de lados no aplica si la naturaleza no tiene ambos lados', () => {
+        const { copia } = prepararEscenario();
+        ejecutar(solicitudCrear(CAPTURA_VALIDA));
+        expect(copia.save).toHaveBeenCalledTimes(1);
+    });
+});

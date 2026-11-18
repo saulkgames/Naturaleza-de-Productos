@@ -19,12 +19,15 @@ define(['./SADS_naturaleza_config_formato'], (formato) => {
      * Formatos de marcador (D-13, D-14). Sin formato, el número se escribe en decimal (RN-07).
      * centesimas3: centésimas truncadas a 3 dígitos (0.5 → 050; 0.375 → 037).
      * fraccion16: fracción reducida hasta dieciseisavos (0.5 → 1/2; 1.25 → 1 1/4).
+     * entero1: entero de 1 dígito, 1 a 9 (D-17). entero2: entero de 2 dígitos con cero a la izquierda, 1 a 99 (7 → 07) (D-16).
      * codigo y texto: segmento de código y texto del espesor elegido en el catálogo (RN3-09); solo para el campo de espesor.
-     * @type {Readonly<{CENTESIMAS_3: string, FRACCION_16: string, CODIGO: string, TEXTO: string}>}
+     * @type {Readonly<{CENTESIMAS_3: string, FRACCION_16: string, ENTERO_1: string, ENTERO_2: string, CODIGO: string, TEXTO: string}>}
      */
     const FORMATOS = Object.freeze({
         CENTESIMAS_3: 'centesimas3',
         FRACCION_16: 'fraccion16',
+        ENTERO_1: 'entero1',
+        ENTERO_2: 'entero2',
         CODIGO: 'codigo',
         TEXTO: 'texto'
     });
@@ -40,6 +43,10 @@ define(['./SADS_naturaleza_config_formato'], (formato) => {
     const DIGITOS_CENTESIMAS = 3;
     const CENTESIMAS_MINIMAS = 1;
     const CENTESIMAS_MAXIMAS = 999;
+    const ENTERO_MINIMO = 1;
+    const ENTERO_1_MAXIMO = 9;
+    const ENTERO_2_MAXIMO = 99;
+    const DIGITOS_ENTERO_2 = 2;
     const PATRON_ID_CITABLE = /^[a-z0-9_]+$/;
 
     const MENSAJES = Object.freeze({
@@ -70,7 +77,9 @@ define(['./SADS_naturaleza_config_formato'], (formato) => {
 
     const MENSAJES_DE_CAPTURA = Object.freeze({
         [FORMATOS.CENTESIMAS_3]: (etiqueta) => `${etiqueta}: el valor no cabe en 3 dígitos de centésimas (de 0.01 a 9.99).`,
-        [FORMATOS.FRACCION_16]: (etiqueta) => `${etiqueta}: el valor no corresponde a una fracción de 1/16 de pulgada.`
+        [FORMATOS.FRACCION_16]: (etiqueta) => `${etiqueta}: el valor no corresponde a una fracción de 1/16 de pulgada.`,
+        [FORMATOS.ENTERO_1]: (etiqueta) => `${etiqueta}: capture un número entero de ${ENTERO_MINIMO} a ${ENTERO_1_MAXIMO}.`,
+        [FORMATOS.ENTERO_2]: (etiqueta) => `${etiqueta}: capture un número entero de ${ENTERO_MINIMO} a ${ENTERO_2_MAXIMO}.`
     });
 
     const errorDePatron = (mensaje) => formato.crearErrorDeDominio(ERRORES.PATRON_INVALIDO, mensaje);
@@ -206,6 +215,16 @@ define(['./SADS_naturaleza_config_formato'], (formato) => {
      * @returns {string} Por ejemplo 2.5 → '2.5', 4 → '4', 0.125 → '0.125'.
      * @throws {Error} PATRON_INVALIDO si numero no es un número finito.
      */
+    const esEnteroEnRango = (numero, maximo) => Number.isInteger(numero) && numero >= ENTERO_MINIMO && numero <= maximo;
+
+    // D-17: un dígito.
+    const formatearEntero1 = (numero) => (esEnteroEnRango(numero, ENTERO_1_MAXIMO) ? String(numero) : null);
+
+    // D-16: dos dígitos con cero a la izquierda (7 → 07).
+    const formatearEntero2 = (numero) => (
+        esEnteroEnRango(numero, ENTERO_2_MAXIMO) ? String(numero).padStart(DIGITOS_ENTERO_2, '0') : null
+    );
+
     const formatearNumero = (numero) => {
         validarNumero(numero);
         const texto = numero.toFixed(DECIMALES_DE_FORMATO);
@@ -216,7 +235,9 @@ define(['./SADS_naturaleza_config_formato'], (formato) => {
 
     const FORMATEADORES = Object.freeze({
         [FORMATOS.CENTESIMAS_3]: formatearCentesimas3,
-        [FORMATOS.FRACCION_16]: formatearFraccion16
+        [FORMATOS.FRACCION_16]: formatearFraccion16,
+        [FORMATOS.ENTERO_1]: formatearEntero1,
+        [FORMATOS.ENTERO_2]: formatearEntero2
     });
 
     /**

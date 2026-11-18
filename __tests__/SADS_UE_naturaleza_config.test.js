@@ -266,7 +266,7 @@ describe('RN-17: formatos de marcador', () => {
             nuevos: configuracionCon({ custrecord_sads_naturaleza_patron_cod: 'PLA36{custitem_pl_espesor:centesimas}' })
         }));
         expect(errores).toEqual([
-            'Patrón de código: El formato centesimas del marcador {custitem_pl_espesor} no existe. Formatos válidos: centesimas3, fraccion16, codigo, texto.'
+            'Patrón de código: El formato centesimas del marcador {custitem_pl_espesor} no existe. Formatos válidos: centesimas3, fraccion16, entero1, entero2, codigo, texto.'
         ]);
     });
 
@@ -400,5 +400,18 @@ describe('iteración B: tipo de espesor y formatos de catálogo (RN3-08, RN3-09)
             anteriores: CONFIGURACION_B
         }));
         expect(errores).toEqual(['La configuración usa espesor y requiere Tipo de Espesor.']);
+    });
+});
+
+describe('formatos entero1 y entero2 en la configuración (D-16, D-17)', () => {
+    test('el patrón de código con entero1 y entero2 en los lados se acepta', () => {
+        const contexto = crearContexto({ nuevos: {
+            custrecord_sads_naturaleza_config: '["custitem_sads_nat_pla_lado_a","custitem_sads_nat_pla_lado_b","custitem_sads_nat_espesor"]',
+            custrecord_sads_naturaleza_plantilla: ID_PLANTILLA,
+            custrecord_sads_naturaleza_patron_cod: 'PLA36{custitem_sads_nat_espesor:codigo}{custitem_sads_nat_pla_lado_a:entero1}{custitem_sads_nat_pla_lado_b:entero2}',
+            custrecord_sads_naturaleza_patron_nom: "Placa Acero TA36 {custitem_sads_nat_espesor:texto} {custitem_sads_nat_pla_lado_a}'x{custitem_sads_nat_pla_lado_b}'",
+            custrecord_sads_naturaleza_tipo_esp: '1'
+        } });
+        expect(() => userEvent.beforeSubmit(contexto)).not.toThrow();
     });
 });

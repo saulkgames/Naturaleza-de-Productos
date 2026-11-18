@@ -230,9 +230,11 @@ describe('formatos de marcador (D-13, D-14, RN-17)', () => {
     const NOMBRE_TA36 = "Placa Acero TA36 {custitem_pl_espesor:fraccion16}'' {custitem_pl_ancho}'x{custitem_pl_largo}'";
     const VALORES_TA36 = Object.freeze({ custitem_pl_espesor: 0.5, custitem_pl_ancho: 6, custitem_pl_largo: 20 });
 
-    test('FORMATOS está congelado con centesimas3, fraccion16, codigo y texto', () => {
+    test('FORMATOS está congelado con centesimas3, fraccion16, entero1, entero2, codigo y texto', () => {
         expect(Object.isFrozen(patron.FORMATOS)).toBe(true);
-        expect(patron.FORMATOS).toEqual({ CENTESIMAS_3: 'centesimas3', FRACCION_16: 'fraccion16', CODIGO: 'codigo', TEXTO: 'texto' });
+        expect(patron.FORMATOS).toEqual({
+            CENTESIMAS_3: 'centesimas3', FRACCION_16: 'fraccion16', ENTERO_1: 'entero1', ENTERO_2: 'entero2', CODIGO: 'codigo', TEXTO: 'texto'
+        });
     });
 
     test('ejemplo de placa TA36: código PLA36050620 y nombre con fracción', () => {
@@ -322,20 +324,20 @@ describe('formatos de marcador (D-13, D-14, RN-17)', () => {
         const resultado = patron.validar({ patron: 'PL{custitem_pl_espesor:fraccion}', idsPermitidos: IDS_TA36 });
         expect(resultado).toEqual({
             valido: false,
-            errores: ['El formato fraccion del marcador {custitem_pl_espesor} no existe. Formatos válidos: centesimas3, fraccion16, codigo, texto.']
+            errores: ['El formato fraccion del marcador {custitem_pl_espesor} no existe. Formatos válidos: centesimas3, fraccion16, entero1, entero2, codigo, texto.']
         });
     });
 
     test('validar no cita un formato no citable', () => {
         const resultado = patron.validar({ patron: '{custitem_pl_espesor:<b>x</b>}', idsPermitidos: IDS_TA36 });
-        expect(resultado.errores).toEqual(['Un marcador del patrón tiene un formato que no existe. Formatos válidos: centesimas3, fraccion16, codigo, texto.']);
+        expect(resultado.errores).toEqual(['Un marcador del patrón tiene un formato que no existe. Formatos válidos: centesimas3, fraccion16, entero1, entero2, codigo, texto.']);
     });
 
     test('validar reporta ID fuera del JSON y formato desconocido a la vez', () => {
         const resultado = patron.validar({ patron: '{custitem_otro:centesimas3}{custitem_pl_largo:xx}', idsPermitidos: IDS_TA36 });
         expect(resultado.errores).toEqual([
             'El marcador {custitem_otro} no es un ID de la configuración.',
-            'El formato xx del marcador {custitem_pl_largo} no existe. Formatos válidos: centesimas3, fraccion16, codigo, texto.'
+            'El formato xx del marcador {custitem_pl_largo} no existe. Formatos válidos: centesimas3, fraccion16, entero1, entero2, codigo, texto.'
         ]);
     });
 
@@ -438,5 +440,51 @@ describe('formatos de catálogo codigo y texto (RN3-09)', () => {
 
     test('validarFormatos ignora codigo y texto', () => {
         expect(patron.validarFormatos({ patron: NOMBRE, valores: VALORES, etiquetas: {} })).toEqual({ valido: true, errores: [] });
+    });
+});
+
+describe('formatos entero1 y entero2 (D-16, D-17)', () => {
+    const IDS = ['custitem_sads_nat_pla_lado_a', 'custitem_sads_nat_pla_lado_b', 'custitem_sads_nat_espesor'];
+    const CATALOGO = ['custitem_sads_nat_espesor'];
+    const CODIGO = 'PLA36{custitem_sads_nat_espesor:codigo}{custitem_sads_nat_pla_lado_a:entero1}{custitem_sads_nat_pla_lado_b:entero2}';
+    const TEXTOS = Object.freeze({ custitem_sads_nat_espesor: { codigo: '050', texto: "1/2''" } });
+
+    test.each([[7, '7'], [1, '1'], [9, '9']])('entero1 de %p → %p', (numero, esperado) => {
+        expect(patron.formatearValor(numero, 'entero1')).toBe(esperado);
+    });
+
+    test.each([0, 10, 6.5, -1])('entero1 de %p no cabe', (numero) => {
+        expect(patron.formatearValor(numero, 'entero1')).toBeNull();
+    });
+
+    test.each([[7, '07'], [1, '01'], [20, '20'], [99, '99']])('entero2 de %p → %p', (numero, esperado) => {
+        expect(patron.formatearValor(numero, 'entero2')).toBe(esperado);
+    });
+
+    test.each([0, 100, 6.5, -7])('entero2 de %p no cabe', (numero) => {
+        expect(patron.formatearValor(numero, 'entero2')).toBeNull();
+    });
+
+    test('placa 1/2 x 7 x 7 termina en 707 y 6 x 20 en 620', () => {
+        const valores = { custitem_sads_nat_espesor: 9, custitem_sads_nat_pla_lado_a: 7, custitem_sads_nat_pla_lado_b: 7 };
+        expect(patron.aplicar({ patron: CODIGO, valores, textos: TEXTOS })).toBe('PLA36050707');
+        expect(patron.aplicar({
+            patron: CODIGO, valores: Object.assign({}, valores, { custitem_sads_nat_pla_lado_a: 6, custitem_sads_nat_pla_lado_b: 20 }), textos: TEXTOS
+        })).toBe('PLA36050620');
+    });
+
+    test('el patrón con entero1 y entero2 es válido en los lados y no en el espesor', () => {
+        expect(patron.validar({ patron: CODIGO, idsPermitidos: IDS, idsCatalogo: CATALOGO })).toEqual({ valido: true, errores: [] });
+        expect(patron.validar({ patron: '{custitem_sads_nat_espesor:entero2}', idsPermitidos: IDS, idsCatalogo: CATALOGO }).errores)
+            .toEqual(['El marcador {custitem_sads_nat_espesor} es un catálogo y requiere el formato codigo o texto.']);
+    });
+
+    test('validarFormatos reporta lados fuera de rango con su etiqueta', () => {
+        const resultado = patron.validarFormatos({
+            patron: CODIGO,
+            valores: { custitem_sads_nat_espesor: 9, custitem_sads_nat_pla_lado_a: 10, custitem_sads_nat_pla_lado_b: 100 },
+            etiquetas: { custitem_sads_nat_pla_lado_a: 'Lado A', custitem_sads_nat_pla_lado_b: 'Lado B' }
+        });
+        expect(resultado.errores).toEqual(['Lado A: capture un número entero de 1 a 9.', 'Lado B: capture un número entero de 1 a 99.']);
     });
 });

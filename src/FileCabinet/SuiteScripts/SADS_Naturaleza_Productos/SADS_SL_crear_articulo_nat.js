@@ -37,6 +37,11 @@ define([
     const REGISTRO_ESPESOR = 'customrecord_sads_espesor';
     const REGISTRO_FAMILIA = 'customrecord_sads_nat_familia';
 
+    // D-18: en cada par, el lado menor no puede superar al mayor. Solo aplica si ambos IDs están en el JSON.
+    const PARES_DE_LADOS = Object.freeze([
+        Object.freeze({ menor: 'custitem_sads_nat_pla_lado_a', mayor: 'custitem_sads_nat_pla_lado_b' })
+    ]);
+
     // Supuesto S-04: IDs de campo válidos en inventoryitem; S-15: vendorname como campo de cuerpo.
     const CAMPOS_ARTICULO = Object.freeze({
         NATURALEZA: 'custitem_sads_naturaleza_producto',
@@ -798,15 +803,23 @@ define([
         });
     };
 
-    // D-13, D-14: un valor que no cabe en el formato de su marcador se corrige en el paso 2, no es error de configuración.
-    const validarFormatosDeCaptura = (preparacion, valores) => {
+    const etiquetasDe = (definicion) => {
         const etiquetas = {};
-        preparacion.definicion.forEach((parametro) => {
+        definicion.forEach((parametro) => {
             etiquetas[parametro.id] = parametro.etiqueta;
         });
+        return etiquetas;
+    };
+
+    // D-13, D-14, D-16, D-17: un valor que no cabe en el formato de su marcador se corrige en el paso 2, no es error de configuración.
+    // D-18: el orden de los lados también se corrige en el paso 2.
+    const validarFormatosDeCaptura = (preparacion, valores) => {
+        const etiquetas = etiquetasDe(preparacion.definicion);
+        const pares = PARES_DE_LADOS.filter((par) => preparacion.ids.indexOf(par.menor) !== -1 && preparacion.ids.indexOf(par.mayor) !== -1);
         const errores = [preparacion.patronCodigo, preparacion.patronNombre]
             .map((texto) => patron.validarFormatos({ patron: texto, valores, etiquetas }).errores)
-            .reduce((todos, propios) => todos.concat(propios), []);
+            .reduce((todos, propios) => todos.concat(propios), [])
+            .concat(parametros.validarOrdenDeLados({ valores, etiquetas, pares }).errores);
         return errores.filter((mensaje, posicion) => errores.indexOf(mensaje) === posicion);
     };
 
