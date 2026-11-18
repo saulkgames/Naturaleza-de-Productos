@@ -25,5 +25,10 @@
       <isinactive>F</isinactive>
       <value>Cédula</value>
     </customvalue>
+    <customvalue scriptid="val_sads_tesp_ptr">
+      <abbreviation></abbreviation>
+      <isinactive>F</isinactive>
+      <value>Pared de PTR</value>
+    </customvalue>
   </customvalues>
 </customlist>

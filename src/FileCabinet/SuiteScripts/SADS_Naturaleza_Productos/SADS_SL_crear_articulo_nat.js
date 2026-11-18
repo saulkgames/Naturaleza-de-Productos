@@ -45,8 +45,9 @@ define([
     // Supuesto S-04: IDs de campo válidos en inventoryitem; S-15: vendorname como campo de cuerpo.
     const CAMPOS_ARTICULO = Object.freeze({
         NATURALEZA: 'custitem_sads_naturaleza_producto',
-        CODIGO: 'itemid',
-        NOMBRE: 'displayname',
+        // D-19: en la empresa itemid guarda el nombre largo; displayname y vendorname guardan el código.
+        NOMBRE_ARTICULO: 'itemid',
+        CODIGO_PARA_MOSTRAR: 'displayname',
         PESO: 'weight',
         UNIDAD_PESO: 'weightunit',
         INACTIVO: 'isinactive',
@@ -62,8 +63,8 @@ define([
     // D-11: campos de proveedor heredados de la plantilla que se dejan vacíos.
     const CAMPOS_A_LIMPIAR = Object.freeze(['upccode', 'mpn']);
 
-    // Supuesto S-14: longitud máxima de itemid.
-    const LONGITUD_MAXIMA_CODIGO = 60;
+    // Supuesto S-14: longitud máxima de itemid, que recibe el nombre generado (D-19).
+    const LONGITUD_MAXIMA_ITEMID = 60;
 
     // Supuesto S-16: IDs internos de weightunit; se usa solo si getText no devuelve texto (PT-11).
     const UNIDADES_PESO_RESPALDO = Object.freeze({
@@ -111,7 +112,7 @@ define([
 
     // Supuesto S-02: columnas custitem_* en la tabla item. Los criterios se agregan con columnas validadas.
     const SQL_DUPLICADO_BASE = [
-        'SELECT art.id AS id, art.itemid AS codigo, art.isinactive AS inactivo',
+        'SELECT art.id AS id, art.displayname AS codigo, art.itemid AS nombre, art.isinactive AS inactivo',
         'FROM item art',
         `WHERE art.${CAMPOS_ARTICULO.NATURALEZA} = ?`
     ];
@@ -188,7 +189,7 @@ define([
         SIN_TIPO_ESPESOR: 'La naturaleza usa espesor pero no tiene tipo de espesor.',
         SIN_ESPESORES: 'No hay espesores activos para el tipo de esta naturaleza.',
         SIN_FAMILIAS: 'La naturaleza no tiene familias de precio configuradas.',
-        CODIGO_LARGO: `El código generado excede ${LONGITUD_MAXIMA_CODIGO} caracteres; revise el patrón de la naturaleza.`,
+        NOMBRE_LARGO: `El nombre generado excede ${LONGITUD_MAXIMA_ITEMID} caracteres; revise el patrón de nombre de la naturaleza.`,
         COLUMNA_NO_PERMITIDA: 'La configuración de esta naturaleza contiene un ID de campo no válido para buscar duplicados.',
         DUPLICADO: 'Ya existe un artículo con esta naturaleza y estos parámetros.',
         CREADO: 'El artículo se creó correctamente.',
@@ -349,7 +350,8 @@ define([
      * Cada columna se valida con parametros.esIdentificadorSeguro; los valores van como parámetros (R-04).
      * @param {string} configuracionId - ID interno de la configuración.
      * @param {Array<{columna: string, valor: number}>} criterios - Resultado de parametros.armarCriteriosDuplicado.
-     * @returns {?{id: string, codigo: string, inactivo: boolean}} Primer artículo encontrado o null.
+     * @returns {?{id: string, codigo: string, nombre: string, inactivo: boolean}} Primer artículo encontrado o null;
+     * codigo = displayname y nombre = itemid (D-19).
      * @throws {Error} CONFIGURACION_INVALIDA si una columna no es un identificador seguro.
      */
     const buscarDuplicado = (configuracionId, criterios) => {
@@ -365,6 +367,7 @@ define([
         return {
             id: aCadena(fila.id),
             codigo: aCadena(fila.codigo),
+            nombre: aCadena(fila.nombre),
             inactivo: fila.inactivo === true || aCadena(fila.inactivo) === CASILLA_MARCADA
         };
     };
@@ -379,8 +382,8 @@ define([
      * @param {number} datos.peso - Peso capturado (kg).
      * @param {number} datos.conversion - Conversión de unidad de compra a base.
      * @param {{familiaPrecioId: string, familiaMargenId: string}} datos.familia - Línea resuelta por familias.resolver.
-     * @param {string} datos.codigo - Código generado.
-     * @param {string} datos.nombre - Nombre generado; también es código de proveedor (D-10) y descripciones (RN3-12).
+     * @param {string} datos.codigo - Código generado; va a displayname y a vendorname (D-19).
+     * @param {string} datos.nombre - Nombre generado; va a itemid y a las descripciones de compra y venta (D-19, RN3-12).
      * @param {boolean} datos.activo - Resultado de leerCrearActivo.
      * @returns {void}
      */
@@ -394,9 +397,9 @@ define([
         copia.setValue({ fieldId: CAMPOS_ARTICULO.CONVERSION, value: conversion });
         copia.setValue({ fieldId: CAMPOS_ARTICULO.FAMILIA_PRECIO, value: familia.familiaPrecioId });
         copia.setValue({ fieldId: CAMPOS_ARTICULO.FAMILIA_MARGEN, value: familia.familiaMargenId });
-        copia.setValue({ fieldId: CAMPOS_ARTICULO.CODIGO, value: codigo });
-        copia.setValue({ fieldId: CAMPOS_ARTICULO.NOMBRE, value: nombre });
-        copia.setValue({ fieldId: CAMPOS_ARTICULO.CODIGO_PROVEEDOR, value: nombre });
+        copia.setValue({ fieldId: CAMPOS_ARTICULO.NOMBRE_ARTICULO, value: nombre });
+        copia.setValue({ fieldId: CAMPOS_ARTICULO.CODIGO_PARA_MOSTRAR, value: codigo });
+        copia.setValue({ fieldId: CAMPOS_ARTICULO.CODIGO_PROVEEDOR, value: codigo });
         copia.setValue({ fieldId: CAMPOS_ARTICULO.DESCRIPCION_COMPRA, value: nombre });
         copia.setValue({ fieldId: CAMPOS_ARTICULO.DESCRIPCION_VENTA, value: nombre });
         CAMPOS_A_LIMPIAR.forEach((id) => {
@@ -643,15 +646,16 @@ define([
      * Construye la página de artículo existente (RN-08).
      * @param {Object} datos
      * @param {string} datos.codigo - Código del artículo existente.
+     * @param {string} datos.nombre - Nombre (itemid) del artículo existente.
      * @param {boolean} datos.inactivo - Estado del artículo existente.
      * @param {?string} datos.urlArticulo - URL del artículo existente; null si no se resolvió su tipo.
      * @param {string} datos.urlInicio - URL del paso 1.
      * @returns {serverWidget.Form}
      */
-    const construirDuplicado = ({ codigo, inactivo, urlArticulo, urlInicio }) => {
+    const construirDuplicado = ({ codigo, nombre, inactivo, urlArticulo, urlInicio }) => {
         const form = crearFormulario(TITULOS_FORMULARIO.DUPLICADO);
         agregarAviso(form, { tipo: message.Type.INFORMATION, titulo: TITULOS_AVISO.DUPLICADO, lineas: [MENSAJES.DUPLICADO] });
-        agregarResumenDelArticulo(form, { codigo, nombre: null, inactivo });
+        agregarResumenDelArticulo(form, { codigo, nombre, inactivo });
         agregarEnlacesFinales(form, { urlArticulo, urlInicio });
         return form;
     };
@@ -772,6 +776,7 @@ define([
         const tipoRegistro = resolverTipoRegistroArticulo(duplicado.id);
         return construirDuplicado({
             codigo: duplicado.codigo,
+            nombre: duplicado.nombre,
             inactivo: duplicado.inactivo,
             urlArticulo: tipoRegistro === null ? null : urlDelArticulo(tipoRegistro, duplicado.id),
             urlInicio: urlDelSuitelet()
@@ -861,7 +866,7 @@ define([
         const textos = textosDelEspesor(espesor);
         const codigo = patron.aplicar({ patron: preparacion.patronCodigo, valores: captura.valores, textos });
         const nombre = patron.aplicar({ patron: preparacion.patronNombre, valores: captura.valores, textos });
-        if (codigo.length > LONGITUD_MAXIMA_CODIGO) return repetirPaso2([MENSAJES.CODIGO_LARGO]);
+        if (nombre.length > LONGITUD_MAXIMA_ITEMID) return repetirPaso2([MENSAJES.NOMBRE_LARGO]);
         const criterios = parametros.armarCriteriosDuplicado({ ids: preparacion.ids, valores: captura.valores });
         asegurarColumnasPermitidas(criterios, preparacion.ids);
         const duplicado = buscarDuplicado(preparacion.configuracion.id, criterios);

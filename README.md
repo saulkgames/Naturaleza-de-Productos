@@ -90,6 +90,7 @@ La sintaxis de los patrones y sus formatos está en la sección 4 de la document
 | Suitelet de creación, deployment y parámetro `custscript_sads_sl_art_activo` | `suitelet` | customscript_sads_sl_crear_articulo_nat.xml |
 | User Event de configuración y deployment | `usereventscript` | customscript_sads_ue_naturaleza_config.xml |
 | Campos de parámetros de placa (lados) | `itemcustomfield` | custitem_sads_nat_pla_lado_a.xml, custitem_sads_nat_pla_lado_b.xml |
+| Campos de parámetros de PTR cuadrado (lado y largo) | `itemcustomfield` | custitem_sads_nat_ptr_lado.xml, custitem_sads_nat_ptr_largo.xml |
 | Lista de tipos de espesor | `customlist` | customlist_sads_tipo_espesor.xml |
 | Registro de espesores | `customrecordtype` | customrecord_sads_espesor.xml |
 | Campo de espesor de artículo (SELECT al catálogo) | `itemcustomfield` | custitem_sads_nat_espesor.xml |
@@ -148,7 +149,7 @@ Manifiesto: CUSTOMRECORDS, SUBSIDIARIES y SERVERSIDESCRIPTING son obligatorias; 
     │       ├── SADS_naturaleza_familias.js
     │       ├── SADS_naturaleza_patron.js
     │       └── SADS_naturaleza_parametros.js
-    └── Objects/                             # 19 Object XML (sección 3)
+    └── Objects/                             # 22 Object XML (sección 3)
 ```
 
 `SADS_item_dynamic_mandatory.md` cita nombres de archivo que no coinciden con los actuales.
@@ -166,10 +167,10 @@ Comando: `npm test` o `npx jest`; no requiere cuenta NetSuite.
 | `SADS_naturaleza_config_formato.test.js` | 109 | Contrato del JSON y compatibilidad con la lectura del CS y del UE. |
 | `SADS_naturaleza_familias.test.js` | 29 | Rangos de familias y resolución por espesor. |
 | `SADS_naturaleza_parametros.test.js` | 83 | IDs, valores capturados, espesor, conversión, orden de lados y criterios de duplicado. |
-| `SADS_naturaleza_patron.test.js` | 141 | Marcadores, formatos `centesimas3`, `fraccion16`, `entero1`, `entero2`, `codigo` y `texto`, y sustitución. |
+| `SADS_naturaleza_patron.test.js` | 158 | Marcadores, formatos `centesimas3`, `fraccion16`, `entero1`, `entero2`, `decimal2`, `codigo` y `texto`, y sustitución. |
 | `sample-test.js` | 2 | Plantilla de SuiteCloud. |
 
-Resultado del 2026-11-18: 9 suites aprobadas de 9; 518 pruebas aprobadas de 518.
+Resultado del 2026-11-18: 9 suites aprobadas de 9; 535 pruebas aprobadas de 535.
 `suitecloud project:validate` no se ejecutó para esta versión (sin cuenta en el entorno de desarrollo).
 El CS y el UE de artículo no tienen pruebas Jest.
 

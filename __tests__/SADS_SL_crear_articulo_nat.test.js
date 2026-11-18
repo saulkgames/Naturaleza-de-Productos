@@ -52,7 +52,7 @@ const MENSAJES = Object.freeze({
     SIN_CONFIGURACIONES: 'No hay naturalezas con artículo plantilla configurado.',
     NATURALEZA_INVALIDA: 'La naturaleza seleccionada no es válida o ya no está disponible.',
     PLANTILLA_INEXISTENTE: 'El artículo plantilla de esta naturaleza no existe.',
-    CODIGO_LARGO: 'El código generado excede 60 caracteres; revise el patrón de la naturaleza.',
+    NOMBRE_LARGO: 'El nombre generado excede 60 caracteres; revise el patrón de nombre de la naturaleza.',
     DUPLICADO: 'Ya existe un artículo con esta naturaleza y estos parámetros.',
     CREADO: 'El artículo se creó correctamente.'
 });
@@ -302,7 +302,7 @@ describe('estructura del módulo', () => {
     });
 
     test('declara los supuestos como constantes con nombre', () => {
-        expect(fuente).toMatch(/const LONGITUD_MAXIMA_CODIGO = 60;/);
+        expect(fuente).toMatch(/const LONGITUD_MAXIMA_ITEMID = 60;/);
         expect(fuente).toMatch(/const CAMPOS_A_LIMPIAR = Object\.freeze\(\['upccode', 'mpn'\]\);/);
         expect(fuente).toMatch(/const UNIDADES_PESO_RESPALDO = Object\.freeze\(/);
     });
@@ -591,9 +591,9 @@ describe('creación (POST crear)', () => {
             custitem_alm_articulo_conversionunidad: 125.5,
             custitem_pfp_famprecios_: '68',
             custitem_pfp_fammargenes_: '7',
-            itemid: 'PL-0.25-4X2',
-            displayname: 'PLACA A36 0.25 IN 4 X 2 FT',
-            vendorname: 'PLACA A36 0.25 IN 4 X 2 FT',
+            itemid: 'PLACA A36 0.25 IN 4 X 2 FT',
+            displayname: 'PL-0.25-4X2',
+            vendorname: 'PL-0.25-4X2',
             purchasedescription: 'PLACA A36 0.25 IN 4 X 2 FT',
             salesdescription: 'PLACA A36 0.25 IN 4 X 2 FT',
             upccode: '',
@@ -665,7 +665,7 @@ describe('creación (POST crear)', () => {
             custpage_codigo: 'FALSO',
             custpage_naturaleza_texto: 'Otra'
         })));
-        expect(valoresAsignados.itemid).toBe('PL-0.25-4X2');
+        expect(valoresAsignados.displayname).toBe('PL-0.25-4X2');
         expect(Object.values(valoresAsignados)).not.toContain(99);
     });
 
@@ -699,25 +699,25 @@ describe('creación (POST crear)', () => {
         expect(formulario.mensajes[0].message).not.toContain('<script>');
     });
 
-    test('código de más de 60 caracteres: repite el paso 2 con el mensaje de longitud', () => {
+    test('D-19: nombre (itemid) de más de 60 caracteres: repite el paso 2 con el mensaje de longitud', () => {
         const { copia } = prepararEscenario({ configuracion: {
             custrecord_sads_naturaleza_config: JSON_PLACAS,
             custrecord_sads_naturaleza_plantilla: ID_PLANTILLA,
-            custrecord_sads_naturaleza_patron_nom: PATRON_NOMBRE,
-            custrecord_sads_naturaleza_patron_cod: `${'X'.repeat(55)}-{custitem_pl_espesor}-{custitem_pl_largo}X{custitem_pl_ancho}`
+            custrecord_sads_naturaleza_patron_nom: `${'X'.repeat(55)}-{custitem_pl_espesor}-{custitem_pl_largo}X{custitem_pl_ancho}`,
+            custrecord_sads_naturaleza_patron_cod: PATRON_CODIGO
         } });
         const formulario = ejecutar(solicitudCrear(CAPTURA_VALIDA));
         expect(formulario.title).toContain('Paso 2 de 2');
-        expect(textosDeMensajes(formulario)).toEqual([MENSAJES.CODIGO_LARGO]);
+        expect(textosDeMensajes(formulario)).toEqual([MENSAJES.NOMBRE_LARGO]);
         expect(copia.save).not.toHaveBeenCalled();
     });
 
-    test('un código de exactamente 60 caracteres se acepta', () => {
+    test('un nombre (itemid) de exactamente 60 caracteres se acepta', () => {
         const { copia } = prepararEscenario({ configuracion: {
             custrecord_sads_naturaleza_config: '["custitem_pl_ancho"]',
             custrecord_sads_naturaleza_plantilla: ID_PLANTILLA,
-            custrecord_sads_naturaleza_patron_nom: 'N {custitem_pl_ancho}',
-            custrecord_sads_naturaleza_patron_cod: `${'X'.repeat(59)}{custitem_pl_ancho}`
+            custrecord_sads_naturaleza_patron_nom: `${'X'.repeat(59)}{custitem_pl_ancho}`,
+            custrecord_sads_naturaleza_patron_cod: 'N {custitem_pl_ancho}'
         } });
         ejecutar(solicitudCrear({ custpage_configuracion: '11', custpage_par_0: '2', custpage_peso: '1', custpage_conversion: '1' }));
         expect(copia.save).toHaveBeenCalledTimes(1);
@@ -760,9 +760,9 @@ describe('formatos de marcador: placa TA36 (D-13 a D-15)', () => {
     test('alta de placa 1/2 x 6 x 20: código PLA36050620 y nombre con fracción', () => {
         const { copia, valoresAsignados } = prepararEscenario({ configuracion: CONFIGURACION_TA36, campos: CAMPOS_TA36 });
         const formulario = ejecutar(solicitudCrear(CAPTURA_TA36));
-        expect(valoresAsignados.itemid).toBe('PLA36050620');
-        expect(valoresAsignados.displayname).toBe("Placa Acero TA36 1/2'' 6'x20'");
-        expect(valoresAsignados.vendorname).toBe("Placa Acero TA36 1/2'' 6'x20'");
+        expect(valoresAsignados.displayname).toBe('PLA36050620');
+        expect(valoresAsignados.vendorname).toBe('PLA36050620');
+        expect(valoresAsignados.itemid).toBe("Placa Acero TA36 1/2'' 6'x20'");
         expect(valoresAsignados.custitem_pl_espesor).toBe(0.5);
         expect(copia.save).toHaveBeenCalledTimes(1);
         expect(formulario.campos.custpage_codigo.defaultValue).toBe('PLA36050620');
@@ -771,8 +771,8 @@ describe('formatos de marcador: placa TA36 (D-13 a D-15)', () => {
     test('3/8 se trunca a 037 en el código y se escribe 3/8 en el nombre', () => {
         const { valoresAsignados } = prepararEscenario({ configuracion: CONFIGURACION_TA36, campos: CAMPOS_TA36 });
         ejecutar(solicitudCrear(Object.assign({}, CAPTURA_TA36, { custpage_par_1: '0.375', custpage_par_0: '4', custpage_par_2: '10' })));
-        expect(valoresAsignados.itemid).toBe('PLA36037410');
-        expect(valoresAsignados.displayname).toBe("Placa Acero TA36 3/8'' 4'x10'");
+        expect(valoresAsignados.displayname).toBe('PLA36037410');
+        expect(valoresAsignados.itemid).toBe("Placa Acero TA36 3/8'' 4'x10'");
     });
 
     test('un espesor que no es múltiplo de 1/16 repite el paso 2 con mensaje y no guarda', () => {
@@ -803,7 +803,9 @@ describe('formatos de marcador: placa TA36 (D-13 a D-15)', () => {
 
 describe('duplicados (RN-08)', () => {
     test('P-11: con un artículo existente muestra la página de duplicado sin guardar', () => {
-        const { copia } = prepararEscenario({ duplicados: [{ id: ID_DUPLICADO, codigo: 'PL-0.25-4X2', inactivo: 'T' }] });
+        const { copia } = prepararEscenario({
+            duplicados: [{ id: ID_DUPLICADO, codigo: 'PL-0.25-4X2', nombre: 'PLACA A36 0.25 IN 4 X 2 FT', inactivo: 'T' }]
+        });
         const formulario = ejecutar(solicitudCrear(CAPTURA_VALIDA));
 
         expect(formulario.title).toContain('Artículo existente');
@@ -812,7 +814,7 @@ describe('duplicados (RN-08)', () => {
         expect(formulario.mensajes[0].message).toBe(MENSAJES.DUPLICADO);
         expect(formulario.campos.custpage_codigo.defaultValue).toBe('PL-0.25-4X2');
         expect(formulario.campos.custpage_estado.defaultValue).toBe('Inactivo');
-        expect(formulario.campos.custpage_nombre).toBeUndefined();
+        expect(formulario.campos.custpage_nombre.defaultValue).toBe('PLACA A36 0.25 IN 4 X 2 FT');
         expect(url.resolveRecord).toHaveBeenCalledWith({ recordType: 'inventoryitem', recordId: String(ID_DUPLICADO), isEditMode: false });
         expect(formulario.campos.custpage_enlace_articulo.defaultValue).toBe(enlace(URL_ARTICULO_ESCAPADA, 'Ver artículo'));
         expect(formulario.campos.custpage_enlace_inicio.defaultValue).toBe(enlace(URL_SUITELET_ESCAPADA, 'Crear otro'));
@@ -947,8 +949,9 @@ describe('iteración B: espesor por catálogo, familias, peso, conversión y des
             custitem_alm_articulo_conversionunidad: 1225.5,
             custitem_pfp_famprecios_: '68',
             custitem_pfp_fammargenes_: '168',
-            itemid: 'PLA36050620',
-            displayname: "Placa Acero TA36 1/2'' 6'x20'",
+            itemid: "Placa Acero TA36 1/2'' 6'x20'",
+            displayname: 'PLA36050620',
+            vendorname: 'PLA36050620',
             purchasedescription: "Placa Acero TA36 1/2'' 6'x20'",
             salesdescription: "Placa Acero TA36 1/2'' 6'x20'",
             isinactive: true
@@ -963,7 +966,7 @@ describe('iteración B: espesor por catálogo, familias, peso, conversión y des
         const { valoresAsignados } = escenarioB();
         ejecutar(solicitudCrear(Object.assign({}, CAPTURA_B, { custpage_par_2: '504' })));
         expect(valoresAsignados.custitem_pfp_famprecios_).toBe('69');
-        expect(valoresAsignados.itemid).toBe('PLA36075620');
+        expect(valoresAsignados.displayname).toBe('PLA36075620');
     });
 
     test('RN3-04: un espesor fuera de todos los rangos muestra error de configuración y no guarda', () => {
@@ -1042,15 +1045,15 @@ describe('medidas de placa con ancho fijo y orden de lados (D-16 a D-18)', () =>
     test('placa 1/2 x 7 x 7 genera el código con terminación 707', () => {
         const { valoresAsignados, copia } = escenario();
         ejecutar(solicitudCrear(CAPTURA));
-        expect(valoresAsignados.itemid).toBe('PLA36050707');
-        expect(valoresAsignados.displayname).toBe("Placa Acero TA36 1/2'' 7'x7'");
+        expect(valoresAsignados.displayname).toBe('PLA36050707');
+        expect(valoresAsignados.itemid).toBe("Placa Acero TA36 1/2'' 7'x7'");
         expect(copia.save).toHaveBeenCalledTimes(1);
     });
 
     test('placa 1/2 x 6 x 20 conserva la terminación 620', () => {
         const { valoresAsignados } = escenario();
         ejecutar(solicitudCrear(Object.assign({}, CAPTURA, { custpage_par_0: '6', custpage_par_1: '20' })));
-        expect(valoresAsignados.itemid).toBe('PLA36050620');
+        expect(valoresAsignados.displayname).toBe('PLA36050620');
     });
 
     test('D-17: Lado A de 10 repite el paso 2 sin guardar', () => {

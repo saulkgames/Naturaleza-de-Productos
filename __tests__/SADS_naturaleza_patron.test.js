@@ -233,7 +233,8 @@ describe('formatos de marcador (D-13, D-14, RN-17)', () => {
     test('FORMATOS está congelado con centesimas3, fraccion16, entero1, entero2, codigo y texto', () => {
         expect(Object.isFrozen(patron.FORMATOS)).toBe(true);
         expect(patron.FORMATOS).toEqual({
-            CENTESIMAS_3: 'centesimas3', FRACCION_16: 'fraccion16', ENTERO_1: 'entero1', ENTERO_2: 'entero2', CODIGO: 'codigo', TEXTO: 'texto'
+            CENTESIMAS_3: 'centesimas3', FRACCION_16: 'fraccion16', ENTERO_1: 'entero1', ENTERO_2: 'entero2',
+            DECIMAL_2: 'decimal2', CODIGO: 'codigo', TEXTO: 'texto'
         });
     });
 
@@ -324,20 +325,20 @@ describe('formatos de marcador (D-13, D-14, RN-17)', () => {
         const resultado = patron.validar({ patron: 'PL{custitem_pl_espesor:fraccion}', idsPermitidos: IDS_TA36 });
         expect(resultado).toEqual({
             valido: false,
-            errores: ['El formato fraccion del marcador {custitem_pl_espesor} no existe. Formatos válidos: centesimas3, fraccion16, entero1, entero2, codigo, texto.']
+            errores: ['El formato fraccion del marcador {custitem_pl_espesor} no existe. Formatos válidos: centesimas3, fraccion16, entero1, entero2, decimal2, codigo, texto.']
         });
     });
 
     test('validar no cita un formato no citable', () => {
         const resultado = patron.validar({ patron: '{custitem_pl_espesor:<b>x</b>}', idsPermitidos: IDS_TA36 });
-        expect(resultado.errores).toEqual(['Un marcador del patrón tiene un formato que no existe. Formatos válidos: centesimas3, fraccion16, entero1, entero2, codigo, texto.']);
+        expect(resultado.errores).toEqual(['Un marcador del patrón tiene un formato que no existe. Formatos válidos: centesimas3, fraccion16, entero1, entero2, decimal2, codigo, texto.']);
     });
 
     test('validar reporta ID fuera del JSON y formato desconocido a la vez', () => {
         const resultado = patron.validar({ patron: '{custitem_otro:centesimas3}{custitem_pl_largo:xx}', idsPermitidos: IDS_TA36 });
         expect(resultado.errores).toEqual([
             'El marcador {custitem_otro} no es un ID de la configuración.',
-            'El formato xx del marcador {custitem_pl_largo} no existe. Formatos válidos: centesimas3, fraccion16, entero1, entero2, codigo, texto.'
+            'El formato xx del marcador {custitem_pl_largo} no existe. Formatos válidos: centesimas3, fraccion16, entero1, entero2, decimal2, codigo, texto.'
         ]);
     });
 
@@ -486,5 +487,58 @@ describe('formatos entero1 y entero2 (D-16, D-17)', () => {
             etiquetas: { custitem_sads_nat_pla_lado_a: 'Lado A', custitem_sads_nat_pla_lado_b: 'Lado B' }
         });
         expect(resultado.errores).toEqual(['Lado A: capture un número entero de 1 a 9.', 'Lado B: capture un número entero de 1 a 99.']);
+    });
+});
+
+describe('formato decimal2 y patrones de PTR cuadrado (D-20)', () => {
+    const IDS = ['custitem_sads_nat_ptr_lado', 'custitem_sads_nat_ptr_largo', 'custitem_sads_nat_espesor'];
+    const CODIGO = 'PTRC{custitem_sads_nat_ptr_lado:centesimas3}{custitem_sads_nat_espesor:codigo}';
+    const NOMBRE = 'PTR {custitem_sads_nat_ptr_lado:fraccion16}" x {custitem_sads_nat_ptr_lado:fraccion16}" '
+        + '{custitem_sads_nat_espesor:texto} a {custitem_sads_nat_ptr_largo:decimal2}m';
+    const NOMBRE_MP = 'PTR Media Pieza {custitem_sads_nat_ptr_lado:fraccion16}" x {custitem_sads_nat_ptr_lado:fraccion16}" '
+        + '{custitem_sads_nat_espesor:texto} a {custitem_sads_nat_ptr_largo:decimal2}m';
+    const ptr = (lado, largo, codigo, texto) => ({
+        valores: { custitem_sads_nat_ptr_lado: lado, custitem_sads_nat_ptr_largo: largo, custitem_sads_nat_espesor: 1 },
+        textos: { custitem_sads_nat_espesor: { codigo, texto } }
+    });
+
+    test.each([[6, '6.00'], [6.1, '6.10'], [3, '3.00'], [0.5, '0.50'], [12.25, '12.25']])('decimal2 de %p → %p', (numero, esperado) => {
+        expect(patron.formatearValor(numero, 'decimal2')).toBe(esperado);
+    });
+
+    test.each([0, -1, 6.125, 0.001])('decimal2 de %p no cabe', (numero) => {
+        expect(patron.formatearValor(numero, 'decimal2')).toBeNull();
+    });
+
+    test.each([
+        [1, 6, 'C14', 'Cal.14', 'PTRC100C14', 'PTR 1" x 1" Cal.14 a 6.00m'],
+        [1.25, 6, 'C12', 'Cal.12', 'PTRC125C12', 'PTR 1 1/4" x 1 1/4" Cal.12 a 6.00m'],
+        [3, 6.1, 'E25', "1/4''", 'PTRC300E25', "PTR 3\" x 3\" 1/4'' a 6.10m"],
+        [3, 6.1, 'E18', "3/16''", 'PTRC300E18', "PTR 3\" x 3\" 3/16'' a 6.10m"],
+        [4, 6, 'C09', 'Cal.09', 'PTRC400C09', 'PTR 4" x 4" Cal.09 a 6.00m']
+    ])('PTR lado %p, largo %p, %p → %p / %p', (lado, largo, codigo, texto, codigoEsperado, nombreEsperado) => {
+        const datos = ptr(lado, largo, codigo, texto);
+        expect(patron.aplicar(Object.assign({ patron: CODIGO }, datos))).toBe(codigoEsperado);
+        expect(patron.aplicar(Object.assign({ patron: NOMBRE }, datos))).toBe(nombreEsperado);
+    });
+
+    test('media pieza: MPPTRC100C14 / PTR Media Pieza 1" x 1" Cal.14 a 3.00m', () => {
+        const datos = ptr(1, 3, 'C14', 'Cal.14');
+        expect(patron.aplicar(Object.assign({ patron: `MP${CODIGO}` }, datos))).toBe('MPPTRC100C14');
+        expect(patron.aplicar(Object.assign({ patron: NOMBRE_MP }, datos))).toBe('PTR Media Pieza 1" x 1" Cal.14 a 3.00m');
+    });
+
+    test('los patrones de PTR son válidos con el espesor como catálogo', () => {
+        const catalogo = ['custitem_sads_nat_espesor'];
+        expect(patron.validar({ patron: CODIGO, idsPermitidos: IDS, idsCatalogo: catalogo }).valido).toBe(true);
+        expect(patron.validar({ patron: NOMBRE, idsPermitidos: IDS, idsCatalogo: catalogo }).valido).toBe(true);
+    });
+
+    test('validarFormatos rechaza un largo con más de 2 decimales', () => {
+        expect(patron.validarFormatos({
+            patron: NOMBRE,
+            valores: { custitem_sads_nat_ptr_lado: 1, custitem_sads_nat_ptr_largo: 6.125, custitem_sads_nat_espesor: 1 },
+            etiquetas: { custitem_sads_nat_ptr_largo: 'Largo' }
+        }).errores).toEqual(['Largo: capture un número mayor que 0 con máximo 2 decimales.']);
     });
 });

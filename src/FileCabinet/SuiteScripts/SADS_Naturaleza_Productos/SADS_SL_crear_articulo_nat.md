@@ -17,6 +17,7 @@
 3. [Flujo del Suitelet](#3-flujo-del-suitelet)
 4. [Guía para usuarios técnicos](#4-guía-para-usuarios-técnicos)
 4B. [Iteración B: espesores, familias, peso y conversión](#4b-iteración-b-espesores-familias-peso-y-conversión)
+4C. [Perfiles Tubulares Cuadrados (PTR)](#4c-perfiles-tubulares-cuadrados-ptr)
 5. [Campos del formulario](#5-campos-del-formulario)
 6. [Consultas SuiteQL](#6-consultas-suiteql)
 7. [User Event de configuración](#7-user-event-de-configuración)
@@ -35,8 +36,8 @@
 ## 1. Resumen
 Un usuario con permiso elige una naturaleza de producto, captura sus parámetros (placas: ancho, espesor, largo) y el peso.
 El Suitelet copia el artículo plantilla de la naturaleza y crea el artículo nuevo.
-El código (`itemid`) y el nombre (`displayname`) se generan con los patrones de la configuración.
-El código de proveedor (`vendorname`) recibe el nombre generado; UPC y MPN quedan vacíos.
+El nombre y el código se generan con los patrones de la configuración (D-19, convención de la empresa):
+el nombre va a `itemid` y a las descripciones de compra y venta; el código va a `displayname` y a `vendorname`. UPC y MPN quedan vacíos.
 Iteración B: el espesor se elige de un catálogo; la familia de precio y la de margen se asignan por rango de espesor; peso y conversión se capturan; las descripciones de compra y venta reciben el nombre.
 La cadena existente de campos fórmula y workflow calcula el precio a partir de la familia y la conversión (supuesto S3-05).
 El artículo se crea inactivo hasta que P3-12 confirme el precio en sandbox (DA3-05).
@@ -141,7 +142,7 @@ Creación:
 2. `patron.validarFormatos` de ambos patrones: un valor que no cabe en el formato de su marcador regresa al paso 2 con mensaje (RN-17).
 3. `patron.aplicar` del patrón de código y del de nombre. Código de más de 60 caracteres: paso 2 con mensaje.
 4. `parametros.armarCriteriosDuplicado`; columnas verificadas contra el JSON; C-2. Con fila: página de duplicado y `log.audit`.
-5. Sobre la copia: naturaleza, parámetros, `weight`, `itemid`, `displayname`, `vendorname` = nombre, `upccode` y `mpn` vacíos, `isinactive` = negación de `custscript_sads_sl_art_activo`.
+5. Sobre la copia: naturaleza, parámetros, `weight`, `itemid` = nombre, `displayname` y `vendorname` = código, `upccode` y `mpn` vacíos, `isinactive` = negación de `custscript_sads_sl_art_activo`.
 6. `save({ ignoreMandatoryFields: false })`; `log.audit`; confirmación con código, nombre, estado y enlaces.
 
 Gobernanza estimada (límite 1,000 unidades; costos de `record.copy` y `save`: supuesto S-05):
@@ -188,6 +189,7 @@ Formatos de marcador (RN-17):
 | `fraccion16` | Fracción de pulgada reducida, hasta dieciseisavos (D-14) | 0.5 → `1/2`; 0.1875 → `3/16`; 1 → `1`; 1.25 → `1 1/4` | Un valor que no es múltiplo de 1/16 |
 | `entero1` | Entero de 1 dígito (D-17) | 7 → `7` | No entero, menor que 1 o mayor que 9 |
 | `entero2` | Entero de 2 dígitos con cero a la izquierda (D-16) | 7 → `07`; 20 → `20` | No entero, menor que 1 o mayor que 99 |
+| `decimal2` | Número con exactamente 2 decimales (D-20) | 6 → `6.00`; 6.1 → `6.10` | Menor o igual que 0 o con más de 2 decimales |
 
 Con espesores múltiplos de 1/16, `centesimas3` da un código distinto para cada uno (1/16 → `006` … 15/16 → `093`; 1 → `100`).
 
@@ -279,6 +281,32 @@ Nuevos campos del formulario: el espesor es un SELECT obligatorio en `custpage_p
 Supuesto S3-11: columnas SuiteQL con el mismo nombre que su scriptid.
 Gobernanza: paso 2 ~51 unidades; creación ~81 más el workflow; UE de familias ~30; límite 1,000.
 
+## 4C. Perfiles Tubulares Cuadrados (PTR)
+Ejemplos de la empresa: `PTRC100C14` / `PTR 1" x 1" Cal.14 a 6.00m`; `PTRC300E25` / `PTR 3" x 3" 1/4'' a 6.10m`; media pieza `MPPTRC100C14` / `PTR Media Pieza 1" x 1" Cal.14 a 3.00m`.
+El largo no va en el código: piezas de 1 m y 6 m comparten código (`displayname`) y se distinguen por el nombre (`itemid`) y por el parámetro de largo en la búsqueda de duplicados.
+
+Objetos en el proyecto:
+| Objeto | ID | Uso |
+|---|---|---|
+| Tipo de espesor | `val_sads_tesp_ptr` "Pared de PTR" | Agrupa calibres y fracciones de pared de PTR |
+| Campo | `custitem_sads_nat_ptr_lado` (FLOAT, pulgadas) | Lado de la sección |
+| Campo | `custitem_sads_nat_ptr_largo` (FLOAT, metros) | Largo de la pieza |
+| Espesores | Instancias `val_sads_esp_ptr_*` de "SADS - Espesor" | Cal.18 a Cal.07 (C18…C07) y 3/16" a 1/2" (E18…E50); orden = espesor en pulgadas. Calibres según calibre estándar de lámina de acero (supuesto S4-01). |
+
+Configuraciones a capturar en la UI:
+| Campo | PTR Cuadrado | PTR Cuadrado Media Pieza |
+|---|---|---|
+| Nombre | Perfiles Tubulares Cuadrados | Perfiles Tubulares Cuadrados Media Pieza |
+| Naturaleza (lista) | Perfiles Tubulares Cuadrados | Perfiles Tubulares Cuadrados |
+| JSON | `["custitem_sads_nat_ptr_lado","custitem_sads_nat_ptr_largo","custitem_sads_nat_espesor"]` | igual |
+| Artículo plantilla | 11249 | ID de un PTR media pieza |
+| Tipo de Espesor | Pared de PTR | Pared de PTR |
+| Patrón de Código | `PTRC{custitem_sads_nat_ptr_lado:centesimas3}{custitem_sads_nat_espesor:codigo}` | `MPPTRC{custitem_sads_nat_ptr_lado:centesimas3}{custitem_sads_nat_espesor:codigo}` |
+| Patrón de Nombre | `PTR {custitem_sads_nat_ptr_lado:fraccion16}" x {custitem_sads_nat_ptr_lado:fraccion16}" {custitem_sads_nat_espesor:texto} a {custitem_sads_nat_ptr_largo:decimal2}m` | `PTR Media Pieza {custitem_sads_nat_ptr_lado:fraccion16}" x {custitem_sads_nat_ptr_lado:fraccion16}" {custitem_sads_nat_espesor:texto} a {custitem_sads_nat_ptr_largo:decimal2}m` |
+| Familias | Rangos de espesor de "Pared de PTR" | igual |
+
+Captura en el Suitelet: lado en pulgadas decimales (1 1/4 = 1.25, múltiplo de 1/16); largo en metros con hasta 2 decimales (6, 6.1, 3).
+
 ## 5. Campos del formulario
 | ID | Tipo | Paso | Uso |
 |---|---|---|---|
@@ -348,7 +376,7 @@ Error inesperado: `log.error` con detalle y se relanza el error original.
 | RN-06 | Código = patrón de código con cada `{id}` sustituido por el valor del parámetro; nombre = patrón de nombre igual. Se recorta el resultado; vacío es error. |
 | RN-07 | Formato numérico en patrones sin formato de marcador: sin ceros a la derecha ni punto final (2.50 → 2.5; 4.0 → 4); punto decimal. |
 | RN-08 | Si existe un artículo, activo o inactivo, con la misma naturaleza y valores iguales en todos los parámetros, no se crea y se muestra el existente. |
-| RN-09 | El artículo nuevo es copia de la plantilla; el script solo escribe naturaleza, parámetros, peso, código, nombre, código de proveedor (= nombre), estado inactivo y (iteración B) precios, y deja vacíos UPC y MPN. |
+| RN-09 | El artículo nuevo es copia de la plantilla; el script solo escribe naturaleza, parámetros, peso, código, nombre, código de proveedor (= código, D-19), estado inactivo y (iteración B) precios, y deja vacíos UPC y MPN. |
 | RN-10 | Con `custscript_sads_sl_art_activo` = F el artículo se crea inactivo; con T, activo. |
 | RN-11 | Naturaleza, configuración, parámetros y plantilla se recalculan en cada POST; del formulario solo se toman el ID de configuración (entero validado contra C-1) y los valores capturados. |
 | RN-12 | El JSON de configuración cumple el contrato de `formato.parsearConfiguracion`. |
@@ -496,7 +524,7 @@ Reversión: configuración de placas con JSON y patrones de iteración A; inacti
 | R-10 | `project:deploy` vacía la audiencia del Suitelet. | Usuarios sin acceso. | Re-aplicar audiencia. |
 | R-11 | La plantilla puede ser de un tipo cuyo deployment del UE de artículo está en TESTING. | El UE no valida para otros usuarios. | El Suitelet valida RN-03 a RN-05 antes de guardar. |
 | R-12 | Un parámetro no aplica al tipo de la plantilla. | El campo no existe en la copia. | Error de configuración con el ID del campo (P-12). |
-| R-13 | La copia hereda datos de proveedor de la plantilla (UPC, MPN, código de proveedor). | Códigos que no corresponden al artículo procesado. | `vendorname` = nombre; `upccode` y `mpn` vacíos (RN-09); P-14. |
+| R-13 | La copia hereda datos de proveedor de la plantilla (UPC, MPN, código de proveedor). | Códigos que no corresponden al artículo procesado. | `vendorname` = código (D-19); `upccode` y `mpn` vacíos (RN-09); P-14. |
 | R-14 | El ID de la plantilla se captura a mano (D-12). | Un ID de otro artículo existente pasa RN-16 y se copia el artículo equivocado. | P-14; los técnicos verifican el ID al capturarlo. |
 | R-15 | En el código TA36 los lados van pegados sin separador (D-15): `2'x12'` y `21'x2'` producen `212`. | Dos medidas distintas con el mismo código; `save` falla por `itemid` repetido (S-09) y el usuario ve el mensaje genérico. | Cerrado: `entero1`/`entero2` fijan el ancho y RN3-14 exige Lado A ≤ Lado B. |
 | R3-01 | El workflow de precios podría no ejecutarse cuando el artículo lo crea un script. | Artículo con el precio de la plantilla. | P3-12; revisar contexto del workflow; artículos inactivos hasta pasar P3-12. |
@@ -558,11 +586,11 @@ Ver los logs: Customization > Scripting > Script Deployments > deployment > pest
 
 ## 16. Pruebas
 Comando: `npm test` (no requiere cuenta NetSuite).
-Resultado del 2026-11-18: 9 suites aprobadas de 9; 518 pruebas aprobadas de 518.
+Resultado del 2026-11-18: 9 suites aprobadas de 9; 535 pruebas aprobadas de 535.
 
 | Suite | Pruebas | Alcance |
 |---|---|---|
-| `SADS_naturaleza_patron.test.js` | 141 | P-01 a P-04; formatos `centesimas3`, `fraccion16`, `entero1`, `entero2`, `codigo`, `texto` (P3-09, P3-16); regla de dependencia |
+| `SADS_naturaleza_patron.test.js` | 158 | P-01 a P-04; formatos `centesimas3`, `fraccion16`, `entero1`, `entero2`, `decimal2`, `codigo`, `texto` (P3-09, P3-16); patrones de PTR; regla de dependencia |
 | `SADS_naturaleza_parametros.test.js` | 83 | P-05 a P-08; catálogo y conversión (P3-08, P3-11); orden de lados (RN3-14); regla de dependencia |
 | `SADS_naturaleza_familias.test.js` | 29 | P3-01 a P3-07; regla de dependencia |
 | `SADS_naturaleza_articulo_ns.test.js` | 7 | Adaptador con y sin resultado |
@@ -587,7 +615,7 @@ Casos automatizados:
 | P-10 | Paso 1 con error; sin `lookupFields` ni `record.copy` |
 | P-11 | Página de duplicado; `save` y `setValue` no llamados |
 | P-12 | Página de error de configuración con el ID del campo |
-| P-13 | Valores asignados, `vendorname` = nombre, UPC y MPN vacíos, `isinactive` T, `save` llamado, confirmación |
+| P-13 | Valores asignados, `itemid` = nombre, `displayname` y `vendorname` = código, UPC y MPN vacíos, `isinactive` T, `save` llamado, confirmación |
 | P-16 | Mensaje genérico; texto crudo ausente; `log.error` llamado |
 | P-17 | Rechazo en los seis casos inválidos; sin error en el válido |
 | P-18 | XEDIT valida contra el JSON y la plantilla de `oldRecord` |
@@ -596,7 +624,7 @@ Casos automatizados:
 Pruebas en sandbox (las ejecuta el equipo):
 | Caso | Entrada | Resultado esperado |
 |---|---|---|
-| P-14 | Alta de una placa | Cuentas, impuestos, claves SAT, subsidiarias y unidades iguales a la plantilla; `vendorname` = nombre; UPC y MPN vacíos |
+| P-14 | Alta de una placa | Cuentas, impuestos, claves SAT, subsidiarias y unidades iguales a la plantilla; `itemid` = nombre; `displayname` y `vendorname` = código; UPC y MPN vacíos |
 | P-15 | Largo 1.5 con `minvalue` 2 en el campo | `save` rechaza; mensaje genérico; confirma S-08 |
 | P-19 | Usuario en audiencia sin `LIST_ITEM` CREATE | No crea; mensaje genérico |
 | P-20 | Re-despliegue | Audiencia vacía; se re-aplica |
@@ -622,6 +650,8 @@ Cambios posteriores al prompt v2 (decisiones del usuario del 2026-11-14):
 | D-16 | Lado B siempre en 2 dígitos con cero a la izquierda (2026-11-18). | Formato `entero2`. |
 | D-17 | Lado A de 1 a 9 y Lado B de 1 a 99 (2026-11-18). | Formatos `entero1` y `entero2`; el paso 2 rechaza fuera de rango o con decimales. |
 | D-18 | Lado A no puede ser mayor que Lado B (2026-11-18). | RN3-14; cierra R-15. |
+| D-19 | `itemid` guarda el nombre largo; `displayname` y `vendorname` guardan el código (convención de la empresa, 2026-11-18). | El límite de 60 caracteres se aplica al nombre. La página de duplicado muestra código y nombre. |
+| D-20 | Largo con 2 decimales en el nombre (2026-11-18). | Formato `decimal2`. |
 
 Desviaciones de la iteración B respecto del prompt v3:
 | Punto | Decisión | Motivo |

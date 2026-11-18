@@ -20,14 +20,16 @@ define(['./SADS_naturaleza_config_formato'], (formato) => {
      * centesimas3: centésimas truncadas a 3 dígitos (0.5 → 050; 0.375 → 037).
      * fraccion16: fracción reducida hasta dieciseisavos (0.5 → 1/2; 1.25 → 1 1/4).
      * entero1: entero de 1 dígito, 1 a 9 (D-17). entero2: entero de 2 dígitos con cero a la izquierda, 1 a 99 (7 → 07) (D-16).
+     * decimal2: número mayor que 0 con exactamente 2 decimales (6 → 6.00; 6.1 → 6.10) (D-20).
      * codigo y texto: segmento de código y texto del espesor elegido en el catálogo (RN3-09); solo para el campo de espesor.
-     * @type {Readonly<{CENTESIMAS_3: string, FRACCION_16: string, ENTERO_1: string, ENTERO_2: string, CODIGO: string, TEXTO: string}>}
+     * @type {Readonly<{CENTESIMAS_3: string, FRACCION_16: string, ENTERO_1: string, ENTERO_2: string, DECIMAL_2: string, CODIGO: string, TEXTO: string}>}
      */
     const FORMATOS = Object.freeze({
         CENTESIMAS_3: 'centesimas3',
         FRACCION_16: 'fraccion16',
         ENTERO_1: 'entero1',
         ENTERO_2: 'entero2',
+        DECIMAL_2: 'decimal2',
         CODIGO: 'codigo',
         TEXTO: 'texto'
     });
@@ -47,6 +49,7 @@ define(['./SADS_naturaleza_config_formato'], (formato) => {
     const ENTERO_1_MAXIMO = 9;
     const ENTERO_2_MAXIMO = 99;
     const DIGITOS_ENTERO_2 = 2;
+    const DECIMALES_DECIMAL_2 = 2;
     const PATRON_ID_CITABLE = /^[a-z0-9_]+$/;
 
     const MENSAJES = Object.freeze({
@@ -79,7 +82,8 @@ define(['./SADS_naturaleza_config_formato'], (formato) => {
         [FORMATOS.CENTESIMAS_3]: (etiqueta) => `${etiqueta}: el valor no cabe en 3 dígitos de centésimas (de 0.01 a 9.99).`,
         [FORMATOS.FRACCION_16]: (etiqueta) => `${etiqueta}: el valor no corresponde a una fracción de 1/16 de pulgada.`,
         [FORMATOS.ENTERO_1]: (etiqueta) => `${etiqueta}: capture un número entero de ${ENTERO_MINIMO} a ${ENTERO_1_MAXIMO}.`,
-        [FORMATOS.ENTERO_2]: (etiqueta) => `${etiqueta}: capture un número entero de ${ENTERO_MINIMO} a ${ENTERO_2_MAXIMO}.`
+        [FORMATOS.ENTERO_2]: (etiqueta) => `${etiqueta}: capture un número entero de ${ENTERO_MINIMO} a ${ENTERO_2_MAXIMO}.`,
+        [FORMATOS.DECIMAL_2]: (etiqueta) => `${etiqueta}: capture un número mayor que 0 con máximo ${DECIMALES_DECIMAL_2} decimales.`
     });
 
     const errorDePatron = (mensaje) => formato.crearErrorDeDominio(ERRORES.PATRON_INVALIDO, mensaje);
@@ -225,6 +229,13 @@ define(['./SADS_naturaleza_config_formato'], (formato) => {
         esEnteroEnRango(numero, ENTERO_2_MAXIMO) ? String(numero).padStart(DIGITOS_ENTERO_2, '0') : null
     );
 
+    // D-20: se redondea antes a millonésimas para evitar el error de punto flotante (6.1 → 6.10).
+    const formatearDecimal2 = (numero) => {
+        const millonesimas = aMillonesimas(numero);
+        if (millonesimas <= 0 || millonesimas % MILLONESIMAS_POR_CENTESIMA !== 0) return null;
+        return (millonesimas / MILLONESIMAS_POR_UNIDAD).toFixed(DECIMALES_DECIMAL_2);
+    };
+
     const formatearNumero = (numero) => {
         validarNumero(numero);
         const texto = numero.toFixed(DECIMALES_DE_FORMATO);
@@ -237,7 +248,8 @@ define(['./SADS_naturaleza_config_formato'], (formato) => {
         [FORMATOS.CENTESIMAS_3]: formatearCentesimas3,
         [FORMATOS.FRACCION_16]: formatearFraccion16,
         [FORMATOS.ENTERO_1]: formatearEntero1,
-        [FORMATOS.ENTERO_2]: formatearEntero2
+        [FORMATOS.ENTERO_2]: formatearEntero2,
+        [FORMATOS.DECIMAL_2]: formatearDecimal2
     });
 
     /**
