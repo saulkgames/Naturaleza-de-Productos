@@ -2,14 +2,14 @@
 
 | Dato | Valor |
 |---|---|
-| Fecha de generación | 2026-11-13 (formatos: 2026-11-14; iteración B: 2026-11-18) |
-| Iteración | B: espesor por catálogo, familias de precio y margen por rango, peso, conversión y descripciones; artículos inactivos hasta pasar P3-12 |
+| Fecha de generación | 2026-11-13 (formatos: 2026-11-14; iteración B: 2026-11-18; cálculo de precio: 2026-11-19) |
+| Iteración | B: espesor por catálogo, familias de precio y margen por rango, peso, conversión y descripciones. Cálculo de precio en el Suitelet (sección 4D). Artículos inactivos hasta pasar P4-01 a P4-04 |
 | Suitelet | `customscript_sads_sl_crear_articulo_nat` / `customdeploy_sads_sl_crear_articulo_nat` |
 | User Events | `customscript_sads_ue_naturaleza_config` / `customdeploy_sads_ue_naturaleza_config`; `customscript_sads_ue_nat_familia` / `customdeploy_sads_ue_nat_familia` |
 | Plataforma | SuiteScript 2.1, `@NModuleScope SameAccount` |
 | Proyecto SDF | Account Customization "Naturaleza de Productos" (`src/manifest.xml`) |
-| Diseño de origen | Iteración A: `planes/2026-11-12_creador-articulos-naturaleza_plan_v2.md` y `..._prompt_v2.md`. Iteración B: `planes/2026-11-17_creador-articulos-naturaleza_plan_v5.md` y `..._prompt_v3.md` |
-| Método | Implementación y pruebas Jest sin cuenta NetSuite; los supuestos S-01 a S-16 y S3-01 a S3-11 siguen abiertos hasta probar en `Almetal_SB` |
+| Diseño de origen | Iteración A: `planes/2026-11-12_creador-articulos-naturaleza_plan_v2.md` y `..._prompt_v2.md`. Iteración B: `planes/2026-11-17_creador-articulos-naturaleza_plan_v5.md` y `..._prompt_v3.md`. Precio: `planes/2026-11-18_calculo-precio-articulo_plan_v1.md` |
+| Método | Implementación y pruebas Jest sin cuenta NetSuite; los supuestos S-01 a S-16, S3-01 a S3-11 y S4-01 a S4-08 siguen abiertos hasta probar en `Almetal_SB` |
 
 ## Contenido
 1. [Resumen](#1-resumen)
@@ -18,6 +18,7 @@
 4. [Guía para usuarios técnicos](#4-guía-para-usuarios-técnicos)
 4B. [Iteración B: espesores, familias, peso y conversión](#4b-iteración-b-espesores-familias-peso-y-conversión)
 4C. [Perfiles Tubulares Cuadrados (PTR)](#4c-perfiles-tubulares-cuadrados-ptr)
+4D. [Cálculo de precio](#4d-cálculo-de-precio)
 5. [Campos del formulario](#5-campos-del-formulario)
 6. [Consultas SuiteQL](#6-consultas-suiteql)
 7. [User Event de configuración](#7-user-event-de-configuración)
@@ -39,8 +40,8 @@ El Suitelet copia el artículo plantilla de la naturaleza y crea el artículo nu
 El nombre y el código se generan con los patrones de la configuración (D-19, convención de la empresa):
 el nombre va a `itemid` y a las descripciones de compra y venta; el código va a `displayname` y a `vendorname`. UPC y MPN quedan vacíos.
 Iteración B: el espesor se elige de un catálogo; la familia de precio y la de margen se asignan por rango de espesor; peso y conversión se capturan; las descripciones de compra y venta reciben el nombre.
-La cadena existente de campos fórmula y workflow calcula el precio a partir de la familia y la conversión (supuesto S3-05).
-El artículo se crea inactivo hasta que P3-12 confirme el precio en sandbox (DA3-05).
+El Suitelet calcula el precio de venta sin IVA con la misma cadena de los campos fórmula de la cuenta y lo guarda en `custitem11` y en el nivel Precio base MXN, en el mismo `save` (sección 4D).
+El artículo se crea inactivo hasta que P4-01 a P4-04 confirmen el precio en sandbox (DA3-05).
 Un User Event sobre el registro de configuración y otro sobre las familias por espesor impiden guardar configuraciones inválidas.
 
 | Componente | Archivo | Tipo | Responsabilidad |
@@ -52,13 +53,15 @@ Un User Event sobre el registro de configuración y otro sobre las familias por 
 | Formato | `domain/SADS_naturaleza_config_formato.js` | Módulo AMD sin `N/` (existente) | Contrato del JSON y errores de dominio |
 | Patrones | `domain/SADS_naturaleza_patron.js` | Módulo AMD sin `N/` | Extraer, validar y aplicar marcadores `{id}` |
 | Parámetros | `domain/SADS_naturaleza_parametros.js` | Módulo AMD sin `N/` | IDs seguros, definición, valores capturados y criterios de duplicado |
+| Precio | `domain/SADS_naturaleza_precio.js` | Módulo AMD sin `N/` | Cadena de fórmulas del precio, redondeo a 0.25 y comparación con el campo fórmula |
 | Adaptador | `infra/SADS_naturaleza_articulo_ns.js` | Módulo AMD con `N/search` | Tipo de registro de un artículo por ID interno |
+| Adaptador de precio | `infra/SADS_naturaleza_precio_ns.js` | Módulo AMD con `N/query`, `N/search`, `N/log` | Cargos de la plantilla, monedas (C-7), campos y matriz de precios, lectura del campo fórmula |
 | CS y UE de artículo | `SADS_CS_item_dynamic_mandatory.js`, `SADS_UE_item_dynamic_mandatory.js` | Existentes, sin cambios | Obligatoriedad de los parámetros en UI y servidor |
 
 ## 2. Arquitectura
 Nivel 1: reglas puras en `domain/`; los entry points conservan el acceso a `N/` en funciones locales con nombre.
 Solo cruzan hacia `domain/` objetos planos.
-`infra/` solo importa `N/search`.
+`infra/SADS_naturaleza_articulo_ns.js` solo importa `N/search`; `infra/SADS_naturaleza_precio_ns.js` importa `N/query`, `N/search` y `N/log` y recibe el `Record` de la copia.
 
 ```mermaid
 flowchart LR
@@ -71,6 +74,11 @@ flowchart LR
   PAT --> FMT
   PAR --> FMT
   SL --> ART[infra/articulo_ns]
+  SL --> PRE[domain/precio]
+  SL --> PNS[infra/precio_ns]
+  PRE --> FMT
+  PNS --> FMT
+  PNS --> NSP["N/query, N/search, N/log"]
   UE --> ART
   ART --> NSS[N/search]
   SL --> NS["N/ui/serverWidget, N/ui/message, N/search, N/query, N/record, N/runtime, N/url, N/log"]
@@ -89,11 +97,14 @@ src/FileCabinet/SuiteScripts/SADS_Naturaleza_Productos/
 ├── SADS_SL_crear_articulo_nat.md
 ├── SADS_UE_naturaleza_config.js
 ├── infra/
-│   └── SADS_naturaleza_articulo_ns.js
+│   ├── SADS_naturaleza_articulo_ns.js
+│   └── SADS_naturaleza_precio_ns.js
 └── domain/
     ├── SADS_naturaleza_config_formato.js
+    ├── SADS_naturaleza_familias.js
     ├── SADS_naturaleza_patron.js
-    └── SADS_naturaleza_parametros.js
+    ├── SADS_naturaleza_parametros.js
+    └── SADS_naturaleza_precio.js
 ```
 
 ## 3. Flujo del Suitelet
@@ -143,7 +154,8 @@ Creación:
 3. `patron.aplicar` del patrón de código y del de nombre. Código de más de 60 caracteres: paso 2 con mensaje.
 4. `parametros.armarCriteriosDuplicado`; columnas verificadas contra el JSON; C-2. Con fila: página de duplicado y `log.audit`.
 5. Sobre la copia: naturaleza, parámetros, `weight`, `itemid` = nombre, `displayname` y `vendorname` = código, `upccode` y `mpn` vacíos, `isinactive` = negación de `custscript_sads_sl_art_activo`.
-6. `save({ ignoreMandatoryFields: false })`; `log.audit`; confirmación con código, nombre, estado y enlaces.
+6. Cálculo de precio (sección 4D): cargos de la plantilla, C-7, `precio.calcular`; con error, página de error sin `save`. Sobre la copia: precio de cotización, margen, `custitem11` y matriz de precios.
+7. `save({ ignoreMandatoryFields: false })`; `log.audit`; lectura del campo fórmula (RN4-08); confirmación con código, nombre, estado, precio y enlaces.
 
 Gobernanza estimada (límite 1,000 unidades; costos de `record.copy` y `save`: supuesto S-05):
 | Solicitud | Operaciones | Unidades |
@@ -344,6 +356,67 @@ Hallazgos en los datos existentes (no los corrige el sistema):
 | Formatos de nombre distintos | "Cal.9" contra "Cal.09"; `3/16"` contra `3/16''`; "Media Pieza PTR…" contra "PTR Media Pieza…" |
 | Margen distinto de la regla | MU25 (11563, 35663), MU PEDACERIA (13018), Perfileria (11807), PTR en media pieza (39404, 14267) |
 
+## 4D. Cálculo de precio
+Antes, el precio de un artículo se fijaba en dos pasos externos: un script copiaba el campo fórmula de precio final a `custitem11` y otro paso lo pasaba al nivel Precio base.
+El script DRT (`customscript_drt_item_ue`, `drt_item_cm.setPreciosFinales`) ya no corre en contexto SUITELET, así que el Suitelet hace ambos pasos.
+Fuente: objetos de `src/Objects/Calculo de Precio/` (solo referencia, fuera del deploy).
+
+### Cadena de fórmulas
+| Símbolo | Campo | Origen o fórmula |
+|---|---|---|
+| P | `custitemalm_articulo_preciocotizacion` | Sourcing de `customrecord_pfp_famprecios.custrecord_drt_ci_f_precio` (Precio Base de Cálculo) |
+| M | `custitem_drt_ci_margen_para_venta` | Sourcing de `customrecord_pfp_fammargenes_.custrecord_drt_ci_m_margen` (20 = 20 %) |
+| TC | `custitem_drt_ci_exchangerate` | Tipo de cambio predeterminado de `custitem_moneda_cotizacion` (no almacenado) |
+| C | `custitem_alm_articulo_conversionunidad` | Capturada en el Suitelet |
+| W | `custitem_drt_ci_precio_teorico` | Peso capturado (kg) |
+| pf, pm, ps | `custitem_drt_ci_flete`, `custitem_drt_ci_maniobras`, `custitem_drt_ci_cargo_seguro` | Plantilla (PERCENT) |
+| Ff, Fm | `custitem_cargofijo_flete`, `custitem_alm_cargofijo_maniobra` | Plantilla (por kg) |
+| CC | `custitem26` | Plantilla; vacío = 0 |
+| PBU | `custitem_alm_preciounitario_base` | P × TC × C |
+| Fletes | `custitem9` | Ff × W + `custitem10` (P × TC × pf) |
+| Maniobras | `custitem7` | Fm × W + `custitem_drt_ci_maniobras_mxn` (P × TC × pm) |
+| Cargos | `custitem_alm_cargos_importetotal` | Fletes + Maniobras |
+| PMC | `custitem_articulo_preciomascargo` | Cargos + PBU |
+| Seguro | `custitem_drt_ci_cargo_seguro_mxn` | PMC × ps |
+| PSM | `custitem_precio_sinmargen` | Seguro + PMC |
+| Utilidad | `custitem_alm_art_imp_utilidad` | PSM × (100 / (100 − M) − 1) |
+| PF | `custitem_alm_art_preciofinal` | CEIL(ROUND((PSM + Utilidad + NVL(CC, 0)) × 4, 6)) / 4: múltiplo de 0.25 hacia arriba, sin IVA |
+Caso de control: P 25, TC 1, C 6.1, W 6.1, Ff 0.35, Fm 0.20, porcentajes en 0, CC vacío, M 20 → PF 195.00.
+Campos fuera de la cadena: `custitem8` (cargo fijo de seguro × W, no se suma), `custitem_alm_articulo_basedelcalculo` (informativo), `custitem_alm_preciofinal_almacenado`, `custitem_alm_preciofinal_cargos`, `custitem_drt_ci_*` (precio final, integrado, sin margen, spot, extranjero, promedio, moneda, familia, cargos flete), temporada, moneda de venta y unidad de cotización.
+
+### Lo que escribe el Suitelet
+| Campo o sublista | Valor | Regla |
+|---|---|---|
+| `custitemalm_articulo_preciocotizacion` | P de la familia resuelta | RN4-01 |
+| `custitem_drt_ci_margen_para_venta` | M de la familia resuelta | RN4-01 |
+| `custitem11` | PF | RN4-06 |
+| Sublista `price{ID de MXN}`, nivel 1 (Precio base), columna 0 | PF | RN4-06 |
+| Toda otra celda de `price{n}` (otras monedas, niveles y cantidades) | Vacío | RN4-06 (D-25) |
+Orden: cálculo después de C-2 sin duplicado; `asignarValores`, `asignarPrecio` y un solo `save` (RN4-07).
+Después del `save`, `search.lookupFields` lee `custitem_alm_art_preciofinal`; si difiere más de 0.005, la confirmación muestra el aviso "Revise el precio" y se registra en el log (RN4-08).
+
+### C-4 ampliada y C-7
+| ID | Tabla | Cambio o filtro | Uso |
+|---|---|---|---|
+| C-4 | `customrecord_sads_nat_familia` | `LEFT JOIN customrecord_pfp_famprecios` → `precio_cotizacion`; `LEFT JOIN customrecord_pfp_fammargenes_` → `margen` | P y M de la línea resuelta |
+| C-7 | `currency` | Sin filtro: `id`, `symbol`, `exchangerate` | TC de la moneda de cotización e ID de la moneda MXN |
+Gobernanza de la creación: ~81 + 10 (C-7) + 1 (`lookupFields`) = ~92 unidades; límite 1,000.
+
+### Hallazgos de la cadena
+| ID | Hallazgo | Tratamiento |
+|---|---|---|
+| H-01 | `custitem10` y `custitem_drt_ci_maniobras_mxn` aplican el % a P × TC sin multiplicar por C y se suman a cargos por pieza. | Se replica; con % distinto de 0 se mezclan unidades. |
+| H-02 | `custitem8` no entra en los cargos. | Se replica; el cargo fijo de seguro no afecta el precio. |
+| H-03 | El tipo de cambio es el predeterminado de la moneda, no el de la tabla por fecha. | Se replica (R4-02). |
+| H-04 | `custitem_alm_art_preciofinal.xml` estaba en `Objects/Config` y en `Objects/Calculo de Precio`. | Se quitó de `Config`. |
+| H-05 | Las líneas de familia de placas (`val_8428201_5490848_sb1_419`, `val_8428204_5490848_sb1_443`) apuntan a la configuración `val_8427261_5490848_sb1_888`; en el proyecto la configuración de placas es `val_sads_nat_config_record_pla36`. | Pendiente: confirmar en la cuenta el ID de la configuración y corregir el XML (R4-05). |
+| H-06 | `drt_item_ue.js` llama `drt_item_cm.setPreciosFinales` en beforeLoad (view) y afterSubmit; el módulo no está en el repositorio. | Al editar el artículo en la UI, DRT recalcula; coincide con el Suitelet solo si las fórmulas no cambian (R4-01). |
+| H-07 | Las familias tienen la casilla "Actualizar Articulo". | Un proceso DRT fuera del repositorio recalcula artículos al cambiar la familia; incluye los nuevos. |
+
+### Objetos y despliegue
+`deploy.xml` envía solo `~/FileCabinet/SuiteScripts/SADS_Naturaleza_Productos/*` y `~/Objects/Config/*`, `~/Objects/Naturalezas/*`, `~/Objects/Scripts/*` (D-28).
+`src/Objects/Calculo de Precio/` y `src/Objects/Terceros/` (`customscript_drt_item_ue.xml`) y `src/FileCabinet/SuiteScripts/drt_item_ue.js` quedan como referencia.
+
 ## 5. Campos del formulario
 | ID | Tipo | Paso | Uso |
 |---|---|---|---|
@@ -355,6 +428,7 @@ Hallazgos en los datos existentes (no los corrige el sistema):
 | `custpage_codigo`, `custpage_nombre`, `custpage_estado` | TEXT INLINE | Confirmación y duplicado | Datos del artículo (el duplicado no muestra nombre) |
 | `custpage_enlace_inicio` | INLINEHTML | 2, confirmación, duplicado, error | "Regresar" o "Crear otro" |
 | `custpage_enlace_articulo` | INLINEHTML | Confirmación y duplicado | "Ver artículo" con `url.resolveRecord` |
+| `custpage_precio_texto` | TEXT INLINE | Confirmación | "Precio base (MXN, sin IVA)" con 2 decimales |
 
 Los campos de parámetro usan el índice del JSON, no el ID del `custitem`.
 Etiqueta del peso (PT-11): `getText` de `weightunit`; si falla o viene vacío, mapa `UNIDADES_PESO_RESPALDO` (1 = lb, 2 = oz, 3 = kg, 4 = g; S-16); si tampoco, "Peso (unidad de la plantilla)".
@@ -434,8 +508,16 @@ Error inesperado: `log.error` con detalle y se relanza el error original.
 | RN3-10 | El peso capturado (kg) se escribe en `custitem_drt_ci_precio_teorico` (informativo) y en `weight`. |
 | RN3-11 | La conversión de unidad de compra a base es obligatoria y > 0; se escribe en `custitem_alm_articulo_conversionunidad`. |
 | RN3-12 | `purchasedescription` y `salesdescription` = nombre generado. |
-| RN3-13 | Ningún otro campo se escribe; el resto viene de la plantilla. |
+| RN3-13 | Ningún otro campo se escribe, salvo los de precio (RN4-06); el resto viene de la plantilla. |
 | RN3-14 | Si el JSON incluye `custitem_sads_nat_pla_lado_a` y `custitem_sads_nat_pla_lado_b`, Lado A no puede ser mayor que Lado B (D-18; constante `PARES_DE_LADOS`). |
+| RN4-01 | P y M salen de la línea de familia resuelta (C-4); TC, de la moneda de cotización de la plantilla (C-7); C y W, de la captura; pf, pm, ps, Ff, Fm y CC, de la plantilla (D-26). |
+| RN4-02 | Una entrada vacía, salvo CC, impide crear; el mensaje nombra los datos faltantes (D-27). |
+| RN4-03 | Un margen de 100 o mayor, o un precio final ≤ 0, impide crear. |
+| RN4-04 | El cálculo replica la cadena de la sección 4D sin redondeos intermedios (S4-07). |
+| RN4-05 | PF = múltiplo de 0.25 hacia arriba, después de redondear PF × 4 a 6 decimales. |
+| RN4-06 | Se escriben P, M, `custitem11` = PF y la celda Precio base MXN = PF; las demás celdas de precio de todas las monedas y niveles quedan vacías (D-25). |
+| RN4-07 | Un solo `save`; el precio se calcula y se asigna antes. |
+| RN4-08 | Después del `save`, si `custitem_alm_art_preciofinal` difiere de PF más de 0.005, la confirmación avisa y se registra en el log; el artículo no se revierte. |
 
 ## 9. Deployments, rol y permisos
 Suitelet (`customscript_sads_sl_crear_articulo_nat.xml`):
@@ -468,6 +550,7 @@ Permisos:
 | `customrole_sads_naturaleza_config_exec` | `runasrole` de los 6 deployments del UE de artículo | `LIST_CUSTRECORDENTRY` VIEW | Reducido; se quitaron `ADMI_CUSTITEMFIELD` y `LIST_ITEM` |
 
 Sin `runasrole` en el Suitelet: un usuario sin permiso de crear artículos no crea aunque esté en la audiencia (P-19).
+Cálculo de precio: la audiencia lee monedas con SuiteQL (C-7) y familias de precio y margen (C-4); permiso de monedas supuesto (S4-09).
 `REPO_ANALYTICS` solo si `N/query` da error de permisos en sandbox.
 Las system notes del artículo registran al usuario real.
 
@@ -512,6 +595,11 @@ Iteración B (sandbox `Almetal_SB`):
 4. Revisar que el workflow de precios se ejecute en la creación desde script (R3-01).
 5. Inactivar o borrar los artículos de prueba de iteración A (R3-06).
 6. Ejecutar P3-12 y P3-15; con P3-12 aprobado, cambiar `custscript_sads_sl_art_activo` a T en el deployment (sin código).
+Cálculo de precio (sandbox `Almetal_SB`):
+1. Confirmar el ID de la configuración de placas y corregir H-05 antes de desplegar `Objects/Config`.
+2. `npm test` en verde; `project:deploy` con el `deploy.xml` reducido (D-28).
+3. Ejecutar P4-01 a P4-04; confirmar S4-01 a S4-09.
+4. Con P4-01 a P4-04 aprobadas, cambiar `custscript_sads_sl_art_activo` a T (sin código); P3-12 queda cubierta.
 Producción: después de sandbox; re-aplicar la audiencia después de cada despliegue (R-10); capturar espesores y familias (los IDs internos difieren entre cuentas).
 Reversión: configuración de placas con JSON y patrones de iteración A; inactivar `customdeploy_sads_ue_nat_familia`; deployment del Suitelet a inactivo; los artículos creados se inactivan a mano.
 
@@ -538,13 +626,22 @@ Reversión: configuración de placas con JSON y patrones de iteración A; inacti
 | S3-02 | `custitem_drt_ci_precio_teorico` es decimal. | P3-12 |
 | S3-03 | `custitem_alm_articulo_conversionunidad` es decimal. | P3-12 |
 | S3-04 | Orden de calibres = grosor nominal en mm. | Captura de catálogo |
-| S3-05 | El workflow de precios se ejecuta en la creación desde Suitelet. | P3-12 |
+| S3-05 | Reemplazado: el Suitelet calcula el precio (sección 4D). | — |
 | S3-06 | El parámetro de catálogo se identifica por el ID `custitem_sads_nat_espesor`. | Paso 2 en sandbox |
 | S3-07 | El UE de configuración no ve las líneas del registro hijo. | Captura de familias |
 | S3-08 | La audiencia del Suitelet tiene VIEW sobre familias de precio y de margen. | Creación en sandbox |
 | S3-09 | El UE del registro hijo se ejecuta al guardar líneas desde la sublista del padre. | Captura de familias con traslape |
 | S3-10 | `allowinlineediting` T permite editar las líneas desde la sublista del padre. | Captura de familias |
 | S3-11 | Columnas SuiteQL de los registros nuevos con nombre igual a su scriptid. | Paso 2 en sandbox |
+| S4-01 | `getValue` de un campo PERCENT devuelve unidades de % (5 = 5 %); la fórmula SQL usa la fracción. | P4-01 con un artículo con % distinto de 0 |
+| S4-02 | `currency.exchangerate` en SuiteQL es el valor que usa el sourcing `STDRECORDCURRENCYEXCHANGERATE`. | P4-01 con cotización en USD |
+| S4-03 | Sublistas `price{ID de moneda}`; nivel Precio base = ID 1; la moneda del precio tiene símbolo MXN. | SuiteQL de `pricelevel` y `currency`; P4-02 |
+| S4-04 | `setMatrixSublistValue` columna 0 funciona en modo estándar, con o sin precios por cantidad, y acepta vacío. | P4-02 |
+| S4-05 | `lookupFields` devuelve el valor de un campo fórmula no almacenado. | P4-01 |
+| S4-06 | `custitem_alm_articulo_conversionunidad` (CURRENCY) conserva los decimales capturados. | P4-03 |
+| S4-07 | Las fórmulas que leen otras fórmulas no redondean el valor intermedio. | P4-01 |
+| S4-08 | El paso 1 anterior copiaba `custitem_alm_art_preciofinal` a `custitem11`. | Revisar `drt_item_cm.js` |
+| S4-09 | La audiencia del Suitelet puede leer la tabla `currency` con SuiteQL. | P4-01 con un rol de la audiencia |
 
 ## 14. Riesgos
 | ID | Enunciado | Consecuencia | Mitigación |
@@ -564,12 +661,17 @@ Reversión: configuración de placas con JSON y patrones de iteración A; inacti
 | R-13 | La copia hereda datos de proveedor de la plantilla (UPC, MPN, código de proveedor). | Códigos que no corresponden al artículo procesado. | `vendorname` = código (D-19); `upccode` y `mpn` vacíos (RN-09); P-14. |
 | R-14 | El ID de la plantilla se captura a mano (D-12). | Un ID de otro artículo existente pasa RN-16 y se copia el artículo equivocado. | P-14; los técnicos verifican el ID al capturarlo. |
 | R-15 | En el código TA36 los lados van pegados sin separador (D-15): `2'x12'` y `21'x2'` producen `212`. | Dos medidas distintas con el mismo código; `save` falla por `itemid` repetido (S-09) y el usuario ve el mensaje genérico. | Cerrado: `entero1`/`entero2` fijan el ancho y RN3-14 exige Lado A ≤ Lado B. |
-| R3-01 | El workflow de precios podría no ejecutarse cuando el artículo lo crea un script. | Artículo con el precio de la plantilla. | P3-12; revisar contexto del workflow; artículos inactivos hasta pasar P3-12. |
+| R3-01 | Cerrado: el Suitelet calcula y escribe el precio (sección 4D). | — | — |
 | R3-03 | Rangos que no cubren un espesor del catálogo. | El Suitelet rechaza ese espesor. | Mensaje claro; los técnicos cubren todo el catálogo. |
 | R3-05 | Conversión capturada a mano. | Precio erróneo propagado por la cadena. | Validación > 0; la confirmación muestra el valor; cálculo automático posterior (DA3-06). |
 | R3-06 | Artículos de placa de iteración A usan `custitem_sads_nat_pla_espesor`. | La búsqueda de duplicados no los detecta. | Inactivar o migrar antes de liberar. |
 | R3-07 | Orden de calibres mal capturado. | Rangos invertidos. | Orden = grosor en mm. |
 | R3-08 | El peso se rotula con la unidad de la plantilla, pero `custitem_drt_ci_precio_teorico` es en kg. | Con una plantilla en otra unidad, el peso informativo queda en otra unidad. | Plantillas con unidad de peso kg. |
+| R4-01 | La fórmula del precio vive en dos lugares: campos fórmula de la cuenta y `domain/SADS_naturaleza_precio.js`. | Si se cambia una fórmula en la cuenta, el Suitelet guarda otro precio. | RN4-08 avisa; cambiar una fórmula exige cambiar el dominio. |
+| R4-02 | El tipo de cambio es el predeterminado de la moneda (H-03). | Precio MXN incorrecto en familias cotizadas en otra moneda si la moneda no está actualizada. | Proceso de actualización de monedas (fuera del alcance). |
+| R4-03 | Se vacían los demás niveles de precio (D-25). | Un nivel usado en ventas queda sin precio. | P4-02; revisar niveles activos antes de liberar. |
+| R4-04 | Precio sin IVA redondeado a 0.25. | Ninguna nueva: el Suitelet conserva el redondeo de `custitem_alm_art_preciofinal`, que según su ayuda deja el precio con IVA en 2 decimales (Anexo 20 CFDI 4.0, ValorUnitario). | RN4-05. |
+| R4-05 | Referencia rota de las líneas de familia de placas (H-05). | `project:deploy` de `Objects/Config` falla por referencia inexistente o crea una segunda configuración de placas. | Confirmar el ID en la cuenta y corregir el XML antes de desplegar. |
 
 ## 15. Troubleshooting y bitácora
 | Síntoma | Causa probable | Solución |
@@ -597,8 +699,10 @@ Reversión: configuración de placas con JSON y patrones de iteración A; inacti
 Bitácora:
 | Script | Nivel | Título | Cuándo |
 |---|---|---|---|
-| Suitelet | AUDIT | Crear artículo por naturaleza: artículo creado | Alta: ID, código, configuración y estado |
+| Suitelet | AUDIT | Crear artículo por naturaleza: artículo creado | Alta: ID, código, configuración, estado, espesor, familia, conversión y precio base |
 | Suitelet | AUDIT | Crear artículo por naturaleza: duplicado | Duplicado: configuración, ID y código del existente |
+| Suitelet | AUDIT | Crear artículo por naturaleza: precio distinto de la fórmula | RN4-08: ID, precio calculado y valor del campo fórmula |
+| Suitelet | ERROR | Crear artículo por naturaleza: lectura del precio fórmula | `lookupFields` del campo fórmula falló; no bloquea |
 | Suitelet | ERROR | Crear artículo por naturaleza: error de dominio | Error de dominio capturado en `onRequest` |
 | Suitelet | ERROR | Crear artículo por naturaleza: error inesperado | Consulta, `record.copy`, `save` u otro |
 | UE de configuración | ERROR | Validación de configuración de naturaleza: error inesperado | Error no previsto; se relanza |
@@ -618,12 +722,18 @@ Mensajes de iteración B:
 | Paso 2: "Conversión unidad de compra a base: capture…" | Conversión vacía o ≤ 0. | Capturar la conversión. |
 | `FAMILIA_NATURALEZA_INVALIDA` | Línea de familia con rango incompleto, invertido, de otro tipo o traslapado. | Corregir los campos citados. |
 | `CONFIGURACION_NATURALEZA_INVALIDA`: "…es un catálogo y requiere el formato codigo o texto." | Marcador del espesor sin formato. | Usar `{custitem_sads_nat_espesor:codigo}` o `:texto`. |
+| "Faltan datos para calcular el precio: …" | Familia sin Precio Base de Cálculo o margen, plantilla sin moneda de cotización o con un cargo vacío, moneda sin tipo de cambio (RN4-02). | Completar el dato citado en la familia, la plantilla o la moneda. |
+| "El margen de la familia de márgenes debe ser menor que 100." | Margen ≥ 100 (RN4-03). | Corregir la familia de márgenes. |
+| "El precio calculado debe ser mayor que cero." | Precio de cotización y cargos en 0 o negativos. | Revisar la familia de precios y los cargos de la plantilla. |
+| "No se encontró una única moneda MXN para el precio base." | No hay moneda con símbolo MXN o hay dos (S4-03). | Revisar el catálogo de monedas. |
+| "La plantilla no tiene precios en MXN." / "…el nivel Precio base en MXN." | La plantilla no tiene la sublista de precios MXN o la línea del nivel 1 (S4-03). | Capturar el Precio base MXN en la plantilla. |
+| Aviso "Revise el precio" en la confirmación | El campo fórmula difiere del precio guardado (RN4-08): fórmula cambiada en la cuenta (R4-01) o S4-01, S4-02, S4-06, S4-07 falsos. | Comparar las fórmulas de la sección 4D con la cuenta y ajustar el dominio. |
 
 Ver los logs: Customization > Scripting > Script Deployments > deployment > pestaña Execution Log; filtrar por Error o Audit.
 
 ## 16. Pruebas
 Comando: `npm test` (no requiere cuenta NetSuite).
-Resultado del 2026-11-18: 10 suites aprobadas de 10; 558 pruebas aprobadas de 558.
+Resultado del 2026-11-19: 12 suites aprobadas de 12; 615 pruebas aprobadas de 615.
 
 | Suite | Pruebas | Alcance |
 |---|---|---|
@@ -632,7 +742,9 @@ Resultado del 2026-11-18: 10 suites aprobadas de 10; 558 pruebas aprobadas de 55
 | `SADS_naturaleza_familias.test.js` | 36 | P3-01 a P3-07; rango de medida (D-21); regla de dependencia |
 | `SADS_naturaleza_familias_ptr.test.js` | 6 | Rangos de PTRC y MPPTRC contra las 69 + 26 filas de las búsquedas |
 | `SADS_naturaleza_articulo_ns.test.js` | 7 | Adaptador con y sin resultado |
-| `SADS_SL_crear_articulo_nat.test.js` | 97 | P-09 a P-13, P-16, P-22; P3-08, P3-10, P3-11, P3-17, P3-18; medidas 707/620 y orden de lados; estructura del entry point |
+| `SADS_naturaleza_precio.test.js` | 29 | U-1 a U-5: casos de control 195.00 y 824.00, datos faltantes, margen, redondeo a 0.25, tolerancia; regla de dependencia |
+| `SADS_naturaleza_precio_ns.test.js` | 16 | I-1: cargos, C-7, matriz de precios, errores de configuración, lectura del campo fórmula |
+| `SADS_SL_crear_articulo_nat.test.js` | 109 | P-09 a P-13, P-16, P-22; P3-08, P3-10, P3-11, P3-17, P3-18; medidas 707/620 y orden de lados; S-1 a S-4 del precio; estructura del entry point |
 | `SADS_UE_naturaleza_config.test.js` | 46 | P-17, P-18; RN-17; P3-13, P3-16; formatos de lados; errores inesperados |
 | `SADS_UE_nat_familia.test.js` | 14 | P3-14, P3-19; RN3-07; errores inesperados |
 | `SADS_naturaleza_config_formato.test.js` | 109 | Contrato del JSON (sin cambios) |
@@ -667,6 +779,10 @@ Pruebas en sandbox (las ejecuta el equipo):
 | P-19 | Usuario en audiencia sin `LIST_ITEM` CREATE | No crea; mensaje genérico |
 | P-20 | Re-despliegue | Audiencia vacía; se re-aplica |
 | P-21 | Artículo creado abierto en la UI | El CS marca los parámetros como obligatorios |
+| P4-01 | Crear un PTRC (plantilla 11249) y una placa | `custitem11` = Precio base MXN = `custitem_alm_art_preciofinal`; sin aviso "Revise el precio" |
+| P4-02 | Pestaña de precios del artículo nuevo | Solo el Precio base MXN tiene valor |
+| P4-03 | Conversión con 3 decimales | Sin aviso; si aparece, S4-06 es falso |
+| P4-04 | Familia sin Precio Base de Cálculo | Mensaje "Faltan datos para calcular el precio…" y sin artículo |
 
 `suitecloud project:validate` no se ejecutó: el entorno de desarrollo no tiene cuenta configurada. S-07 queda abierto.
 
@@ -694,6 +810,16 @@ Cambios posteriores al prompt v2 (decisiones del usuario del 2026-11-14):
 | D-22 | Los rangos reproducen la familia actual de los artículos (2026-11-18). | Tablas de la sección 4C. |
 | D-23 | Margen "PTR" en piezas y "PTR Media Pieza" en medias piezas (2026-11-18). | Excepciones a mano. |
 | D-24 | Cal.20 en el catálogo "Pared de PTR" (2026-11-18). | Instancia `val_sads_esp_ptr_c20`. |
+| D-25 | Al crear, se vacían los niveles de precio heredados de la plantilla, salvo Precio base MXN (2026-11-18). | RN4-06. |
+| D-26 | Los cargos (% flete, % maniobras, % seguro, flete y maniobra por kg, cargo compensatorio) se heredan de la plantilla (2026-11-18). | RN4-01. |
+| D-27 | Si falta un dato del precio, no se crea el artículo (2026-11-18). | RN4-02. |
+| D-28 | Los objetos de terceros (`Calculo de Precio`, script DRT) quedan como referencia, fuera del deploy (2026-11-18). | `deploy.xml` reducido; `customscript_drt_item_ue.xml` en `Objects/Terceros`. |
+
+Desviaciones del cálculo de precio respecto del plan 2026-11-18 v1:
+| Punto | Decisión | Motivo |
+|---|---|---|
+| C-7 con filtro `id = ? OR symbol = 'MXN'`. | C-7 sin filtro. | Las monedas son pocas; una consulta sin parámetros cubre la plantilla sin moneda. |
+| Corrección de H-05. | Pendiente. | Requiere confirmar en la cuenta el ID de la configuración de placas. |
 
 Desviaciones de la iteración B respecto del prompt v3:
 | Punto | Decisión | Motivo |
@@ -706,4 +832,4 @@ Desviaciones de la iteración B respecto del prompt v3:
 Hallazgo fuera de alcance: `validarIds` no rechaza IDs repetidos en el JSON (no lo exige RN-13). Con un ID repetido el paso 2 muestra dos campos para el mismo `custitem` y prevalece el último valor.
 
 ## 18. Fuentes
-Plan v2, prompt v2, plan v5 y prompt v3 del creador de artículos; Object XML y código del repositorio; pruebas Jest del 2026-11-18.
+Plan v2, prompt v2, plan v5 y prompt v3 del creador de artículos; plan 2026-11-18 v1 del cálculo de precio; Object XML de `src/Objects/Calculo de Precio/` y `drt_item_ue.js` descargados por el usuario (commits 0febee8 y efbea4a); código del repositorio; pruebas Jest del 2026-11-19.

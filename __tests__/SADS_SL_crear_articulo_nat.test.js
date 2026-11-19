@@ -83,8 +83,29 @@ const CAPTURA_VALIDA = Object.freeze({
 
 const FAMILIA_UNICA = Object.freeze({
     id: 1, desde_id: null, desde_orden: null, desde_tipo: null, hasta_id: null, hasta_orden: null, hasta_tipo: null,
-    precio_id: 68, margen_id: 7, precio_nombre: 'FAM68'
+    precio_id: 68, margen_id: 7, precio_nombre: 'FAM68', precio_cotizacion: 20, margen: 20
 });
+
+// Cargos de la plantilla (RN4-01). Con FAMILIA_UNICA, peso 125.5 y conversión 125.5 el precio es 3224.00.
+const VALORES_PLANTILLA = Object.freeze({
+    custitem_drt_ci_flete: 0,
+    custitem_drt_ci_maniobras: 0,
+    custitem_drt_ci_cargo_seguro: 0,
+    custitem_cargofijo_flete: 0.35,
+    custitem_alm_cargofijo_maniobra: 0.2,
+    custitem26: '',
+    custitem_moneda_cotizacion: 1
+});
+
+const PRECIO_ESPERADO = 3224;
+
+const MONEDAS = Object.freeze([
+    { id: 1, simbolo: 'MXN', tipo_cambio: 1 },
+    { id: 2, simbolo: 'USD', tipo_cambio: 18.5 }
+]);
+
+// Matriz de precios de la plantilla: niveles por sublista de moneda.
+const MATRIZ_PLANTILLA = Object.freeze({ price1: ['1', '2'], price2: ['1', '2'] });
 
 const enlace = (destinoEscapado, texto) => `<p><a href="${destinoEscapado}">${texto}</a></p>`;
 
@@ -152,6 +173,7 @@ const filasPara = (sql, datos) => {
     if (/from\s+item\b/i.test(sql)) return copiar(datos.duplicados);
     if (/from\s+customrecord_sads_nat_familia\b/i.test(sql)) return copiar(datos.familias);
     if (/from\s+customrecord_sads_espesor\b/i.test(sql)) return copiar(datos.espesores);
+    if (/from\s+currency\b/i.test(sql)) return copiar(datos.monedas);
     throw new Error(`Consulta no esperada en la prueba: ${sql}`);
 };
 
@@ -175,7 +197,11 @@ const prepararEscenario = (ajustes = {}) => {
         crearActivo: false,
         errorDeConsulta: null,
         errorAlGuardar: null,
-        errorUrlSuitelet: null
+        errorUrlSuitelet: null,
+        valoresPlantilla: VALORES_PLANTILLA,
+        monedas: MONEDAS,
+        matriz: MATRIZ_PLANTILLA,
+        precioFormula: String(PRECIO_ESPERADO)
     }, ajustes);
 
     serverWidget.createForm.mockImplementation((definicion) => crearFormularioFalso(definicion));
@@ -183,7 +209,9 @@ const prepararEscenario = (ajustes = {}) => {
         if (datos.errorDeConsulta !== null) throw datos.errorDeConsulta;
         return { asMappedResults: () => filasPara(consulta.query, datos) };
     });
-    search.lookupFields.mockImplementation(() => Object.assign({}, datos.configuracion));
+    search.lookupFields.mockImplementation((opciones) => (opciones.type === REGISTRO_CONFIGURACION
+        ? Object.assign({}, datos.configuracion)
+        : { custitem_alm_art_preciofinal: datos.precioFormula }));
     search.create.mockImplementation((definicion) => {
         const id = definicion.filters[0][2];
         const tipo = datos.tipos[id];
@@ -195,6 +223,7 @@ const prepararEscenario = (ajustes = {}) => {
     });
 
     const valoresAsignados = {};
+    const celdasDePrecio = {};
     const copia = {
         getField: jest.fn((opciones) => {
             const campo = datos.campos[opciones.fieldId];
@@ -204,7 +233,16 @@ const prepararEscenario = (ajustes = {}) => {
             if (datos.errorTextoUnidad !== null) throw datos.errorTextoUnidad;
             return datos.textoUnidad;
         }),
-        getValue: jest.fn(() => datos.valorUnidad),
+        getValue: jest.fn((opciones) => (Object.prototype.hasOwnProperty.call(datos.valoresPlantilla, opciones.fieldId)
+            ? datos.valoresPlantilla[opciones.fieldId]
+            : datos.valorUnidad)),
+        getSublists: jest.fn(() => ['itemvendor'].concat(Object.keys(datos.matriz))),
+        findSublistLineWithValue: jest.fn((opciones) => (datos.matriz[opciones.sublistId] || []).indexOf(opciones.value)),
+        getMatrixHeaderCount: jest.fn(() => 1),
+        getLineCount: jest.fn((opciones) => (datos.matriz[opciones.sublistId] || []).length),
+        setMatrixSublistValue: jest.fn((opciones) => {
+            celdasDePrecio[`${opciones.sublistId}|${opciones.line}|${opciones.column}`] = opciones.value;
+        }),
         setValue: jest.fn((opciones) => {
             valoresAsignados[opciones.fieldId] = opciones.value;
         }),
@@ -225,7 +263,7 @@ const prepararEscenario = (ajustes = {}) => {
         return URL_SUITELET;
     });
     url.resolveRecord.mockReturnValue(URL_ARTICULO);
-    return { copia, valoresAsignados };
+    return { copia, valoresAsignados, celdasDePrecio };
 };
 
 const ejecutar = (solicitud) => {
@@ -297,7 +335,9 @@ describe('estructura del módulo', () => {
             './domain/SADS_naturaleza_patron',
             './domain/SADS_naturaleza_parametros',
             './domain/SADS_naturaleza_familias',
-            './infra/SADS_naturaleza_articulo_ns'
+            './domain/SADS_naturaleza_precio',
+            './infra/SADS_naturaleza_articulo_ns',
+            './infra/SADS_naturaleza_precio_ns'
         ]);
     });
 
@@ -599,7 +639,10 @@ describe('creación (POST crear)', () => {
             salesdescription: 'PLACA A36 0.25 IN 4 X 2 FT',
             upccode: '',
             mpn: '',
-            isinactive: true
+            isinactive: true,
+            custitemalm_articulo_preciocotizacion: 20,
+            custitem_drt_ci_margen_para_venta: 20,
+            custitem11: PRECIO_ESPERADO
         });
         expect(copia.save).toHaveBeenCalledTimes(1);
         expect(copia.save).toHaveBeenCalledWith({ ignoreMandatoryFields: false });
@@ -618,8 +661,10 @@ describe('creación (POST crear)', () => {
 
         expect(log.audit).toHaveBeenCalledTimes(1);
         expect(log.audit.mock.calls[0][0].details).toBe(
-            'ID: 777. Código: PL-0.25-4X2. Configuración: 11. Estado: Inactivo. Espesor: . Familia de precio: FAM68. Conversión: 125.5.'
+            'ID: 777. Código: PL-0.25-4X2. Configuración: 11. Estado: Inactivo. Espesor: . Familia de precio: FAM68. Conversión: 125.5. '
+            + 'Precio base: 3224.00.'
         );
+        expect(formulario.campos.custpage_precio_texto.defaultValue).toBe('3224.00');
         expect(formulario.campos.custpage_familia_texto.defaultValue).toBe('FAM68');
         expect(formulario.campos.custpage_conversion_texto.defaultValue).toBe('125.5');
         expect(formulario.campos.custpage_espesor_texto).toBeUndefined();
@@ -802,6 +847,136 @@ describe('formatos de marcador: placa TA36 (D-13 a D-15)', () => {
     });
 });
 
+describe('cálculo de precio (RN4-01 a RN4-08)', () => {
+    const conPlantilla = (ajuste) => Object.assign({}, VALORES_PLANTILLA, ajuste);
+
+    test('S-1: calcula antes del save, escribe custitem11 y solo la celda Precio base MXN, un solo save', () => {
+        const { copia, valoresAsignados, celdasDePrecio } = prepararEscenario();
+        ejecutar(solicitudCrear(CAPTURA_VALIDA));
+        expect(valoresAsignados.custitem11).toBe(PRECIO_ESPERADO);
+        expect(celdasDePrecio).toEqual({ 'price1|0|0': PRECIO_ESPERADO, 'price1|1|0': '', 'price2|0|0': '', 'price2|1|0': '' });
+        expect(copia.save).toHaveBeenCalledTimes(1);
+        const ultimaCelda = Math.max(...copia.setMatrixSublistValue.mock.invocationCallOrder);
+        expect(copia.save.mock.invocationCallOrder[0]).toBeGreaterThan(ultimaCelda);
+        expect(copia.findSublistLineWithValue).toHaveBeenCalledWith({ sublistId: 'price1', fieldId: 'pricelevel', value: '1' });
+    });
+
+    test('C-4 trae precio de cotización y margen de las familias; C-7 se ejecuta una vez', () => {
+        prepararEscenario();
+        ejecutar(solicitudCrear(CAPTURA_VALIDA));
+        const familias = consultasEjecutadas().filter((consulta) => /from\s+customrecord_sads_nat_familia\b/i.test(consulta.query));
+        expect(familias[0].query).toMatch(/LEFT JOIN customrecord_pfp_famprecios fpr ON fpr\.id = fam\.custrecord_sads_natfam_precio/);
+        expect(familias[0].query).toMatch(/LEFT JOIN customrecord_pfp_fammargenes_ fma ON fma\.id = fam\.custrecord_sads_natfam_margen/);
+        expect(familias[0].query).toMatch(/fpr\.custrecord_drt_ci_f_precio AS precio_cotizacion/);
+        expect(familias[0].query).toMatch(/fma\.custrecord_drt_ci_m_margen AS margen/);
+        expect(consultasEjecutadas().filter((consulta) => /from\s+currency\b/i.test(consulta.query))).toHaveLength(1);
+    });
+
+    test('cotización en USD usa el tipo de cambio de la moneda', () => {
+        const { valoresAsignados, celdasDePrecio } = prepararEscenario({
+            valoresPlantilla: conPlantilla({ custitem_moneda_cotizacion: 2 }),
+            precioFormula: '58130.25'
+        });
+        const formulario = ejecutar(solicitudCrear(CAPTURA_VALIDA));
+        expect(valoresAsignados.custitem11).toBe(58130.25);
+        expect(celdasDePrecio['price1|0|0']).toBe(58130.25);
+        expect(formulario.campos.custpage_precio_texto.defaultValue).toBe('58130.25');
+        expect(formulario.mensajes).toHaveLength(1);
+    });
+
+    test('porcentajes y cargo compensatorio de la plantilla', () => {
+        const { valoresAsignados } = prepararEscenario({
+            valoresPlantilla: conPlantilla({
+                custitem_drt_ci_flete: 2, custitem_drt_ci_maniobras: 1, custitem_drt_ci_cargo_seguro: 0.5, custitem26: 3.1
+            }),
+            precioFormula: '3244'
+        });
+        ejecutar(solicitudCrear(CAPTURA_VALIDA));
+        expect(valoresAsignados.custitem11).toBe(3244);
+    });
+
+    test('S-2: un cargo vacío en la plantilla impide crear y nombra el campo', () => {
+        const { copia } = prepararEscenario({ valoresPlantilla: conPlantilla({ custitem_cargofijo_flete: '' }) });
+        const formulario = ejecutar(solicitudCrear(CAPTURA_VALIDA));
+        esperarPaginaDeError(formulario, 'Faltan datos para calcular el precio: Flete p/kg de la plantilla.');
+        expect(copia.save).not.toHaveBeenCalled();
+        expect(copia.setValue).not.toHaveBeenCalled();
+        expect(log.error.mock.calls[0][0].title).toBe('Crear artículo por naturaleza: error de dominio');
+    });
+
+    test('S-2: familia sin Precio Base de Cálculo ni margen y plantilla sin moneda de cotización', () => {
+        const { copia } = prepararEscenario({
+            familias: [Object.assign({}, FAMILIA_UNICA, { precio_cotizacion: null, margen: null })],
+            valoresPlantilla: conPlantilla({ custitem_moneda_cotizacion: '' })
+        });
+        const formulario = ejecutar(solicitudCrear(CAPTURA_VALIDA));
+        esperarPaginaDeError(formulario, 'Faltan datos para calcular el precio: Precio Base de Cálculo de la familia de precios, '
+            + 'Tipo de cambio de la moneda de cotización, Margen de la familia de márgenes.');
+        expect(copia.save).not.toHaveBeenCalled();
+    });
+
+    test('RN4-03: margen de 100 impide crear', () => {
+        const { copia } = prepararEscenario({ familias: [Object.assign({}, FAMILIA_UNICA, { margen: 100 })] });
+        const formulario = ejecutar(solicitudCrear(CAPTURA_VALIDA));
+        esperarPaginaDeError(formulario, 'El margen de la familia de márgenes debe ser menor que 100.');
+        expect(copia.save).not.toHaveBeenCalled();
+    });
+
+    test('S-3: plantilla sin precios MXN o sin nivel Precio base: error de configuración sin save', () => {
+        [
+            { matriz: { price2: ['1'] }, mensaje: 'La plantilla no tiene precios en MXN.' },
+            { matriz: { price1: ['2'] }, mensaje: 'La plantilla no tiene el nivel Precio base en MXN.' }
+        ].forEach(({ matriz, mensaje }) => {
+            jest.clearAllMocks();
+            const { copia } = prepararEscenario({ matriz });
+            const formulario = ejecutar(solicitudCrear(CAPTURA_VALIDA));
+            esperarPaginaDeError(formulario, mensaje);
+            expect(copia.save).not.toHaveBeenCalled();
+        });
+    });
+
+    test('sin moneda MXN: error de configuración sin save', () => {
+        const { copia } = prepararEscenario({ monedas: [MONEDAS[1]] });
+        const formulario = ejecutar(solicitudCrear(CAPTURA_VALIDA));
+        esperarPaginaDeError(formulario, 'No se encontró una única moneda MXN para el precio base.');
+        expect(copia.save).not.toHaveBeenCalled();
+    });
+
+    test('S-4: si el campo fórmula difiere, el artículo queda creado con aviso y log', () => {
+        const { copia } = prepararEscenario({ precioFormula: '3224.25' });
+        const formulario = ejecutar(solicitudCrear(CAPTURA_VALIDA));
+        expect(copia.save).toHaveBeenCalledTimes(1);
+        expect(formulario.title).toContain('Artículo creado');
+        expect(formulario.mensajes).toHaveLength(2);
+        expect(formulario.mensajes[1].type).toBe(message.Type.WARNING);
+        expect(formulario.mensajes[1].title).toBe('Revise el precio');
+        expect(formulario.mensajes[1].message).toBe('El precio guardado (3224.00) difiere del campo fórmula PRECIO FINAL (3224.25). '
+            + 'Revise las fórmulas de precio de la cuenta contra el Suitelet.');
+        expect(log.audit).toHaveBeenCalledTimes(2);
+        expect(log.audit.mock.calls[1][0]).toEqual({
+            title: 'Crear artículo por naturaleza: precio distinto de la fórmula',
+            details: 'ID: 777. Precio calculado: 3224.00. Campo fórmula: 3224.25.'
+        });
+        expect(search.lookupFields).toHaveBeenLastCalledWith({
+            type: 'inventoryitem', id: ID_ARTICULO_CREADO, columns: ['custitem_alm_art_preciofinal']
+        });
+    });
+
+    test('S-4: sin valor legible del campo fórmula no hay aviso', () => {
+        prepararEscenario({ precioFormula: '' });
+        const formulario = ejecutar(solicitudCrear(CAPTURA_VALIDA));
+        expect(formulario.mensajes).toHaveLength(1);
+        expect(log.audit).toHaveBeenCalledTimes(1);
+    });
+
+    test('un duplicado no calcula precio', () => {
+        const { copia } = prepararEscenario({ duplicados: [{ id: ID_DUPLICADO, codigo: 'X', nombre: 'Y', inactivo: 'F' }] });
+        ejecutar(solicitudCrear(CAPTURA_VALIDA));
+        expect(consultasEjecutadas().filter((consulta) => /from\s+currency\b/i.test(consulta.query))).toHaveLength(0);
+        expect(copia.setMatrixSublistValue).not.toHaveBeenCalled();
+    });
+});
+
 describe('duplicados (RN-08)', () => {
     test('P-11: con un artículo existente muestra la página de duplicado sin guardar', () => {
         const { copia } = prepararEscenario({
@@ -909,7 +1084,7 @@ describe('iteración B: espesor por catálogo, familias, peso, conversión y des
     const rango = (id, desde, hasta, precio, nombre) => ({
         id, desde_id: desde, desde_orden: desde === 501 ? 0.1875 : 0.75, desde_tipo: 1,
         hasta_id: hasta, hasta_orden: hasta === 503 ? 0.625 : 1.5, hasta_tipo: 1,
-        precio_id: precio, margen_id: precio + 100, precio_nombre: nombre
+        precio_id: precio, margen_id: precio + 100, precio_nombre: nombre, precio_cotizacion: 20, margen: 20
     });
     const FAMILIAS_PLACA = Object.freeze([rango(1, 501, 503, 68, 'FAM68'), rango(2, 504, 505, 69, 'FAM069')]);
     const CAPTURA_B = Object.freeze({
@@ -1109,7 +1284,7 @@ describe('PTR cuadrado con familias por espesor y lado (D-19 a D-21)', () => {
     ]);
     const linea = (id, desdeOrden, hastaOrden, medidaDesde, medidaHasta, precio) => ({
         id, desde_id: id * 10, desde_orden: desdeOrden, desde_tipo: 5, hasta_id: id * 10 + 1, hasta_orden: hastaOrden, hasta_tipo: 5,
-        medida_desde: medidaDesde, medida_hasta: medidaHasta, precio_id: precio, margen_id: 900, precio_nombre: `FAM ${precio}`
+        medida_desde: medidaDesde, medida_hasta: medidaHasta, precio_id: precio, margen_id: 900, precio_nombre: `FAM ${precio}`, precio_cotizacion: 20, margen: 20
     });
     const FAMILIAS_PTR = Object.freeze([
         linea(1, 0.0747, 0.0747, 0.5, 3.5, 23),

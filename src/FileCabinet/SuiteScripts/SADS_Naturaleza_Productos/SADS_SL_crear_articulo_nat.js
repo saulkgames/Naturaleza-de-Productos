@@ -6,6 +6,7 @@
  * Paso 1: naturaleza con plantilla. Paso 2: parámetros de la naturaleza y peso. Creación: valida, genera
  * código y nombre con los patrones, busca duplicados y guarda la copia de la plantilla.
  * Iteración B: espesor por catálogo, familias de precio y margen por rango de espesor, peso, conversión y descripciones.
+ * Cálculo de precio (plan 2026-11-18): precio de venta sin IVA en custitem11 y en el nivel Precio base MXN, en el mismo save.
  */
 define([
     'N/ui/serverWidget',
@@ -20,8 +21,10 @@ define([
     './domain/SADS_naturaleza_patron',
     './domain/SADS_naturaleza_parametros',
     './domain/SADS_naturaleza_familias',
-    './infra/SADS_naturaleza_articulo_ns'
-], (serverWidget, message, search, query, record, runtime, url, log, formato, patron, parametros, familias, articulos) => {
+    './domain/SADS_naturaleza_precio',
+    './infra/SADS_naturaleza_articulo_ns',
+    './infra/SADS_naturaleza_precio_ns'
+], (serverWidget, message, search, query, record, runtime, url, log, formato, patron, parametros, familias, precio, articulos, precioNs) => {
     const REGISTRO_CONFIGURACION = 'customrecord_sads_naturaleza_productos';
 
     const CAMPOS_CONFIGURACION = Object.freeze({
@@ -37,6 +40,8 @@ define([
     const CAMPO_ESPESOR = 'custitem_sads_nat_espesor';
     const REGISTRO_ESPESOR = 'customrecord_sads_espesor';
     const REGISTRO_FAMILIA = 'customrecord_sads_nat_familia';
+    const REGISTRO_FAMILIA_PRECIO = 'customrecord_pfp_famprecios';
+    const REGISTRO_FAMILIA_MARGEN = 'customrecord_pfp_fammargenes_';
 
     // D-18: en cada par, el lado menor no puede superar al mayor. Solo aplica si ambos IDs están en el JSON.
     const PARES_DE_LADOS = Object.freeze([
@@ -76,6 +81,7 @@ define([
     });
 
     const PARAMETRO_CREAR_ACTIVO = 'custscript_sads_sl_art_activo';
+    const DECIMALES_PRECIO = 2;
     const METODO_POST = 'POST';
     const CASILLA_MARCADA = 'T';
     const PATRON_ID_INTERNO = /^[1-9][0-9]*$/;
@@ -93,7 +99,8 @@ define([
         ENLACE_ARTICULO: 'custpage_enlace_articulo',
         ESPESOR_TEXTO: 'custpage_espesor_texto',
         FAMILIA_TEXTO: 'custpage_familia_texto',
-        CONVERSION_TEXTO: 'custpage_conversion_texto'
+        CONVERSION_TEXTO: 'custpage_conversion_texto',
+        PRECIO_TEXTO: 'custpage_precio_texto'
     });
 
     const PREFIJO_CAMPO_PARAMETRO = 'custpage_par_';
@@ -128,7 +135,7 @@ define([
           AND esp.custrecord_sads_esp_tipo = ?
         ORDER BY esp.custrecord_sads_esp_orden`;
 
-    // C-4. Líneas activas de familias por rango con orden y tipo de sus espesores.
+    // C-4. Líneas activas de familias por rango con orden y tipo de sus espesores, precio de cotización y margen (RN4-01).
     const SQL_FAMILIAS = `
         SELECT fam.id AS id,
                fam.custrecord_sads_natfam_desde AS desde_id, des.custrecord_sads_esp_orden AS desde_orden,
@@ -137,10 +144,13 @@ define([
                has.custrecord_sads_esp_tipo AS hasta_tipo,
                fam.custrecord_sads_natfam_med_desde AS medida_desde, fam.custrecord_sads_natfam_med_hasta AS medida_hasta,
                fam.custrecord_sads_natfam_precio AS precio_id, fam.custrecord_sads_natfam_margen AS margen_id,
-               BUILTIN.DF(fam.custrecord_sads_natfam_precio) AS precio_nombre
+               BUILTIN.DF(fam.custrecord_sads_natfam_precio) AS precio_nombre,
+               fpr.custrecord_drt_ci_f_precio AS precio_cotizacion, fma.custrecord_drt_ci_m_margen AS margen
         FROM ${REGISTRO_FAMILIA} fam
         LEFT JOIN ${REGISTRO_ESPESOR} des ON des.id = fam.custrecord_sads_natfam_desde
         LEFT JOIN ${REGISTRO_ESPESOR} has ON has.id = fam.custrecord_sads_natfam_hasta
+        LEFT JOIN ${REGISTRO_FAMILIA_PRECIO} fpr ON fpr.id = fam.custrecord_sads_natfam_precio
+        LEFT JOIN ${REGISTRO_FAMILIA_MARGEN} fma ON fma.id = fam.custrecord_sads_natfam_margen
         WHERE fam.isinactive = 'F'
           AND fam.custrecord_sads_natfam_config = ?
         ORDER BY des.custrecord_sads_esp_orden`;
@@ -161,6 +171,7 @@ define([
         CONVERSION: 'Conversión unidad de compra a base',
         ESPESOR: 'Espesor',
         FAMILIA_PRECIO: 'Familia de precio',
+        PRECIO: 'Precio base (MXN, sin IVA)',
         CODIGO: 'Código',
         NOMBRE: 'Nombre',
         ESTADO: 'Estado',
@@ -178,6 +189,7 @@ define([
         SIN_OPCIONES: 'Sin naturalezas disponibles',
         DUPLICADO: 'Artículo existente',
         CREADO: 'Artículo creado',
+        PRECIO_DISTINTO: 'Revise el precio',
         ERROR: 'No fue posible continuar'
     });
 
@@ -196,12 +208,15 @@ define([
         COLUMNA_NO_PERMITIDA: 'La configuración de esta naturaleza contiene un ID de campo no válido para buscar duplicados.',
         DUPLICADO: 'Ya existe un artículo con esta naturaleza y estos parámetros.',
         CREADO: 'El artículo se creó correctamente.',
+        PRECIO_DISTINTO: (calculado, formula) => `El precio guardado (${calculado}) difiere del campo fórmula PRECIO FINAL `
+            + `(${formula}). Revise las fórmulas de precio de la cuenta contra el Suitelet.`,
         GENERICO: 'No fue posible completar la operación. Contacte al administrador.'
     });
 
     const TITULOS_LOG = Object.freeze({
         CREADO: 'Crear artículo por naturaleza: artículo creado',
         DUPLICADO: 'Crear artículo por naturaleza: duplicado',
+        PRECIO_DISTINTO: 'Crear artículo por naturaleza: precio distinto de la fórmula',
         ERROR_DE_DOMINIO: 'Crear artículo por naturaleza: error de dominio',
         ERROR_INESPERADO: 'Crear artículo por naturaleza: error inesperado'
     });
@@ -316,7 +331,9 @@ define([
         medidaHasta: numeroONulo(fila.medida_hasta),
         familiaPrecioId: aCadena(fila.precio_id),
         familiaMargenId: aCadena(fila.margen_id),
-        familiaPrecioNombre: aCadena(fila.precio_nombre)
+        familiaPrecioNombre: aCadena(fila.precio_nombre),
+        precioCotizacion: numeroONulo(fila.precio_cotizacion),
+        margen: numeroONulo(fila.margen)
     }));
 
     /**
@@ -629,13 +646,20 @@ define([
      * @param {?string} datos.espesor - Nombre del espesor elegido; null si la naturaleza no usa espesor.
      * @param {string} datos.familiaPrecio - Nombre de la familia de precio asignada.
      * @param {number} datos.conversion - Conversión guardada.
+     * @param {string} datos.precio - Precio base guardado con 2 decimales.
+     * @param {?string} datos.advertencia - Aviso de precio distinto del campo fórmula (RN4-08); null si no aplica.
      * @param {string} datos.urlArticulo - URL del artículo creado.
      * @param {string} datos.urlInicio - URL del paso 1.
      * @returns {serverWidget.Form}
      */
-    const construirConfirmacion = ({ codigo, nombre, inactivo, espesor, familiaPrecio, conversion, urlArticulo, urlInicio }) => {
+    const construirConfirmacion = ({
+        codigo, nombre, inactivo, espesor, familiaPrecio, conversion, precio: precioBase, advertencia, urlArticulo, urlInicio
+    }) => {
         const form = crearFormulario(TITULOS_FORMULARIO.CONFIRMACION);
         agregarAviso(form, { tipo: message.Type.CONFIRMATION, titulo: TITULOS_AVISO.CREADO, lineas: [MENSAJES.CREADO] });
+        if (advertencia !== null) {
+            agregarAviso(form, { tipo: message.Type.WARNING, titulo: TITULOS_AVISO.PRECIO_DISTINTO, lineas: [advertencia] });
+        }
         agregarResumenDelArticulo(form, { codigo, nombre, inactivo });
         if (espesor !== null) {
             agregarTextoDeSoloLectura(form, { id: CAMPOS_FORMULARIO.ESPESOR_TEXTO, etiqueta: ETIQUETAS.ESPESOR, valor: espesor });
@@ -646,6 +670,7 @@ define([
             etiqueta: ETIQUETAS.CONVERSION,
             valor: aCadena(conversion)
         });
+        agregarTextoDeSoloLectura(form, { id: CAMPOS_FORMULARIO.PRECIO_TEXTO, etiqueta: ETIQUETAS.PRECIO, valor: precioBase });
         agregarEnlacesFinales(form, { urlArticulo, urlInicio });
         return form;
     };
@@ -801,19 +826,65 @@ define([
         });
     };
 
-    const guardarArticulo = (preparacion, { valores, peso, conversion, espesor, familia, codigo, nombre }) => {
+    const formatearPrecio = (valor) => Number(valor).toFixed(DECIMALES_PRECIO);
+
+    /**
+     * Calcula el precio del artículo nuevo antes de guardar (RN4-01 a RN4-03, RN4-07).
+     * @param {Object} preparacion - Resultado de prepararNaturaleza.
+     * @param {Object} datos
+     * @param {Object} datos.familia - Línea resuelta por familias.resolver, con precioCotizacion y margen (C-4).
+     * @param {number} datos.peso - Peso capturado (kg).
+     * @param {number} datos.conversion - Conversión capturada.
+     * @returns {{entradas: Object, calculo: Object, monedaPrecioId: string}}
+     * @throws {Error} PRECIO_INVALIDO si falta un dato o el resultado no es válido; CONFIGURACION_INVALIDA sin moneda MXN.
+     */
+    const calcularPrecio = (preparacion, { familia, peso, conversion }) => {
+        const cargos = precioNs.leerCargos(preparacion.copia);
+        const monedas = precioNs.cargarMonedas(cargos.monedaCotizacionId);
+        const entradas = {
+            precioCotizacion: familia.precioCotizacion,
+            tipoCambio: monedas.tipoCambio,
+            conversion,
+            peso,
+            porcentajeFlete: cargos.porcentajeFlete,
+            porcentajeManiobras: cargos.porcentajeManiobras,
+            porcentajeSeguro: cargos.porcentajeSeguro,
+            fletePorKg: cargos.fletePorKg,
+            maniobraPorKg: cargos.maniobraPorKg,
+            cargoCompensatorio: cargos.cargoCompensatorio,
+            margen: familia.margen
+        };
+        return { entradas, calculo: precio.calcular(entradas), monedaPrecioId: monedas.monedaPrecioId };
+    };
+
+    // RN4-08: el artículo ya está guardado; una diferencia solo se avisa y se registra.
+    const verificarPrecioGuardado = (tipoRegistro, articuloId, precioFinal) => {
+        const formula = precioNs.leerPrecioFormula(tipoRegistro, articuloId);
+        if (formula === null || precio.coincide(precioFinal, formula)) return null;
+        log.audit({
+            title: TITULOS_LOG.PRECIO_DISTINTO,
+            details: `ID: ${articuloId}. Precio calculado: ${formatearPrecio(precioFinal)}. Campo fórmula: ${formatearPrecio(formula)}.`
+        });
+        return MENSAJES.PRECIO_DISTINTO(formatearPrecio(precioFinal), formatearPrecio(formula));
+    };
+
+    const guardarArticulo = (preparacion, { valores, peso, conversion, espesor, familia, codigo, nombre, precioCalculado }) => {
         const activo = leerCrearActivo();
         const configuracionId = preparacion.configuracion.id;
         asignarValores(preparacion.copia, {
             configuracionId, ids: preparacion.ids, valores, peso, conversion, familia, codigo, nombre, activo
         });
+        precioNs.asignarPrecio(preparacion.copia, precioCalculado);
         const articuloId = preparacion.copia.save({ ignoreMandatoryFields: false });
+        const precioFinal = precioCalculado.calculo.precioFinal;
         const nombreEspesor = espesor === null ? '' : espesor.nombre;
         log.audit({
             title: TITULOS_LOG.CREADO,
             details: `ID: ${articuloId}. Código: ${codigo}. Configuración: ${configuracionId}. Estado: ${textoDeEstado(!activo)}. `
-                + `Espesor: ${nombreEspesor}. Familia de precio: ${familia.familiaPrecioNombre}. Conversión: ${conversion}.`
+                + `Espesor: ${nombreEspesor}. Familia de precio: ${familia.familiaPrecioNombre}. Conversión: ${conversion}. `
+                + `Precio base: ${formatearPrecio(precioFinal)}.`
         });
+        const advertencia = verificarPrecioGuardado(preparacion.tipoRegistro, articuloId, precioFinal);
         return construirConfirmacion({
             codigo,
             nombre,
@@ -821,6 +892,8 @@ define([
             espesor: espesor === null ? null : espesor.nombre,
             familiaPrecio: familia.familiaPrecioNombre,
             conversion,
+            precio: formatearPrecio(precioFinal),
+            advertencia,
             urlArticulo: urlDelArticulo(preparacion.tipoRegistro, articuloId),
             urlInicio: urlDelSuitelet()
         });
@@ -893,8 +966,9 @@ define([
         asegurarColumnasPermitidas(criterios, preparacion.ids);
         const duplicado = buscarDuplicado(preparacion.configuracion.id, criterios);
         if (duplicado !== null) return mostrarDuplicado({ configuracionId: preparacion.configuracion.id, duplicado });
+        const precioCalculado = calcularPrecio(preparacion, { familia, peso: captura.peso, conversion: captura.conversion });
         return guardarArticulo(preparacion, {
-            valores: captura.valores, peso: captura.peso, conversion: captura.conversion, espesor, familia, codigo, nombre
+            valores: captura.valores, peso: captura.peso, conversion: captura.conversion, espesor, familia, codigo, nombre, precioCalculado
         });
     };
 
