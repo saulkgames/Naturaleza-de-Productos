@@ -9,7 +9,7 @@ Un Suitelet crea artículos nuevos de una naturaleza con solo capturar sus pará
 | Tipo de proyecto | SuiteCloud SDF, Account Customization (`src/manifest.xml`) |
 | Plataforma | SuiteScript 2.1 |
 | Ambiente de desarrollo | Sandbox `Almetal_SB` (authId en `project.json`, excluido del control de versiones) |
-| Pruebas | Jest 30 con `@oracle/suitecloud-unit-testing`: 13 suites, 619 pruebas aprobadas (2026-11-19) |
+| Pruebas | Jest 30 con `@oracle/suitecloud-unit-testing`: 13 suites, 620 pruebas aprobadas (2026-11-19) |
 | Estado | Iteración B y cálculo de precio implementados; los artículos se crean inactivos hasta validar el precio en sandbox (P4-01 a P4-04) |
 | Diseño vigente | [Plan v5](planes/2026-11-17_creador-articulos-naturaleza_plan_v5.md), [prompt v3](planes/2026-11-17_creador-articulos-naturaleza_prompt_v3.md) y [plan de cálculo de precio](planes/2026-11-18_calculo-precio-articulo_plan_v1.md) |
 | Actualización | 2026-11-19 |
@@ -266,15 +266,15 @@ Comando: `npm test`; no requiere cuenta NetSuite.
 | `SADS_naturaleza_articulo_ns.test.js` | 7 | Adaptador de tipo de registro. |
 | `SADS_naturaleza_precio.test.js` | 29 | Cadena de fórmulas del precio, datos faltantes, margen y redondeo a 0.25. |
 | `SADS_naturaleza_precio_ns.test.js` | 16 | Adaptador de precio: cargos, monedas, matriz de precios y campo fórmula. |
-| `SADS_objetos_portables.test.js` | 4 | Alcance de `deploy.xml` y ausencia de IDs generados por la cuenta en los objetos desplegados. |
+| `SADS_objetos_portables.test.js` | 5 | Alcance de `deploy.xml`, ausencia de IDs generados por la cuenta y referencias existentes en los objetos desplegados. |
 | `sample-test.js` | 2 | Plantilla de SuiteCloud. |
 
-Resultado del 2026-11-19: 13 de 13 suites y 619 de 619 pruebas aprobadas.
+Resultado del 2026-11-19: 13 de 13 suites y 620 de 620 pruebas aprobadas.
 `suitecloud project:validate` no se ejecutó en esta versión: el entorno de desarrollo no tiene cuenta.
 
 ## 7. Despliegue y operación
 1. `npm test` en verde; el hook de `suitecloud.config.js` lo repite antes de `project:deploy`.
-2. `project:deploy` envía `~/FileCabinet/SuiteScripts/SADS_Naturaleza_Productos/*` y `~/Objects/Config/*`, `~/Objects/Naturalezas/*`, `~/Objects/Scripts/*`; no envía `Calculo de Precio`, `Terceros` ni `drt_item_ue.js`. Antes de producción, verificar los IDs de la sección 4E de la documentación del Suitelet.
+2. `project:deploy` envía `~/FileCabinet/SuiteScripts/SADS_Naturaleza_Productos/*` y `~/Objects/Config/*`, `~/Objects/Naturalezas/*`, `~/Objects/Scripts/*`; no envía `Calculo de Precio`, `Terceros` ni `drt_item_ue.js`. IDs verificados para producción (sección 4E de la documentación del Suitelet).
 3. Re-aplicar en la UI la audiencia del Suitelet después de cada despliegue; el XML la deja vacía.
 4. Usuarios técnicos: capturar espesores, configuración y familias de cada naturaleza, según la guía de la documentación del Suitelet.
 5. Validar en sandbox el precio de los artículos creados (P4-01 a P4-04); después, `custscript_sads_sl_art_activo` = T.
@@ -287,9 +287,9 @@ En producción, la plantilla, las familias y las subsidiarias tienen IDs distint
 |---|---|---|
 | El despliegue incluye 4 objetos de otras personalizaciones (familias de precio y margen). | `deploy.xml` envía `~/Objects/Config/*`. | Sobrescribe en la cuenta su definición con la versión del repositorio. |
 | La configuración y los espesores viajan como datos en los XML. | Elementos `instances` en los XML de los registros. | Un despliegue puede revertir cambios hechos en la UI. |
-| Hay IDs internos dependientes de la cuenta. | Plantillas 10928, 11249 y 25481 en las configuraciones; subsidiarias 3 y 4 en los deployments. | En producción apuntarían a registros distintos si los IDs no coinciden. |
+| Hay IDs internos dependientes de la cuenta. | Plantillas 10928, 11249 y 25481; subsidiarias 3 y 4. Verificados iguales en producción (último refresh). | Una plantilla creada en sandbox después del refresh tendría otro ID en producción. |
 | La fórmula del precio vive en los campos fórmula de la cuenta y en el dominio. | AD-11; R4-01. | Si cambia una fórmula en la cuenta, el Suitelet guarda otro precio; la confirmación lo avisa. |
-| Las líneas de familia apuntan a 10 registros de familias DRT por scriptid generado en la cuenta. | Sección 4E de la documentación del Suitelet. | Si en producción el scriptid es otro, el deploy falla por referencia inexistente. |
+| Las líneas de familia dependen del scriptid de 10 familias DRT. | Verificados iguales en sandbox y producción (2026-11-19); sección 4E. | Una familia nueva creada solo en sandbox tendría otro scriptid en producción y el deploy fallaría. |
 | El artículo hereda la configuración fiscal de la plantilla. | AD-01; Anexo 20 de CFDI 4.0, atributos `ClaveProdServ` y `ClaveUnidad`. | Una clave errónea en la plantilla se replica en cada artículo y en los CFDI que lo facturen. |
 | Peso y conversión se capturan a mano. | DA3-06. | Un error se propaga a la cadena de precios y, si la localización usa el peso, a `PesoEnKg` de Carta Porte. |
 | La plantilla se captura como ID interno. | D-12. | Un ID de otro artículo existente copia el artículo equivocado. |

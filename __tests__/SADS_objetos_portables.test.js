@@ -11,8 +11,9 @@ const PATRON_ID_DE_CUENTA = /^val_[0-9]+_[0-9]+/;
 const PATRON_ID_NUMERICO = /^[0-9]+$/;
 
 // Registros de familias DRT (otra personalización) referenciados por las líneas de familia.
-// Pendientes de verificar en producción: si su scriptid difiere, se asigna uno propio en ambas cuentas.
-const REFERENCIAS_EXTERNAS_PENDIENTES = Object.freeze([
+// Verificados por el usuario el 2026-11-19: existen en producción con el mismo scriptid.
+// Una familia nueva se agrega aquí solo después de verificar su scriptid en ambas cuentas.
+const REFERENCIAS_EXTERNAS_VERIFICADAS = Object.freeze([
     'customrecord_pfp_famprecios.val_26730_5490848_sb1_968',
     'customrecord_pfp_famprecios.val_135356_5490848_790',
     'customrecord_pfp_famprecios.val_26685_5490848_sb1_980',
@@ -46,6 +47,20 @@ const leer = (archivo) => fs.readFileSync(path.join(RAIZ_SRC, archivo), 'utf8');
 
 const esIdDeCuenta = (id) => PATRON_ID_DE_CUENTA.test(id) || PATRON_ID_NUMERICO.test(id);
 
+// Objeto raíz de cada XML desplegado y los scriptid de sus valores de lista o instancias.
+const definiciones = () => ARCHIVOS.reduce((mapa, archivo) => {
+    const contenido = leer(archivo);
+    const raiz = contenido.match(/^\s*<[a-z]+ scriptid="([^"]+)"/);
+    if (raiz === null) return mapa;
+    const hijos = Array.from(contenido.matchAll(/<(?:customvalue|instance) scriptid="([^"]+)"/g)).map((coincidencia) => coincidencia[1]);
+    return Object.assign(mapa, { [raiz[1]]: (mapa[raiz[1]] || []).concat(hijos) });
+}, {});
+
+const referenciasCompuestas = () => ARCHIVOS.reduce((lista, archivo) => lista.concat(
+    Array.from(leer(archivo).matchAll(/\[scriptid=([a-z0-9_]+)\.([^\]]+)\]/g))
+        .map((coincidencia) => ({ archivo, objeto: coincidencia[1], id: coincidencia[2] }))
+), []);
+
 describe('alcance del despliegue', () => {
     test('deploy.xml despliega solo las carpetas propias', () => {
         expect(carpetasDesplegadas()).toEqual(['Objects/Config', 'Objects/Naturalezas', 'Objects/Scripts']);
@@ -64,7 +79,7 @@ describe('IDs portables en los objetos desplegados', () => {
         expect(encontrados).toEqual([]);
     });
 
-    test('ninguna referencia apunta a un ID de cuenta, salvo las familias DRT pendientes de verificar', () => {
+    test('ninguna referencia apunta a un ID de cuenta, salvo las familias DRT verificadas en producción', () => {
         const referencias = ARCHIVOS.reduce((lista, archivo) => lista.concat(
             Array.from(leer(archivo).matchAll(/\[scriptid=([a-z0-9_]+)\.([^\]]+)\]/g))
                 .map((coincidencia) => ({ archivo, objeto: coincidencia[1], id: coincidencia[2] }))
@@ -72,17 +87,27 @@ describe('IDs portables en los objetos desplegados', () => {
         const deCuenta = referencias.filter((referencia) => esIdDeCuenta(referencia.id));
         const noPermitidas = deCuenta
             .map((referencia) => `${referencia.objeto}.${referencia.id}`)
-            .filter((referencia) => REFERENCIAS_EXTERNAS_PENDIENTES.indexOf(referencia) === -1);
+            .filter((referencia) => REFERENCIAS_EXTERNAS_VERIFICADAS.indexOf(referencia) === -1);
         expect(noPermitidas).toEqual([]);
         deCuenta.forEach((referencia) => {
             expect(['customrecord_pfp_famprecios', 'customrecord_pfp_fammargenes_']).toContain(referencia.objeto);
         });
     });
 
-    test('la lista de pendientes no tiene sobrantes: cada una se usa', () => {
+    test('la lista de familias verificadas no tiene sobrantes: cada una se usa', () => {
         const contenido = ARCHIVOS.map(leer).join('\n');
-        REFERENCIAS_EXTERNAS_PENDIENTES.forEach((referencia) => {
+        REFERENCIAS_EXTERNAS_VERIFICADAS.forEach((referencia) => {
             expect(contenido).toContain(`[scriptid=${referencia}]`);
         });
+    });
+
+    test('cada referencia a un valor o instancia de un objeto del proyecto existe en el proyecto', () => {
+        const definidos = definiciones();
+        const rotas = referenciasCompuestas()
+            .filter((referencia) => REFERENCIAS_EXTERNAS_VERIFICADAS.indexOf(`${referencia.objeto}.${referencia.id}`) === -1)
+            .filter((referencia) => !Object.prototype.hasOwnProperty.call(definidos, referencia.objeto)
+                || definidos[referencia.objeto].indexOf(referencia.id) === -1)
+            .map((referencia) => `${referencia.archivo}: ${referencia.objeto}.${referencia.id}`);
+        expect(rotas).toEqual([]);
     });
 });

@@ -420,18 +420,18 @@ Gobernanza de la creación: ~81 + 10 (C-7) + 1 (`lookupFields`) = ~92 unidades; 
 
 ## 4E. IDs portables para producción
 Regla: los objetos que se despliegan no usan scriptid generados por una cuenta (`val_<número>_<cuenta>…`) ni IDs numéricos de valores de lista.
-La prueba `__tests__/SADS_objetos_portables.test.js` lee `deploy.xml` y revisa los XML de las carpetas desplegadas.
+La prueba `__tests__/SADS_objetos_portables.test.js` lee `deploy.xml`, revisa los XML de las carpetas desplegadas y comprueba que cada referencia a un valor o instancia propia exista en el proyecto.
 
-IDs propios renombrados el 2026-11-19 (el usuario los renombra en sandbox antes del deploy; si la UI no permite editar el ID de un valor de lista, el deploy crea el valor nuevo y se inactiva el anterior):
+IDs propios renombrados el 2026-11-19 en la cuenta y en el proyecto (usuario):
 | Objeto | ID anterior | ID nuevo |
 |---|---|---|
-| Lista de naturalezas, "Placas de Acero" | `1` | `val_sads_natlist_placas` |
+| Lista de naturalezas, "Placas de Acero" | `1` | `val_sads_natlist_pla36` |
 | Lista de naturalezas, "Perfiles Tubulares Cuadrados" | `val_8427308_5490848_sb1_520` | `val_sads_natlist_ptrc` |
 | Lista de naturalezas, "Perfiles Tubulares Redondos" | `val_8427309_5490848_sb1_327` | `val_sads_natlist_ptrr` |
 | Configuración de placas | `val_8427261_5490848_sb1_888` | `val_sads_nat_config_record_pla36` (usuario) |
 | Líneas de familia de placas | `val_8428201_…`, `val_8428204_…` | `val_sads_espesor_config_pla36_1`, `_2` (usuario) |
 
-Pendiente de verificar en producción, antes del primer deploy:
+Registros de familias DRT referenciados; verificados por el usuario el 2026-11-19: existen en producción con el mismo scriptid.
 | scriptid en el proyecto | Registro | Nombre | Lo usan |
 |---|---|---|---|
 | `val_26730_5490848_sb1_968` | DRT- Familia de precios | FAM68 | Placas 3/16"–5/8" |
@@ -444,9 +444,9 @@ Pendiente de verificar en producción, antes del primer deploy:
 | `val_5474627_5490848_847` | DRT CI - Familia de margenes | Margen de placas | Placas |
 | `val_5522235_5490848_713` | DRT CI - Familia de margenes | PTR | PTRC |
 | `val_6067916_5490848_922` | DRT CI - Familia de margenes | PTR Media Pieza | MPPTRC |
-Si el scriptid coincide en producción, se deja. Si no, se asigna el mismo scriptid propio en ambas cuentas, se cambia la referencia en `customrecord_sads_nat_familia.xml` y se actualiza `REFERENCIAS_EXTERNAS_PENDIENTES` de la prueba.
+Una familia nueva se referencia solo si su scriptid es igual en sandbox y producción; después se agrega a `REFERENCIAS_EXTERNAS_VERIFICADAS` de la prueba.
 
-IDs internos que no son scriptid (verificar que sean iguales en producción):
+IDs internos que no son scriptid; verificados por el usuario: iguales en producción (copiados con el último refresh). Un artículo creado en sandbox después del refresh tendría otro ID en producción.
 | Dato | Valor | Dónde |
 |---|---|---|
 | Artículos plantilla | 10928 (placas), 11249 (PTRC), 25481 (MPPTRC) | `custrecord_sads_naturaleza_plantilla` de las configuraciones |
@@ -631,7 +631,7 @@ Iteración B (sandbox `Almetal_SB`):
 5. Inactivar o borrar los artículos de prueba de iteración A (R3-06).
 6. Ejecutar P3-12 y P3-15; con P3-12 aprobado, cambiar `custscript_sads_sl_art_activo` a T en el deployment (sin código).
 Cálculo de precio (sandbox `Almetal_SB`):
-1. En sandbox, renombrar los valores de la lista de naturalezas a `val_sads_natlist_placas`, `val_sads_natlist_ptrc` y `val_sads_natlist_ptrr` antes de desplegar `Objects/Config` (sección 4E).
+1. IDs de la sección 4E verificados en sandbox y producción (2026-11-19).
 2. `npm test` en verde; `project:deploy` con el `deploy.xml` reducido (D-28).
 3. Ejecutar P4-01 a P4-04; confirmar S4-01 a S4-09.
 4. Con P4-01 a P4-04 aprobadas, cambiar `custscript_sads_sl_art_activo` a T (sin código); P3-12 queda cubierta.
@@ -768,7 +768,7 @@ Ver los logs: Customization > Scripting > Script Deployments > deployment > pest
 
 ## 16. Pruebas
 Comando: `npm test` (no requiere cuenta NetSuite).
-Resultado del 2026-11-19: 13 suites aprobadas de 13; 619 pruebas aprobadas de 619.
+Resultado del 2026-11-19: 13 suites aprobadas de 13; 620 pruebas aprobadas de 620.
 
 | Suite | Pruebas | Alcance |
 |---|---|---|
@@ -778,7 +778,7 @@ Resultado del 2026-11-19: 13 suites aprobadas de 13; 619 pruebas aprobadas de 61
 | `SADS_naturaleza_familias_ptr.test.js` | 6 | Rangos de PTRC y MPPTRC contra las 69 + 26 filas de las búsquedas |
 | `SADS_naturaleza_articulo_ns.test.js` | 7 | Adaptador con y sin resultado |
 | `SADS_naturaleza_precio.test.js` | 29 | U-1 a U-5: casos de control 195.00 y 824.00, datos faltantes, margen, redondeo a 0.25, tolerancia; regla de dependencia |
-| `SADS_objetos_portables.test.js` | 4 | Alcance de `deploy.xml` e IDs portables en los objetos desplegados (sección 4E) |
+| `SADS_objetos_portables.test.js` | 5 | Alcance de `deploy.xml`, IDs portables y referencias existentes en los objetos desplegados (sección 4E) |
 | `SADS_naturaleza_precio_ns.test.js` | 16 | I-1: cargos, C-7, matriz de precios, errores de configuración, lectura del campo fórmula |
 | `SADS_SL_crear_articulo_nat.test.js` | 109 | P-09 a P-13, P-16, P-22; P3-08, P3-10, P3-11, P3-17, P3-18; medidas 707/620 y orden de lados; S-1 a S-4 del precio; estructura del entry point |
 | `SADS_UE_naturaleza_config.test.js` | 46 | P-17, P-18; RN-17; P3-13, P3-16; formatos de lados; errores inesperados |
