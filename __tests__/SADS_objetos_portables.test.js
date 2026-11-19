@@ -32,7 +32,18 @@ const REFERENCIAS_EXTERNAS_VERIFICADAS = Object.freeze([
     'customrecord_pfp_famprecios.val_135477_5490848_178',
     'customrecord_pfp_famprecios.val_135479_5490848_671',
     'customrecord_pfp_famprecios.val_135480_5490848_658',
-    'customrecord_pfp_fammargenes_.val_5500436_5490848_831'
+    'customrecord_pfp_fammargenes_.val_5500436_5490848_831',
+    // Familias de Corte (Sistema de Cortes) marcadas en placas; sin sb1: provienen de producción (verificar).
+    'customlist_familias_de_corte.val_5804725_5490848_144',
+    'customlist_familias_de_corte.val_5804726_5490848_890',
+    'customlist_familias_de_corte.val_5804727_5490848_668',
+    'customlist_familias_de_corte.val_5804728_5490848_523',
+    'customlist_familias_de_corte.val_5804729_5490848_783',
+    'customlist_familias_de_corte.val_5804730_5490848_524',
+    'customlist_familias_de_corte.val_5804731_5490848_917',
+    'customlist_familias_de_corte.val_5804732_5490848_135',
+    'customlist_familias_de_corte.val_5804733_5490848_926',
+    'customlist_familias_de_corte.val_5804734_5490848_350'
 ]);
 
 const carpetasDesplegadas = () => {
@@ -88,7 +99,7 @@ describe('IDs portables en los objetos desplegados', () => {
         expect(encontrados).toEqual([]);
     });
 
-    test('ninguna referencia apunta a un ID de cuenta, salvo las familias DRT verificadas en producción', () => {
+    test('ninguna referencia apunta a un ID de cuenta, salvo las familias DRT y de corte de otras soluciones', () => {
         const referencias = ARCHIVOS.reduce((lista, archivo) => lista.concat(
             Array.from(leer(archivo).matchAll(/\[scriptid=([a-z0-9_]+)\.([^\]]+)\]/g))
                 .map((coincidencia) => ({ archivo, objeto: coincidencia[1], id: coincidencia[2] }))
@@ -99,7 +110,7 @@ describe('IDs portables en los objetos desplegados', () => {
             .filter((referencia) => REFERENCIAS_EXTERNAS_VERIFICADAS.indexOf(referencia) === -1);
         expect(noPermitidas).toEqual([]);
         deCuenta.forEach((referencia) => {
-            expect(['customrecord_pfp_famprecios', 'customrecord_pfp_fammargenes_']).toContain(referencia.objeto);
+            expect(['customrecord_pfp_famprecios', 'customrecord_pfp_fammargenes_', 'customlist_familias_de_corte']).toContain(referencia.objeto);
         });
     });
 

@@ -526,6 +526,8 @@ Configuración (campos nuevos):
 | RN6-04 | Espesor de corte = orden del registro SADS - Espesor elegido. |
 | RN6-05 | Las familias de corte no se validan en el UE (los deploys de SDF ejecutan el UE y las instancias del XML no las traen); las valida el Suitelet. |
 
+Dependencias: un MULTISELECT se guarda en el XML como referencias unidas con `|`. `suitecloud project:adddependencies` lo toma como un solo objeto y escribe en el manifiesto una entrada con `|` que `project:validate` rechaza ("caracteres no permitidos"). Cada valor de `customlist_familias_de_corte` se declara a mano en `manifest.xml` y en `REFERENCIAS_EXTERNAS_VERIFICADAS` de la prueba de portabilidad (10 valores de placas, 2026-11-19; sin `sb1`, provienen de producción: verificar).
+Estado del XML (commit c687e7a): solo placas tiene Familias de Corte; PTRC, MPPTRC, PTRR, MPPTRR y LNE las tienen vacías y el Suitelet no permite crear en ellas hasta marcarlas y volver a descargar el XML.
 Riesgo: las familias de corte se capturan en la UI y no están en el XML. Después de capturarlas, descargar `customrecord_sads_naturaleza_productos.xml`; un deploy sin descargar las borra.
 Desviación del plan: las opciones del paso 2 salen de `search.lookupFields` (devuelve valor y texto del MULTISELECT); no se agregó la consulta C-9.
 Ejemplos del usuario verificados en `SADS_naturaleza_corte.test.js`: LNE 4'x10' C18 → 40 y 0.0478; Placa 6'x20' 1" → 120 y 1; PTR a 6.00m → 6; media pieza a 3.00m → 3.
