@@ -30,5 +30,10 @@
       <isinactive>F</isinactive>
       <value>Perfiles Tubulares Rectangulares Media Pieza</value>
     </customvalue>
+    <customvalue scriptid="val_sads_natlist_lne">
+      <abbreviation></abbreviation>
+      <isinactive>F</isinactive>
+      <value>Lamina Negra</value>
+    </customvalue>
   </customvalues>
 </customlist>

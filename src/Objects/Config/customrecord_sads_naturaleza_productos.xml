@@ -376,8 +376,8 @@ Ejemplo: [&quot;custitem_pl_ancho&quot;,&quot;custitem_pl_espesor&quot;,&quot;cu
     <instance scriptid="val_sads_nat_config_record_pla36">
       <custrecord_sads_naturaleza_campo_med></custrecord_sads_naturaleza_campo_med>
       <custrecord_sads_naturaleza_config>[&quot;custitem_sads_nat_pla_lado_a&quot;,&quot;custitem_sads_nat_pla_lado_b&quot;,&quot;custitem_sads_nat_espesor&quot;]</custrecord_sads_naturaleza_config>
-      <custrecord_sads_naturaleza_mapa_med>F</custrecord_sads_naturaleza_mapa_med>
       <custrecord_sads_naturaleza_lista>[scriptid=customlist_sads_naturaleza_productos.val_sads_natlist_pla36]</custrecord_sads_naturaleza_lista>
+      <custrecord_sads_naturaleza_mapa_med>F</custrecord_sads_naturaleza_mapa_med>
       <custrecord_sads_naturaleza_patron_cod>PLA36{custitem_sads_nat_espesor:codigo}{custitem_sads_nat_pla_lado_a:entero1}{custitem_sads_nat_pla_lado_b:entero2}</custrecord_sads_naturaleza_patron_cod>
       <custrecord_sads_naturaleza_patron_nom>Placa Acero TA36 {custitem_sads_nat_espesor:texto} {custitem_sads_nat_pla_lado_a}&apos;x{custitem_sads_nat_pla_lado_b}&apos;</custrecord_sads_naturaleza_patron_nom>
       <custrecord_sads_naturaleza_plantilla>10928</custrecord_sads_naturaleza_plantilla>
@@ -388,8 +388,8 @@ Ejemplo: [&quot;custitem_pl_ancho&quot;,&quot;custitem_pl_espesor&quot;,&quot;cu
     <instance scriptid="val_sads_nat_config_record_ptrc">
       <custrecord_sads_naturaleza_campo_med>custitem_sads_nat_ptr_lado</custrecord_sads_naturaleza_campo_med>
       <custrecord_sads_naturaleza_config>[&quot;custitem_sads_nat_ptr_lado&quot;,&quot;custitem_sads_nat_ptr_largo&quot;,&quot;custitem_sads_nat_espesor&quot;]</custrecord_sads_naturaleza_config>
-      <custrecord_sads_naturaleza_mapa_med>F</custrecord_sads_naturaleza_mapa_med>
       <custrecord_sads_naturaleza_lista>[scriptid=customlist_sads_naturaleza_productos.val_sads_natlist_ptrc]</custrecord_sads_naturaleza_lista>
+      <custrecord_sads_naturaleza_mapa_med>F</custrecord_sads_naturaleza_mapa_med>
       <custrecord_sads_naturaleza_patron_cod>PTRC{custitem_sads_nat_ptr_lado:centesimas3}{custitem_sads_nat_espesor:codigo}</custrecord_sads_naturaleza_patron_cod>
       <custrecord_sads_naturaleza_patron_nom>PTR {custitem_sads_nat_ptr_lado:fraccion16}&quot; x {custitem_sads_nat_ptr_lado:fraccion16}&quot; {custitem_sads_nat_espesor:texto} a {custitem_sads_nat_ptr_largo:decimal2}m</custrecord_sads_naturaleza_patron_nom>
       <custrecord_sads_naturaleza_plantilla>11249</custrecord_sads_naturaleza_plantilla>
@@ -400,8 +400,8 @@ Ejemplo: [&quot;custitem_pl_ancho&quot;,&quot;custitem_pl_espesor&quot;,&quot;cu
     <instance scriptid="val_sads_nat_config_record_mpptrc">
       <custrecord_sads_naturaleza_campo_med>custitem_sads_nat_ptr_lado</custrecord_sads_naturaleza_campo_med>
       <custrecord_sads_naturaleza_config>[&quot;custitem_sads_nat_ptr_lado&quot;,&quot;custitem_sads_nat_ptr_largo&quot;,&quot;custitem_sads_nat_espesor&quot;]</custrecord_sads_naturaleza_config>
-      <custrecord_sads_naturaleza_mapa_med>F</custrecord_sads_naturaleza_mapa_med>
       <custrecord_sads_naturaleza_lista>[scriptid=customlist_sads_naturaleza_productos.val_sads_natlist_mpptrc]</custrecord_sads_naturaleza_lista>
+      <custrecord_sads_naturaleza_mapa_med>F</custrecord_sads_naturaleza_mapa_med>
       <custrecord_sads_naturaleza_patron_cod>MPPTRC{custitem_sads_nat_ptr_lado:centesimas3}{custitem_sads_nat_espesor:codigo}</custrecord_sads_naturaleza_patron_cod>
       <custrecord_sads_naturaleza_patron_nom>PTR Media Pieza {custitem_sads_nat_ptr_lado:fraccion16}&quot; x {custitem_sads_nat_ptr_lado:fraccion16}&quot; {custitem_sads_nat_espesor:texto} a {custitem_sads_nat_ptr_largo:decimal2}m</custrecord_sads_naturaleza_patron_nom>
       <custrecord_sads_naturaleza_plantilla>25481</custrecord_sads_naturaleza_plantilla>
@@ -412,8 +412,8 @@ Ejemplo: [&quot;custitem_pl_ancho&quot;,&quot;custitem_pl_espesor&quot;,&quot;cu
     <instance scriptid="val_sads_nat_config_record_ptrr">
       <custrecord_sads_naturaleza_campo_med>custitem_sads_nat_ptr_lado</custrecord_sads_naturaleza_campo_med>
       <custrecord_sads_naturaleza_config>[&quot;custitem_sads_nat_ptr_lado&quot;,&quot;custitem_sads_nat_ptr_lado_b&quot;,&quot;custitem_sads_nat_ptr_largo&quot;,&quot;custitem_sads_nat_espesor&quot;]</custrecord_sads_naturaleza_config>
-      <custrecord_sads_naturaleza_mapa_med>T</custrecord_sads_naturaleza_mapa_med>
       <custrecord_sads_naturaleza_lista>[scriptid=customlist_sads_naturaleza_productos.val_sads_natlist_ptrr]</custrecord_sads_naturaleza_lista>
+      <custrecord_sads_naturaleza_mapa_med>T</custrecord_sads_naturaleza_mapa_med>
       <custrecord_sads_naturaleza_patron_cod>PTRR{mapa:codigo}{custitem_sads_nat_espesor:codigo}</custrecord_sads_naturaleza_patron_cod>
       <custrecord_sads_naturaleza_patron_nom>PTR {custitem_sads_nat_ptr_lado:fraccion16}&quot; x {custitem_sads_nat_ptr_lado_b:fraccion16}&quot; {custitem_sads_nat_espesor:texto} a {custitem_sads_nat_ptr_largo:decimal2}m</custrecord_sads_naturaleza_patron_nom>
       <custrecord_sads_naturaleza_plantilla>11560</custrecord_sads_naturaleza_plantilla>
@@ -424,14 +424,26 @@ Ejemplo: [&quot;custitem_pl_ancho&quot;,&quot;custitem_pl_espesor&quot;,&quot;cu
     <instance scriptid="val_sads_nat_config_record_mpptrr">
       <custrecord_sads_naturaleza_campo_med>custitem_sads_nat_ptr_lado</custrecord_sads_naturaleza_campo_med>
       <custrecord_sads_naturaleza_config>[&quot;custitem_sads_nat_ptr_lado&quot;,&quot;custitem_sads_nat_ptr_lado_b&quot;,&quot;custitem_sads_nat_ptr_largo&quot;,&quot;custitem_sads_nat_espesor&quot;]</custrecord_sads_naturaleza_config>
-      <custrecord_sads_naturaleza_mapa_med>T</custrecord_sads_naturaleza_mapa_med>
       <custrecord_sads_naturaleza_lista>[scriptid=customlist_sads_naturaleza_productos.val_sads_natlist_mpptrr]</custrecord_sads_naturaleza_lista>
+      <custrecord_sads_naturaleza_mapa_med>T</custrecord_sads_naturaleza_mapa_med>
       <custrecord_sads_naturaleza_patron_cod>MPPTRR{mapa:codigo}{custitem_sads_nat_espesor:codigo}</custrecord_sads_naturaleza_patron_cod>
       <custrecord_sads_naturaleza_patron_nom>PTR Media Pieza {custitem_sads_nat_ptr_lado:fraccion16}&quot; x {custitem_sads_nat_ptr_lado_b:fraccion16}&quot; {custitem_sads_nat_espesor:texto} a {custitem_sads_nat_ptr_largo:decimal2}m</custrecord_sads_naturaleza_patron_nom>
       <custrecord_sads_naturaleza_plantilla>12679</custrecord_sads_naturaleza_plantilla>
       <custrecord_sads_naturaleza_tipo_esp>[scriptid=customlist_sads_tipo_espesor.val_sads_tesp_ptr]</custrecord_sads_naturaleza_tipo_esp>
       <isinactive>F</isinactive>
       <name>Perfiles Tubulares Rectangulares Media Pieza</name>
+    </instance>
+    <instance scriptid="val_sads_nat_config_record_lne">
+      <custrecord_sads_naturaleza_campo_med>custitem_sads_nat_espesor</custrecord_sads_naturaleza_campo_med>
+      <custrecord_sads_naturaleza_config>[&quot;custitem_sads_nat_lne_lado_a&quot;,&quot;custitem_sads_nat_lne_lado_b&quot;,&quot;custitem_sads_nat_espesor&quot;]</custrecord_sads_naturaleza_config>
+      <custrecord_sads_naturaleza_lista>[scriptid=customlist_sads_naturaleza_productos.val_sads_natlist_lne]</custrecord_sads_naturaleza_lista>
+      <custrecord_sads_naturaleza_mapa_med>F</custrecord_sads_naturaleza_mapa_med>
+      <custrecord_sads_naturaleza_patron_cod>LNE{custitem_sads_nat_lne_lado_a:entero1}{custitem_sads_nat_lne_lado_b:entero2}{custitem_sads_nat_espesor:codigo}</custrecord_sads_naturaleza_patron_cod>
+      <custrecord_sads_naturaleza_patron_nom>Lamina Negra {custitem_sads_nat_lne_lado_a}&apos;x{custitem_sads_nat_lne_lado_b}&apos; {custitem_sads_nat_espesor:texto}</custrecord_sads_naturaleza_patron_nom>
+      <custrecord_sads_naturaleza_plantilla>10780</custrecord_sads_naturaleza_plantilla>
+      <custrecord_sads_naturaleza_tipo_esp>[scriptid=customlist_sads_tipo_espesor.val_sads_tesp_calibre]</custrecord_sads_naturaleza_tipo_esp>
+      <isinactive>F</isinactive>
+      <name>Lamina Negra</name>
     </instance>
   </instances>
 </customrecordtype>

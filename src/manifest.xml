@@ -17,8 +17,18 @@
       <feature required="false">WEBSERVICES</feature>
     </features>
     <objects>
+      <object>customrecord_pfp_famprecios.val_26685_5490848_sb1_980</object>
+      <object>customrecord_pfp_famprecios.val_263837_5490848_945</object>
+      <object>customrecord_pfp_famprecios.val_135356_5490848_790</object>
+      <object>customrecord_pfp_famprecios.val_26689_5490848_sb1_515</object>
+      <object>customrecord_pfp_fammargenes_.val_5522235_5490848_713</object>
+      <object>customrecord_pfp_famprecios.val_26687_5490848_sb1_614</object>
       <object>customlist_alm_lista_unidadcotizacion</object>
+      <object>customrecord_pfp_famprecios.val_26688_5490848_sb1_408</object>
       <object>custitem_alm_art_preciofinal</object>
+      <object>customrecord_pfp_fammargenes_.val_6067916_5490848_922</object>
+      <object>customrecord_pfp_famprecios.val_26730_5490848_sb1_968</object>
+      <object>customrecord_pfp_fammargenes_.val_5474627_5490848_847</object>
     </objects>
   </dependencies>
 </manifest>
