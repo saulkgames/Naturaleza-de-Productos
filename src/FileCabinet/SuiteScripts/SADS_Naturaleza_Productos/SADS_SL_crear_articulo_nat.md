@@ -19,6 +19,7 @@
 4B. [Iteración B: espesores, familias, peso y conversión](#4b-iteración-b-espesores-familias-peso-y-conversión)
 4C. [Perfiles Tubulares Cuadrados (PTR)](#4c-perfiles-tubulares-cuadrados-ptr)
 4D. [Cálculo de precio](#4d-cálculo-de-precio)
+4E. [IDs portables para producción](#4e-ids-portables-para-producción)
 5. [Campos del formulario](#5-campos-del-formulario)
 6. [Consultas SuiteQL](#6-consultas-suiteql)
 7. [User Event de configuración](#7-user-event-de-configuración)
@@ -409,13 +410,47 @@ Gobernanza de la creación: ~81 + 10 (C-7) + 1 (`lookupFields`) = ~92 unidades; 
 | H-02 | `custitem8` no entra en los cargos. | Se replica; el cargo fijo de seguro no afecta el precio. |
 | H-03 | El tipo de cambio es el predeterminado de la moneda, no el de la tabla por fecha. | Se replica (R4-02). |
 | H-04 | `custitem_alm_art_preciofinal.xml` estaba en `Objects/Config` y en `Objects/Calculo de Precio`. | Se quitó de `Config`. |
-| H-05 | Las líneas de familia de placas (`val_8428201_5490848_sb1_419`, `val_8428204_5490848_sb1_443`) apuntan a la configuración `val_8427261_5490848_sb1_888`; en el proyecto la configuración de placas es `val_sads_nat_config_record_pla36`. | Pendiente: confirmar en la cuenta el ID de la configuración y corregir el XML (R4-05). |
+| H-05 | Las líneas de familia de placas apuntaban a la configuración `val_8427261_5490848_sb1_888`. | Corregido el 2026-11-19: el usuario renombró la configuración y las líneas en la cuenta (`val_sads_nat_config_record_pla36`, `val_sads_espesor_config_pla36_1` y `_2`). |
 | H-06 | `drt_item_ue.js` llama `drt_item_cm.setPreciosFinales` en beforeLoad (view) y afterSubmit; el módulo no está en el repositorio. | Al editar el artículo en la UI, DRT recalcula; coincide con el Suitelet solo si las fórmulas no cambian (R4-01). |
 | H-07 | Las familias tienen la casilla "Actualizar Articulo". | Un proceso DRT fuera del repositorio recalcula artículos al cambiar la familia; incluye los nuevos. |
 
 ### Objetos y despliegue
 `deploy.xml` envía solo `~/FileCabinet/SuiteScripts/SADS_Naturaleza_Productos/*` y `~/Objects/Config/*`, `~/Objects/Naturalezas/*`, `~/Objects/Scripts/*` (D-28).
 `src/Objects/Calculo de Precio/` y `src/Objects/Terceros/` (`customscript_drt_item_ue.xml`) y `src/FileCabinet/SuiteScripts/drt_item_ue.js` quedan como referencia.
+
+## 4E. IDs portables para producción
+Regla: los objetos que se despliegan no usan scriptid generados por una cuenta (`val_<número>_<cuenta>…`) ni IDs numéricos de valores de lista.
+La prueba `__tests__/SADS_objetos_portables.test.js` lee `deploy.xml` y revisa los XML de las carpetas desplegadas.
+
+IDs propios renombrados el 2026-11-19 (el usuario los renombra en sandbox antes del deploy; si la UI no permite editar el ID de un valor de lista, el deploy crea el valor nuevo y se inactiva el anterior):
+| Objeto | ID anterior | ID nuevo |
+|---|---|---|
+| Lista de naturalezas, "Placas de Acero" | `1` | `val_sads_natlist_placas` |
+| Lista de naturalezas, "Perfiles Tubulares Cuadrados" | `val_8427308_5490848_sb1_520` | `val_sads_natlist_ptrc` |
+| Lista de naturalezas, "Perfiles Tubulares Redondos" | `val_8427309_5490848_sb1_327` | `val_sads_natlist_ptrr` |
+| Configuración de placas | `val_8427261_5490848_sb1_888` | `val_sads_nat_config_record_pla36` (usuario) |
+| Líneas de familia de placas | `val_8428201_…`, `val_8428204_…` | `val_sads_espesor_config_pla36_1`, `_2` (usuario) |
+
+Pendiente de verificar en producción, antes del primer deploy:
+| scriptid en el proyecto | Registro | Nombre | Lo usan |
+|---|---|---|---|
+| `val_26730_5490848_sb1_968` | DRT- Familia de precios | FAM68 | Placas 3/16"–5/8" |
+| `val_135356_5490848_790` | DRT- Familia de precios | FAM069 (inferido) | Placas 3/4"–2" |
+| `val_26685_5490848_sb1_980` | DRT- Familia de precios | FAM 020 | PTRC |
+| `val_26687_5490848_sb1_614` | DRT- Familia de precios | FAM 022 | PTRC |
+| `val_263837_5490848_945` | DRT- Familia de precios | FAM 098 | PTRC |
+| `val_26688_5490848_sb1_408` | DRT- Familia de precios | FAM 023 | PTRC, MPPTRC |
+| `val_26689_5490848_sb1_515` | DRT- Familia de precios | FAM 024 | PTRC, MPPTRC |
+| `val_5474627_5490848_847` | DRT CI - Familia de margenes | Margen de placas | Placas |
+| `val_5522235_5490848_713` | DRT CI - Familia de margenes | PTR | PTRC |
+| `val_6067916_5490848_922` | DRT CI - Familia de margenes | PTR Media Pieza | MPPTRC |
+Si el scriptid coincide en producción, se deja. Si no, se asigna el mismo scriptid propio en ambas cuentas, se cambia la referencia en `customrecord_sads_nat_familia.xml` y se actualiza `REFERENCIAS_EXTERNAS_PENDIENTES` de la prueba.
+
+IDs internos que no son scriptid (verificar que sean iguales en producción):
+| Dato | Valor | Dónde |
+|---|---|---|
+| Artículos plantilla | 10928 (placas), 11249 (PTRC), 25481 (MPPTRC) | `custrecord_sads_naturaleza_plantilla` de las configuraciones |
+| Subsidiarias | 3 y 4 | `audsubsidiary` de los deployments del CS y del UE de artículo |
 
 ## 5. Campos del formulario
 | ID | Tipo | Paso | Uso |
@@ -596,7 +631,7 @@ Iteración B (sandbox `Almetal_SB`):
 5. Inactivar o borrar los artículos de prueba de iteración A (R3-06).
 6. Ejecutar P3-12 y P3-15; con P3-12 aprobado, cambiar `custscript_sads_sl_art_activo` a T en el deployment (sin código).
 Cálculo de precio (sandbox `Almetal_SB`):
-1. Confirmar el ID de la configuración de placas y corregir H-05 antes de desplegar `Objects/Config`.
+1. En sandbox, renombrar los valores de la lista de naturalezas a `val_sads_natlist_placas`, `val_sads_natlist_ptrc` y `val_sads_natlist_ptrr` antes de desplegar `Objects/Config` (sección 4E).
 2. `npm test` en verde; `project:deploy` con el `deploy.xml` reducido (D-28).
 3. Ejecutar P4-01 a P4-04; confirmar S4-01 a S4-09.
 4. Con P4-01 a P4-04 aprobadas, cambiar `custscript_sads_sl_art_activo` a T (sin código); P3-12 queda cubierta.
@@ -671,7 +706,7 @@ Reversión: configuración de placas con JSON y patrones de iteración A; inacti
 | R4-02 | El tipo de cambio es el predeterminado de la moneda (H-03). | Precio MXN incorrecto en familias cotizadas en otra moneda si la moneda no está actualizada. | Proceso de actualización de monedas (fuera del alcance). |
 | R4-03 | Se vacían los demás niveles de precio (D-25). | Un nivel usado en ventas queda sin precio. | P4-02; revisar niveles activos antes de liberar. |
 | R4-04 | Precio sin IVA redondeado a 0.25. | Ninguna nueva: el Suitelet conserva el redondeo de `custitem_alm_art_preciofinal`, que según su ayuda deja el precio con IVA en 2 decimales (Anexo 20 CFDI 4.0, ValorUnitario). | RN4-05. |
-| R4-05 | Referencia rota de las líneas de familia de placas (H-05). | `project:deploy` de `Objects/Config` falla por referencia inexistente o crea una segunda configuración de placas. | Confirmar el ID en la cuenta y corregir el XML antes de desplegar. |
+| R4-05 | Cerrado (H-05 corregido). | — | — |
 
 ## 15. Troubleshooting y bitácora
 | Síntoma | Causa probable | Solución |
@@ -733,7 +768,7 @@ Ver los logs: Customization > Scripting > Script Deployments > deployment > pest
 
 ## 16. Pruebas
 Comando: `npm test` (no requiere cuenta NetSuite).
-Resultado del 2026-11-19: 12 suites aprobadas de 12; 615 pruebas aprobadas de 615.
+Resultado del 2026-11-19: 13 suites aprobadas de 13; 619 pruebas aprobadas de 619.
 
 | Suite | Pruebas | Alcance |
 |---|---|---|
@@ -743,6 +778,7 @@ Resultado del 2026-11-19: 12 suites aprobadas de 12; 615 pruebas aprobadas de 61
 | `SADS_naturaleza_familias_ptr.test.js` | 6 | Rangos de PTRC y MPPTRC contra las 69 + 26 filas de las búsquedas |
 | `SADS_naturaleza_articulo_ns.test.js` | 7 | Adaptador con y sin resultado |
 | `SADS_naturaleza_precio.test.js` | 29 | U-1 a U-5: casos de control 195.00 y 824.00, datos faltantes, margen, redondeo a 0.25, tolerancia; regla de dependencia |
+| `SADS_objetos_portables.test.js` | 4 | Alcance de `deploy.xml` e IDs portables en los objetos desplegados (sección 4E) |
 | `SADS_naturaleza_precio_ns.test.js` | 16 | I-1: cargos, C-7, matriz de precios, errores de configuración, lectura del campo fórmula |
 | `SADS_SL_crear_articulo_nat.test.js` | 109 | P-09 a P-13, P-16, P-22; P3-08, P3-10, P3-11, P3-17, P3-18; medidas 707/620 y orden de lados; S-1 a S-4 del precio; estructura del entry point |
 | `SADS_UE_naturaleza_config.test.js` | 46 | P-17, P-18; RN-17; P3-13, P3-16; formatos de lados; errores inesperados |
@@ -819,7 +855,7 @@ Desviaciones del cálculo de precio respecto del plan 2026-11-18 v1:
 | Punto | Decisión | Motivo |
 |---|---|---|
 | C-7 con filtro `id = ? OR symbol = 'MXN'`. | C-7 sin filtro. | Las monedas son pocas; una consulta sin parámetros cubre la plantilla sin moneda. |
-| Corrección de H-05. | Pendiente. | Requiere confirmar en la cuenta el ID de la configuración de placas. |
+| Corrección de H-05. | Hecha por el usuario en la cuenta y en el XML (commit 92fc57e). | — |
 
 Desviaciones de la iteración B respecto del prompt v3:
 | Punto | Decisión | Motivo |

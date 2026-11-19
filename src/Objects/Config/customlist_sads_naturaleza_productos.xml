@@ -5,12 +5,20 @@
   <isordered>T</isordered>
   <name>Naturalezas de Productos</name>
   <customvalues>
+<<<<<<< HEAD
     <customvalue scriptid="val_sads_nat_list_pla36">
+=======
+    <customvalue scriptid="val_sads_natlist_placas">
+>>>>>>> 937109d735d4fb30502f40b164cfe2fbd95797d9
       <abbreviation>P</abbreviation>
       <isinactive>F</isinactive>
       <value>Placas de Acero</value>
     </customvalue>
+<<<<<<< HEAD
     <customvalue scriptid="va_sads_natlist_ptrc">
+=======
+    <customvalue scriptid="val_sads_natlist_ptrc">
+>>>>>>> 937109d735d4fb30502f40b164cfe2fbd95797d9
       <abbreviation></abbreviation>
       <isinactive>F</isinactive>
       <value>Perfiles Tubulares Cuadrados</value>
