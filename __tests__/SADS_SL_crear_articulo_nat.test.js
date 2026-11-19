@@ -174,6 +174,7 @@ const filasPara = (sql, datos) => {
     if (/from\s+customrecord_sads_nat_familia\b/i.test(sql)) return copiar(datos.familias);
     if (/from\s+customrecord_sads_espesor\b/i.test(sql)) return copiar(datos.espesores);
     if (/from\s+currency\b/i.test(sql)) return copiar(datos.monedas);
+    if (/from\s+customrecord_sads_mapa_medidas_ptrr\b/i.test(sql)) return copiar(datos.medidas);
     throw new Error(`Consulta no esperada en la prueba: ${sql}`);
 };
 
@@ -199,6 +200,7 @@ const prepararEscenario = (ajustes = {}) => {
         errorAlGuardar: null,
         errorUrlSuitelet: null,
         valoresPlantilla: VALORES_PLANTILLA,
+        medidas: [],
         monedas: MONEDAS,
         matriz: MATRIZ_PLANTILLA,
         precioFormula: String(PRECIO_ESPERADO)
@@ -336,6 +338,7 @@ describe('estructura del módulo', () => {
             './domain/SADS_naturaleza_parametros',
             './domain/SADS_naturaleza_familias',
             './domain/SADS_naturaleza_precio',
+            './domain/SADS_naturaleza_mapa_medidas',
             './infra/SADS_naturaleza_articulo_ns',
             './infra/SADS_naturaleza_precio_ns'
         ]);
@@ -494,7 +497,8 @@ describe('paso 2 (POST parametros)', () => {
                 'custrecord_sads_naturaleza_patron_nom',
                 'custrecord_sads_naturaleza_patron_cod',
                 'custrecord_sads_naturaleza_tipo_esp',
-                'custrecord_sads_naturaleza_campo_med'
+                'custrecord_sads_naturaleza_campo_med',
+                'custrecord_sads_naturaleza_mapa_med'
             ]
         });
         expect(record.copy).toHaveBeenCalledTimes(1);
@@ -1341,5 +1345,114 @@ describe('PTR cuadrado con familias por espesor y lado (D-19 a D-21)', () => {
         escenario({ configuracion: Object.assign({}, CONFIGURACION_PTR, { custrecord_sads_naturaleza_campo_med: 'custitem_sads_nat_espesor' }) });
         esperarPaginaDeError(ejecutar(solicitudParametros({ custpage_configuracion: '11' })),
             'El campo de medida para familias debe ser un parámetro numérico de la configuración.');
+    });
+});
+
+describe('PTR rectangular con mapa de medidas (RN5-01 a RN5-05)', () => {
+    const CONFIGURACION_PTRR = Object.freeze({
+        custrecord_sads_naturaleza_config: '["custitem_sads_nat_ptr_lado","custitem_sads_nat_ptr_lado_b","custitem_sads_nat_ptr_largo",'
+            + '"custitem_sads_nat_espesor"]',
+        custrecord_sads_naturaleza_plantilla: ID_PLANTILLA,
+        custrecord_sads_naturaleza_patron_cod: 'PTRR{mapa:codigo}{custitem_sads_nat_espesor:codigo}',
+        custrecord_sads_naturaleza_patron_nom: 'PTR {custitem_sads_nat_ptr_lado:fraccion16}" x {custitem_sads_nat_ptr_lado_b:fraccion16}" '
+            + '{custitem_sads_nat_espesor:texto} a {custitem_sads_nat_ptr_largo:decimal2}m',
+        custrecord_sads_naturaleza_tipo_esp: [{ value: '5', text: 'Pared de PTR' }],
+        custrecord_sads_naturaleza_campo_med: 'custitem_sads_nat_ptr_lado',
+        custrecord_sads_naturaleza_mapa_med: true
+    });
+    const CAMPOS_PTRR = Object.freeze({
+        custitem_sads_nat_ptr_lado: { label: 'Lado mayor', type: 'float' },
+        custitem_sads_nat_ptr_lado_b: { label: 'Lado menor', type: 'float' },
+        custitem_sads_nat_ptr_largo: { label: 'Largo', type: 'float' },
+        custitem_sads_nat_espesor: { label: 'Espesor', type: 'select' }
+    });
+    const ESPESORES_PTR = Object.freeze([
+        { id: 31, nombre: 'Cal.14', texto: 'Cal.14', codigo: 'C14', orden: 0.0747 },
+        { id: 41, nombre: '3/16"', texto: '3/16\'\'', codigo: 'E18', orden: 0.1875 }
+    ]);
+    const MEDIDAS = Object.freeze([
+        { id: 501, nombre: '3" x 2" (R-302)', lado_mayor: 3, lado_menor: 2, codigo: '302' },
+        { id: 502, nombre: '4" x 1 1/2" (R-400)', lado_mayor: 4, lado_menor: 1.5, codigo: '400' }
+    ]);
+    const linea = (id, desdeOrden, hastaOrden, medidaDesde, medidaHasta, precio) => ({
+        id, desde_id: id * 10, desde_orden: desdeOrden, desde_tipo: 5, hasta_id: id * 10 + 1, hasta_orden: hastaOrden, hasta_tipo: 5,
+        medida_desde: medidaDesde, medida_hasta: medidaHasta, precio_id: precio, margen_id: 900, precio_nombre: `FAM ${precio}`,
+        precio_cotizacion: 20, margen: 20
+    });
+    const FAMILIAS_PTRR = Object.freeze([
+        linea(1, 0.0747, 0.1495, 0.5, 3, 23),
+        linea(2, 0.0747, 0.1495, 3.5, 8, 24),
+        linea(3, 0.1875, 0.5, 0.5, 8, 24)
+    ]);
+    // Captura: medida (custpage_par_0), largo (custpage_par_1) y espesor (custpage_par_2).
+    const CAPTURA = Object.freeze({
+        custpage_configuracion: '11', custpage_par_0: '501', custpage_par_1: '6', custpage_par_2: '31',
+        custpage_peso: '10', custpage_conversion: '10'
+    });
+    const escenario = (ajustes = {}) => prepararEscenario(Object.assign({
+        configuracion: CONFIGURACION_PTRR, campos: CAMPOS_PTRR, espesores: ESPESORES_PTR, familias: FAMILIAS_PTRR, medidas: MEDIDAS
+    }, ajustes));
+
+    test('paso 2: la medida se elige del mapa; no hay campos de lado', () => {
+        escenario();
+        const formulario = ejecutar(solicitudParametros({ custpage_configuracion: '11' }));
+        expect(formulario.campos.custpage_par_0).toMatchObject({ label: 'Medida', type: FieldType.SELECT });
+        expect(formulario.campos.custpage_par_0.opciones.map((opcion) => opcion.text)).toEqual(['', '3" x 2" (R-302)', '4" x 1 1/2" (R-400)']);
+        expect(formulario.campos.custpage_par_1.label).toBe('Largo');
+        expect(formulario.campos.custpage_par_2.type).toBe(FieldType.SELECT);
+        expect(formulario.campos.custpage_par_3).toBeUndefined();
+    });
+
+    test('3" x 2" Cal.14 a 6.00m: código del proveedor, lados llenados por el mapa, FAM 23', () => {
+        const { valoresAsignados } = escenario();
+        ejecutar(solicitudCrear(CAPTURA));
+        expect(valoresAsignados.displayname).toBe('PTRR302C14');
+        expect(valoresAsignados.vendorname).toBe('PTRR302C14');
+        expect(valoresAsignados.itemid).toBe('PTR 3" x 2" Cal.14 a 6.00m');
+        expect(valoresAsignados.custitem_sads_nat_ptr_lado).toBe(3);
+        expect(valoresAsignados.custitem_sads_nat_ptr_lado_b).toBe(2);
+        expect(valoresAsignados.custitem_pfp_famprecios_).toBe('23');
+        expect(Object.prototype.hasOwnProperty.call(valoresAsignados, 'mapa')).toBe(false);
+    });
+
+    test('4" x 1 1/2" Cal.14: familia por lado mayor (FAM 24); duplicados con los lados del mapa', () => {
+        const { valoresAsignados } = escenario();
+        ejecutar(solicitudCrear(Object.assign({}, CAPTURA, { custpage_par_0: '502' })));
+        expect(valoresAsignados.displayname).toBe('PTRR400C14');
+        expect(valoresAsignados.itemid).toBe('PTR 4" x 1 1/2" Cal.14 a 6.00m');
+        expect(valoresAsignados.custitem_pfp_famprecios_).toBe('24');
+        const duplicado = consultaDeDuplicado()[0];
+        expect(duplicado.params).toEqual(['11', 4, 1.5, 6, 31]);
+    });
+
+    test('una medida fuera del mapa repite el paso 2 sin guardar', () => {
+        const { copia } = escenario();
+        const formulario = ejecutar(solicitudCrear(Object.assign({}, CAPTURA, { custpage_par_0: '999' })));
+        expect(textosDeMensajes(formulario)).toEqual(['Medida: elija un valor de la lista.']);
+        expect(copia.save).not.toHaveBeenCalled();
+    });
+
+    test('un mapa con códigos repetidos es error de configuración', () => {
+        const { copia } = escenario({ medidas: [MEDIDAS[0], Object.assign({}, MEDIDAS[1], { codigo: '302' })] });
+        esperarPaginaDeError(ejecutar(solicitudCrear(CAPTURA)),
+            'El mapa de medidas no es válido: El código 302 se repite en el mapa de medidas.');
+        expect(copia.save).not.toHaveBeenCalled();
+    });
+
+    test('con la casilla y sin lado menor en el JSON es error de configuración', () => {
+        escenario({
+            configuracion: Object.assign({}, CONFIGURACION_PTRR, {
+                custrecord_sads_naturaleza_config: '["custitem_sads_nat_ptr_lado","custitem_sads_nat_ptr_largo","custitem_sads_nat_espesor"]'
+            })
+        });
+        esperarPaginaDeError(ejecutar(solicitudParametros({ custpage_configuracion: '11' })),
+            'La configuración usa el mapa de medidas: el JSON debe incluir custitem_sads_nat_ptr_lado y '
+            + 'custitem_sads_nat_ptr_lado_b como parámetros numéricos.');
+    });
+
+    test('sin la casilla no se consulta el mapa', () => {
+        prepararEscenario();
+        ejecutar(solicitudParametros({ custpage_configuracion: '11' }));
+        expect(consultasEjecutadas().filter((consulta) => /customrecord_sads_mapa_medidas_ptrr/.test(consulta.query))).toHaveLength(0);
     });
 });

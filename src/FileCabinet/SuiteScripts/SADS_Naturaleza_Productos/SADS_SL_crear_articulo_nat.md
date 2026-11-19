@@ -20,6 +20,7 @@
 4C. [Perfiles Tubulares Cuadrados (PTR)](#4c-perfiles-tubulares-cuadrados-ptr)
 4D. [Cálculo de precio](#4d-cálculo-de-precio)
 4E. [IDs portables para producción](#4e-ids-portables-para-producción)
+4F. [PTR rectangular con mapa de medidas](#4f-ptr-rectangular-con-mapa-de-medidas)
 5. [Campos del formulario](#5-campos-del-formulario)
 6. [Consultas SuiteQL](#6-consultas-suiteql)
 7. [User Event de configuración](#7-user-event-de-configuración)
@@ -452,6 +453,32 @@ IDs internos que no son scriptid; verificados por el usuario: iguales en producc
 | Artículos plantilla | 10928 (placas), 11249 (PTRC), 25481 (MPPTRC) | `custrecord_sads_naturaleza_plantilla` de las configuraciones |
 | Subsidiarias | 3 y 4 | `audsubsidiary` de los deployments del CS y del UE de artículo |
 
+## 4F. PTR rectangular con mapa de medidas
+El código de PTR rectangular usa el número del catálogo del proveedor (R-302 → `PTRR302C14`), que no sigue una fórmula (1.5x0.5 = 155, 1.5x0.75 = 150, 2x1 = 200, 3x2 = 302, 3x0.75 = 375).
+En PTRR y MPPTRR la medida no se captura: se elige de "SADS - Mapa de Medidas PTRR" (`customrecord_sads_mapa_medidas_ptrr`).
+
+| Objeto | Detalle |
+|---|---|
+| `customrecord_sads_mapa_medidas_ptrr` | Lado mayor (`custrecord_sads_medptrr_lado_mayor`), lado menor (`custrecord_sads_medptrr_lado_menor`), código del proveedor (`custrecord_sads_medptrr_codigo`). 24 instancias `val_sads_medptrr_r<código>` de la tabla del proveedor. |
+| `custitem_sads_nat_ptr_lado_b` | Lado menor (FLOAT, pulgadas). `custitem_sads_nat_ptr_lado` es el lado mayor. |
+| `custrecord_sads_naturaleza_mapa_med` | Casilla "Usar Mapa de Medidas PTRR" en la configuración. |
+| Configuraciones | `val_sads_nat_config_record_ptrr` (plantilla 11560, `PTRR{mapa:codigo}{custitem_sads_nat_espesor:codigo}`) y `val_sads_nat_config_record_mpptrr` (plantilla 12679, `MPPTRR…`, nombre "PTR Media Pieza …"). |
+| Espesor 1/8" | `val_sads_esp_ptr_e12`: código `E12`, orden 0.125 (DR-2). |
+| Familias | 5 líneas por configuración: Cal.20–18 → FAM 022; Cal.16 → FAM 098; Cal.14–09 con lado mayor 0.5–3 → FAM 023 y 3.5–8 → FAM 024; 3/16"–1/2" → FAM 024. Margen PTR y PTR Media Pieza. |
+
+| ID | Regla |
+|---|---|
+| RN5-01 | Con la casilla, el paso 2 muestra el SELECT "Medida" (C-8: medidas activas, por lado mayor y menor) en lugar de los dos lados. |
+| RN5-02 | El mapa debe tener medidas con lados > 0, lado menor ≤ lado mayor, código de letras y dígitos, sin códigos ni medidas repetidos; si no, error de configuración. |
+| RN5-03 | La medida elegida (validada contra C-8) llena `custitem_sads_nat_ptr_lado` y `custitem_sads_nat_ptr_lado_b`; familias por lado mayor y duplicados por los lados. |
+| RN5-04 | `{mapa:codigo}` escribe el código del proveedor; `{mapa:texto}`, el nombre de la medida. |
+| RN5-05 | El UE de configuración acepta `{mapa:…}` solo con la casilla, y con la casilla exige ambos lados en el JSON. El orden de lados no se valida: lo fija el mapa. |
+
+Verificación con `RelacionPTRR_Familias.csv` (prueba `SADS_naturaleza_mapa_medidas.test.js`): los 52 artículos vigentes tienen su código en el mapa y reciben su familia actual en PTRR y MPPTRR.
+Fuera de la prueba: 11222 `PTRR201C12` (3"x2" Cal.12; se corrige a mano a `PTRR302C12`, DR-3), 13833 y 39405 `PTRR604CE12`, 1549 "x Metro" (MU PEDACERIA) y descontinuados con sufijo `des`.
+Supuesto S5-01: MPPTRR usa las mismas familias de precio que PTRR; no hay CSV de media pieza rectangular.
+`custitem_sads_nat_ptr_lado_b.xml` se generó en el proyecto; el usuario ya creó el campo en la cuenta: conviene descargar su versión antes del deploy.
+
 ## 5. Campos del formulario
 | ID | Tipo | Paso | Uso |
 |---|---|---|---|
@@ -768,20 +795,21 @@ Ver los logs: Customization > Scripting > Script Deployments > deployment > pest
 
 ## 16. Pruebas
 Comando: `npm test` (no requiere cuenta NetSuite).
-Resultado del 2026-11-19: 13 suites aprobadas de 13; 620 pruebas aprobadas de 620.
+Resultado del 2026-11-19: 14 suites aprobadas de 14; 645 pruebas aprobadas de 645.
 
 | Suite | Pruebas | Alcance |
 |---|---|---|
 | `SADS_naturaleza_patron.test.js` | 158 | P-01 a P-04; formatos `centesimas3`, `fraccion16`, `entero1`, `entero2`, `decimal2`, `codigo`, `texto` (P3-09, P3-16); patrones de PTR; regla de dependencia |
-| `SADS_naturaleza_parametros.test.js` | 83 | P-05 a P-08; catálogo y conversión (P3-08, P3-11); orden de lados (RN3-14); regla de dependencia |
+| `SADS_naturaleza_parametros.test.js` | 85 | P-05 a P-08; catálogo y conversión (P3-08, P3-11); orden de lados (RN3-14); regla de dependencia |
 | `SADS_naturaleza_familias.test.js` | 36 | P3-01 a P3-07; rango de medida (D-21); regla de dependencia |
 | `SADS_naturaleza_familias_ptr.test.js` | 6 | Rangos de PTRC y MPPTRC contra las 69 + 26 filas de las búsquedas |
 | `SADS_naturaleza_articulo_ns.test.js` | 7 | Adaptador con y sin resultado |
 | `SADS_naturaleza_precio.test.js` | 29 | U-1 a U-5: casos de control 195.00 y 824.00, datos faltantes, margen, redondeo a 0.25, tolerancia; regla de dependencia |
+| `SADS_naturaleza_mapa_medidas.test.js` | 12 | RN5-02 a RN5-04; mapa desplegado contra el catálogo del proveedor y el CSV de PTRR (sección 4F) |
 | `SADS_objetos_portables.test.js` | 5 | Alcance de `deploy.xml`, IDs portables y referencias existentes en los objetos desplegados (sección 4E) |
 | `SADS_naturaleza_precio_ns.test.js` | 16 | I-1: cargos, C-7, matriz de precios, errores de configuración, lectura del campo fórmula |
-| `SADS_SL_crear_articulo_nat.test.js` | 109 | P-09 a P-13, P-16, P-22; P3-08, P3-10, P3-11, P3-17, P3-18; medidas 707/620 y orden de lados; S-1 a S-4 del precio; estructura del entry point |
-| `SADS_UE_naturaleza_config.test.js` | 46 | P-17, P-18; RN-17; P3-13, P3-16; formatos de lados; errores inesperados |
+| `SADS_SL_crear_articulo_nat.test.js` | 116 | P-09 a P-13, P-16, P-22; P3-08, P3-10, P3-11, P3-17, P3-18; medidas 707/620 y orden de lados; S-1 a S-4 del precio; estructura del entry point |
+| `SADS_UE_naturaleza_config.test.js` | 50 | P-17, P-18; RN-17; P3-13, P3-16; formatos de lados; errores inesperados |
 | `SADS_UE_nat_familia.test.js` | 14 | P3-14, P3-19; RN3-07; errores inesperados |
 | `SADS_naturaleza_config_formato.test.js` | 109 | Contrato del JSON (sin cambios) |
 | `sample-test.js` | 2 | Plantilla de SuiteCloud |

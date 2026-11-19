@@ -117,6 +117,7 @@ describe('estructura del módulo', () => {
             './domain/SADS_naturaleza_config_formato',
             './domain/SADS_naturaleza_patron',
             './domain/SADS_naturaleza_parametros',
+            './domain/SADS_naturaleza_mapa_medidas',
             './infra/SADS_naturaleza_articulo_ns'
         ]);
     });
@@ -427,5 +428,49 @@ describe('campo de medida para familias (D-21)', () => {
         expect(esperarRechazo(crearContexto({
             nuevos: configuracionCon({ custrecord_sads_naturaleza_campo_med: 'custitem_otro' })
         }))).toEqual(['El Campo de Medida para Familias debe ser uno de los IDs de la configuración.']);
+    });
+});
+
+describe('mapa de medidas PTRR (RN5-05)', () => {
+    const JSON_PTRR = '["custitem_sads_nat_ptr_lado","custitem_sads_nat_ptr_lado_b","custitem_sads_nat_ptr_largo","custitem_sads_nat_espesor"]';
+    const PTRR = Object.freeze({
+        custrecord_sads_naturaleza_config: JSON_PTRR,
+        custrecord_sads_naturaleza_plantilla: ID_PLANTILLA,
+        custrecord_sads_naturaleza_mapa_med: true,
+        custrecord_sads_naturaleza_tipo_esp: '5',
+        custrecord_sads_naturaleza_campo_med: 'custitem_sads_nat_ptr_lado',
+        custrecord_sads_naturaleza_patron_cod: 'PTRR{mapa:codigo}{custitem_sads_nat_espesor:codigo}',
+        custrecord_sads_naturaleza_patron_nom: 'PTR {custitem_sads_nat_ptr_lado:fraccion16}" x {custitem_sads_nat_ptr_lado_b:fraccion16}" '
+            + '{custitem_sads_nat_espesor:texto} a {custitem_sads_nat_ptr_largo:decimal2}m'
+    });
+    const ptrrCon = (ajuste) => Object.assign({}, PTRR, ajuste);
+
+    test('la configuración de PTRR con {mapa:codigo} se acepta (casilla booleana o T)', () => {
+        expect(() => userEvent.beforeSubmit(crearContexto({ nuevos: PTRR }))).not.toThrow();
+        expect(() => userEvent.beforeSubmit(crearContexto({ nuevos: ptrrCon({ custrecord_sads_naturaleza_mapa_med: 'T' }) })))
+            .not.toThrow();
+    });
+
+    test('{mapa:codigo} sin la casilla se rechaza como marcador fuera de la configuración', () => {
+        expect(esperarRechazo(crearContexto({ nuevos: ptrrCon({ custrecord_sads_naturaleza_mapa_med: false }) })))
+            .toEqual([
+                'Patrón de código: El marcador {mapa} no es un ID de la configuración.',
+                'Patrón de código: El formato codigo solo aplica al campo de espesor.'
+            ]);
+    });
+
+    test('{mapa} sin formato codigo o texto se rechaza', () => {
+        expect(esperarRechazo(crearContexto({
+            nuevos: ptrrCon({ custrecord_sads_naturaleza_patron_cod: 'PTRR{mapa}{custitem_sads_nat_espesor:codigo}' })
+        }))).toEqual(['Patrón de código: El marcador {mapa} es un catálogo y requiere el formato codigo o texto.']);
+    });
+
+    test('con la casilla, el JSON debe incluir los dos lados', () => {
+        expect(esperarRechazo(crearContexto({
+            nuevos: ptrrCon({
+                custrecord_sads_naturaleza_config: '["custitem_sads_nat_ptr_lado","custitem_sads_nat_ptr_largo","custitem_sads_nat_espesor"]',
+                custrecord_sads_naturaleza_patron_nom: 'PTR {custitem_sads_nat_ptr_lado:fraccion16}'
+            })
+        }))).toEqual(['Con el Mapa de Medidas PTRR, el JSON debe incluir custitem_sads_nat_ptr_lado y custitem_sads_nat_ptr_lado_b.']);
     });
 });

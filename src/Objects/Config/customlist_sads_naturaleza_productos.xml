@@ -25,5 +25,10 @@
       <isinactive>F</isinactive>
       <value>Perfiles Tubulares Cuadrados Media Pieza</value>
     </customvalue>
+    <customvalue scriptid="val_sads_natlist_mpptrr">
+      <abbreviation></abbreviation>
+      <isinactive>F</isinactive>
+      <value>Perfiles Tubulares Rectangulares Media Pieza</value>
+    </customvalue>
   </customvalues>
 </customlist>

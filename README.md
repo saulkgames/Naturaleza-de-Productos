@@ -9,7 +9,7 @@ Un Suitelet crea artículos nuevos de una naturaleza con solo capturar sus pará
 | Tipo de proyecto | SuiteCloud SDF, Account Customization (`src/manifest.xml`) |
 | Plataforma | SuiteScript 2.1 |
 | Ambiente de desarrollo | Sandbox `Almetal_SB` (authId en `project.json`, excluido del control de versiones) |
-| Pruebas | Jest 30 con `@oracle/suitecloud-unit-testing`: 13 suites, 620 pruebas aprobadas (2026-11-19) |
+| Pruebas | Jest 30 con `@oracle/suitecloud-unit-testing`: 14 suites, 645 pruebas aprobadas (2026-11-19) |
 | Estado | Iteración B y cálculo de precio implementados; los artículos se crean inactivos hasta validar el precio en sandbox (P4-01 a P4-04) |
 | Diseño vigente | [Plan v5](planes/2026-11-17_creador-articulos-naturaleza_plan_v5.md), [prompt v3](planes/2026-11-17_creador-articulos-naturaleza_prompt_v3.md) y [plan de cálculo de precio](planes/2026-11-18_calculo-precio-articulo_plan_v1.md) |
 | Actualización | 2026-11-19 |
@@ -140,6 +140,7 @@ flowchart LR
 | `domain/SADS_naturaleza_patron.js` | Dominio | Analiza, valida y aplica los patrones. |
 | `domain/SADS_naturaleza_parametros.js` | Dominio | IDs seguros, valores capturados, catálogo, orden de lados y criterios de duplicado. |
 | `domain/SADS_naturaleza_familias.js` | Dominio | Validación de rangos y resolución de la familia de un espesor. |
+| `domain/SADS_naturaleza_mapa_medidas.js` | Dominio | Mapa de medidas de PTR rectangular: validación, medida elegida y marcador `{mapa:codigo}`. |
 | `domain/SADS_naturaleza_precio.js` | Dominio | Cadena de fórmulas del precio, redondeo a 0.25 y comparación con el campo fórmula. |
 | `infra/SADS_naturaleza_articulo_ns.js` | Adaptador | Tipo de registro de un artículo a partir de su ID interno. |
 | `infra/SADS_naturaleza_precio_ns.js` | Adaptador | Cargos de la plantilla, monedas, campos y matriz de precios, lectura del campo fórmula. |
@@ -189,7 +190,8 @@ Hacia el dominio solo cruzan objetos planos, nunca registros, resultados de bús
 |---|---|---|
 | `custitem_sads_naturaleza_producto` | Campo de artículo SELECT, obligatorio | Apunta a la configuración; aplica a 6 tipos de artículo. |
 | `custitem_sads_nat_pla_lado_a`, `custitem_sads_nat_pla_lado_b` | Campos de artículo FLOAT | Lados de placa en pies. |
-| `custitem_sads_nat_ptr_lado`, `custitem_sads_nat_ptr_largo` | Campos de artículo FLOAT | Lado de PTR en pulgadas y largo en metros. |
+| `custitem_sads_nat_ptr_lado`, `custitem_sads_nat_ptr_lado_b`, `custitem_sads_nat_ptr_largo` | Campos de artículo FLOAT | Lado (mayor) y lado menor de PTR en pulgadas; largo en metros. |
+| `customrecord_sads_mapa_medidas_ptrr` | Registro con 24 instancias | Mapa de medidas de PTR rectangular con el código del proveedor (sección 4F de la documentación del Suitelet). |
 | `custitem_sads_nat_espesor` | Campo de artículo SELECT | Apunta al catálogo de espesores. |
 | `customrecord_sads_naturaleza_productos` | Registro de configuración | Apunta a la lista de naturalezas y al tipo de espesor. |
 | `customrecord_sads_nat_familia` | Registro hijo, sublista de la configuración | Apunta a espesores desde y hasta, y a las familias de precio y margen. |
@@ -224,7 +226,7 @@ Los XML incluyen datos: la configuración de Placas de Acero, con la plantilla d
 ```
 .
 ├── README.md
-├── __tests__/                         # 13 suites Jest
+├── __tests__/                         # 14 suites Jest
 ├── planes/                            # Planes y prompts de diseño
 ├── jest.config.js
 ├── package.json
@@ -246,6 +248,7 @@ Los XML incluyen datos: la configuración de Placas de Acero, con la plantilla d
         └── domain/
             ├── SADS_naturaleza_config_formato.js
             ├── SADS_naturaleza_familias.js
+            ├── SADS_naturaleza_mapa_medidas.js
             ├── SADS_naturaleza_parametros.js
             ├── SADS_naturaleza_patron.js
             └── SADS_naturaleza_precio.js
@@ -255,21 +258,22 @@ Los XML incluyen datos: la configuración de Placas de Acero, con la plantilla d
 Comando: `npm test`; no requiere cuenta NetSuite.
 | Suite | Pruebas | Alcance |
 |---|---|---|
-| `SADS_SL_crear_articulo_nat.test.js` | 109 | Entry point del Suitelet con `jest.mock` de `N/`, incluido el cálculo y la escritura del precio. |
-| `SADS_UE_naturaleza_config.test.js` | 46 | Entry point del UE de configuración, incluido XEDIT. |
+| `SADS_SL_crear_articulo_nat.test.js` | 116 | Entry point del Suitelet con `jest.mock` de `N/`, incluido el cálculo y la escritura del precio. |
+| `SADS_UE_naturaleza_config.test.js` | 50 | Entry point del UE de configuración, incluido XEDIT. |
 | `SADS_UE_nat_familia.test.js` | 14 | Entry point del UE de familias, incluido XEDIT. |
 | `SADS_naturaleza_patron.test.js` | 158 | Marcadores, formatos (incluido `decimal2`), patrones de PTR y sustitución. |
 | `SADS_naturaleza_config_formato.test.js` | 109 | Contrato del JSON y compatibilidad con el CS y el UE de artículo. |
-| `SADS_naturaleza_parametros.test.js` | 83 | IDs, valores, catálogo, conversión, orden de lados y duplicados. |
+| `SADS_naturaleza_parametros.test.js` | 85 | IDs, valores, catálogo, conversión, orden de lados y duplicados. |
 | `SADS_naturaleza_familias.test.js` | 36 | Rangos de familias por espesor y medida, y resolución. |
 | `SADS_naturaleza_familias_ptr.test.js` | 6 | Rangos de familias de PTR contra los artículos existentes. |
 | `SADS_naturaleza_articulo_ns.test.js` | 7 | Adaptador de tipo de registro. |
 | `SADS_naturaleza_precio.test.js` | 29 | Cadena de fórmulas del precio, datos faltantes, margen y redondeo a 0.25. |
 | `SADS_naturaleza_precio_ns.test.js` | 16 | Adaptador de precio: cargos, monedas, matriz de precios y campo fórmula. |
+| `SADS_naturaleza_mapa_medidas.test.js` | 12 | Mapa de medidas de PTR rectangular contra el catálogo del proveedor y los artículos existentes. |
 | `SADS_objetos_portables.test.js` | 5 | Alcance de `deploy.xml`, ausencia de IDs generados por la cuenta y referencias existentes en los objetos desplegados. |
 | `sample-test.js` | 2 | Plantilla de SuiteCloud. |
 
-Resultado del 2026-11-19: 13 de 13 suites y 620 de 620 pruebas aprobadas.
+Resultado del 2026-11-19: 14 de 14 suites y 645 de 645 pruebas aprobadas.
 `suitecloud project:validate` no se ejecutó en esta versión: el entorno de desarrollo no tiene cuenta.
 
 ## 7. Despliegue y operación

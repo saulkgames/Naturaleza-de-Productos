@@ -22,9 +22,11 @@ define([
     './domain/SADS_naturaleza_parametros',
     './domain/SADS_naturaleza_familias',
     './domain/SADS_naturaleza_precio',
+    './domain/SADS_naturaleza_mapa_medidas',
     './infra/SADS_naturaleza_articulo_ns',
     './infra/SADS_naturaleza_precio_ns'
-], (serverWidget, message, search, query, record, runtime, url, log, formato, patron, parametros, familias, precio, articulos, precioNs) => {
+], (serverWidget, message, search, query, record, runtime, url, log, formato, patron, parametros, familias, precio, mapaMedidas,
+    articulos, precioNs) => {
     const REGISTRO_CONFIGURACION = 'customrecord_sads_naturaleza_productos';
 
     const CAMPOS_CONFIGURACION = Object.freeze({
@@ -33,8 +35,13 @@ define([
         PATRON_NOMBRE: 'custrecord_sads_naturaleza_patron_nom',
         PATRON_CODIGO: 'custrecord_sads_naturaleza_patron_cod',
         TIPO_ESPESOR: 'custrecord_sads_naturaleza_tipo_esp',
-        CAMPO_MEDIDA: 'custrecord_sads_naturaleza_campo_med'
+        CAMPO_MEDIDA: 'custrecord_sads_naturaleza_campo_med',
+        MAPA_MEDIDAS: 'custrecord_sads_naturaleza_mapa_med'
     });
+
+    // RN5-01: el mapa de medidas de PTR rectangular llena estos campos del artículo.
+    const REGISTRO_MAPA_MEDIDAS = 'customrecord_sads_mapa_medidas_ptrr';
+    const CAMPOS_DEL_MAPA = Object.freeze({ mayor: 'custitem_sads_nat_ptr_lado', menor: 'custitem_sads_nat_ptr_lado_b' });
 
     // S3-06: el parámetro de catálogo (espesor) se identifica por el ID de su campo de artículo.
     const CAMPO_ESPESOR = 'custitem_sads_nat_espesor';
@@ -155,6 +162,14 @@ define([
           AND fam.custrecord_sads_natfam_config = ?
         ORDER BY des.custrecord_sads_esp_orden`;
 
+    // C-8. Medidas activas del mapa de PTR rectangular (RN5-01).
+    const SQL_MAPA_MEDIDAS = `
+        SELECT med.id AS id, med.name AS nombre, med.custrecord_sads_medptrr_lado_mayor AS lado_mayor,
+               med.custrecord_sads_medptrr_lado_menor AS lado_menor, med.custrecord_sads_medptrr_codigo AS codigo
+        FROM ${REGISTRO_MAPA_MEDIDAS} med
+        WHERE med.isinactive = 'F'
+        ORDER BY med.custrecord_sads_medptrr_lado_mayor, med.custrecord_sads_medptrr_lado_menor`;
+
     const TITULOS_FORMULARIO = Object.freeze({
         PASO_1: 'Crear artículo por naturaleza - Paso 1 de 2',
         PASO_2: 'Crear artículo por naturaleza - Paso 2 de 2',
@@ -171,6 +186,7 @@ define([
         CONVERSION: 'Conversión unidad de compra a base',
         ESPESOR: 'Espesor',
         FAMILIA_PRECIO: 'Familia de precio',
+        MEDIDA: 'Medida',
         PRECIO: 'Precio base (MXN, sin IVA)',
         CODIGO: 'Código',
         NOMBRE: 'Nombre',
@@ -204,6 +220,9 @@ define([
         SIN_ESPESORES: 'No hay espesores activos para el tipo de esta naturaleza.',
         SIN_FAMILIAS: 'La naturaleza no tiene familias de precio configuradas.',
         CAMPO_MEDIDA_INVALIDO: 'El campo de medida para familias debe ser un parámetro numérico de la configuración.',
+        MAPA_SIN_CAMPOS: 'La configuración usa el mapa de medidas: el JSON debe incluir custitem_sads_nat_ptr_lado y '
+            + 'custitem_sads_nat_ptr_lado_b como parámetros numéricos.',
+        MAPA_INVALIDO: (errores) => `El mapa de medidas no es válido: ${errores.join('; ')}`,
         NOMBRE_LARGO: `El nombre generado excede ${LONGITUD_MAXIMA_ITEMID} caracteres; revise el patrón de nombre de la naturaleza.`,
         COLUMNA_NO_PERMITIDA: 'La configuración de esta naturaleza contiene un ID de campo no válido para buscar duplicados.',
         DUPLICADO: 'Ya existe un artículo con esta naturaleza y estos parámetros.',
@@ -254,6 +273,8 @@ define([
         return Number.isFinite(numero) ? numero : null;
     };
 
+    const esCasillaMarcada = (valor) => valor === true || aCadena(valor) === CASILLA_MARCADA;
+
     // search.lookupFields devuelve los SELECT como arreglo de {value, text}.
     const valorDeSeleccion = (valor) => {
         if (Array.isArray(valor)) return valor.length > 0 ? textoONulo(valor[0].value) : null;
@@ -287,7 +308,8 @@ define([
                 CAMPOS_CONFIGURACION.PATRON_NOMBRE,
                 CAMPOS_CONFIGURACION.PATRON_CODIGO,
                 CAMPOS_CONFIGURACION.TIPO_ESPESOR,
-                CAMPOS_CONFIGURACION.CAMPO_MEDIDA
+                CAMPOS_CONFIGURACION.CAMPO_MEDIDA,
+                CAMPOS_CONFIGURACION.MAPA_MEDIDAS
             ]
         });
         const plantilla = aCadena(campos[CAMPOS_CONFIGURACION.PLANTILLA]).trim();
@@ -297,7 +319,8 @@ define([
             patronNombre: aCadena(campos[CAMPOS_CONFIGURACION.PATRON_NOMBRE]),
             patronCodigo: aCadena(campos[CAMPOS_CONFIGURACION.PATRON_CODIGO]),
             tipoEspesorId: valorDeSeleccion(campos[CAMPOS_CONFIGURACION.TIPO_ESPESOR]),
-            campoMedida: textoONulo(campos[CAMPOS_CONFIGURACION.CAMPO_MEDIDA])
+            campoMedida: textoONulo(campos[CAMPOS_CONFIGURACION.CAMPO_MEDIDA]),
+            usaMapa: esCasillaMarcada(campos[CAMPOS_CONFIGURACION.MAPA_MEDIDAS])
         };
     };
 
@@ -334,6 +357,18 @@ define([
         familiaPrecioNombre: aCadena(fila.precio_nombre),
         precioCotizacion: numeroONulo(fila.precio_cotizacion),
         margen: numeroONulo(fila.margen)
+    }));
+
+    /**
+     * Carga las medidas activas del mapa de PTR rectangular (C-8, RN5-01).
+     * @returns {Array<{id: string, nombre: string, ladoMayor: ?number, ladoMenor: ?number, codigo: string}>}
+     */
+    const cargarMapaMedidas = () => ejecutarConsulta(SQL_MAPA_MEDIDAS, []).map((fila) => ({
+        id: aCadena(fila.id),
+        nombre: aCadena(fila.nombre),
+        ladoMayor: numeroONulo(fila.lado_mayor),
+        ladoMenor: numeroONulo(fila.lado_menor),
+        codigo: aCadena(fila.codigo).trim()
     }));
 
     /**
@@ -563,7 +598,8 @@ define([
      * @param {Array<{id: string, etiqueta: string, tipo: string}>} datos.definicion - Parámetros validados.
      * @param {?string} datos.unidadPeso - Unidad de peso de la plantilla o null.
      * @param {Array<*>} datos.valoresPrevios - Capturas previas alineadas por índice.
-     * @param {Array<{id: string, nombre: string}>} datos.espesores - Catálogo de C-3; vacío si la naturaleza no usa espesor.
+     * @param {Object<string, Array<{id: string, nombre: string}>>} datos.catalogos - Opciones por ID de parámetro de catálogo:
+     * espesores de C-3 y medidas de C-8 (RN5-01).
      * @param {*} datos.pesoPrevio - Peso capturado antes.
      * @param {*} datos.conversionPrevia - Conversión capturada antes.
      * @param {string[]} datos.errores - Mensajes de validación.
@@ -571,7 +607,7 @@ define([
      * @returns {serverWidget.Form}
      */
     const construirPaso2 = ({
-        configuracion, definicion, unidadPeso, espesores, valoresPrevios, pesoPrevio, conversionPrevia, errores, urlInicio
+        configuracion, definicion, unidadPeso, catalogos, valoresPrevios, pesoPrevio, conversionPrevia, errores, urlInicio
     }) => {
         const form = crearFormulario(TITULOS_FORMULARIO.PASO_2);
         if (errores.length > 0) {
@@ -593,7 +629,7 @@ define([
                 agregarSeleccion(form, {
                     id: campoDeParametro(posicion),
                     etiqueta: escaparHtml(parametro.etiqueta),
-                    opciones: espesores,
+                    opciones: catalogos[parametro.id] || [],
                     valorPrevio: valoresPrevios[posicion]
                 });
                 return;
@@ -738,7 +774,8 @@ define([
     });
 
     const parametroDeCatalogo = (definicion) => {
-        const encontrados = definicion.filter((parametro) => parametro.tipo === parametros.TIPOS_SOPORTADOS.CATALOGO);
+        const encontrados = definicion.filter((parametro) => parametro.id === CAMPO_ESPESOR
+            && parametro.tipo === parametros.TIPOS_SOPORTADOS.CATALOGO);
         return encontrados.length > 0 ? encontrados[0] : null;
     };
 
@@ -759,6 +796,29 @@ define([
         if (!valido) throw errorDeConfiguracion(MENSAJES.CAMPO_MEDIDA_INVALIDO);
     };
 
+    // RN5-01: con el mapa, los dos lados deben ser parámetros numéricos del JSON; el mapa se valida completo (RN5-02).
+    const cargarMapa = (definicion) => {
+        const numericos = [parametros.TIPOS_SOPORTADOS.FLOAT, parametros.TIPOS_SOPORTADOS.INTEGER];
+        const esNumerico = (id) => definicion.some((parametro) => parametro.id === id && numericos.indexOf(parametro.tipo) !== -1);
+        if (!esNumerico(CAMPOS_DEL_MAPA.mayor) || !esNumerico(CAMPOS_DEL_MAPA.menor)) throw errorDeConfiguracion(MENSAJES.MAPA_SIN_CAMPOS);
+        const medidas = cargarMapaMedidas();
+        const revision = mapaMedidas.validarFilas(medidas);
+        if (!revision.valido) throw errorDeConfiguracion(MENSAJES.MAPA_INVALIDO(revision.errores));
+        return medidas;
+    };
+
+    // RN5-01: en el paso 2 los lados no se capturan; se elige una medida del mapa.
+    const definicionConMapa = (definicion) => [{
+        id: mapaMedidas.MARCADOR,
+        etiqueta: ETIQUETAS.MEDIDA,
+        tipo: parametros.TIPOS_SOPORTADOS.CATALOGO
+    }].concat(definicion.filter((parametro) => parametro.id !== CAMPOS_DEL_MAPA.mayor && parametro.id !== CAMPOS_DEL_MAPA.menor));
+
+    const opcionesPorCatalogo = (preparacion) => ({
+        [CAMPO_ESPESOR]: preparacion.espesores,
+        [mapaMedidas.MARCADOR]: preparacion.medidas
+    });
+
     // Preparación común del paso 2 y de la creación: una sola copia de la plantilla por solicitud (PT-02).
     const prepararNaturaleza = (configuracion) => {
         const leida = leerConfiguracion(configuracion.id);
@@ -777,6 +837,7 @@ define([
         const lineasDeFamilia = cargarFamilias(configuracion.id);
         if (lineasDeFamilia.length === 0) throw errorDeConfiguracion(MENSAJES.SIN_FAMILIAS);
         validarCampoMedida(leida.campoMedida, definicion);
+        const medidas = leida.usaMapa ? cargarMapa(definicion) : [];
         return {
             configuracion,
             ids: leida.ids,
@@ -787,15 +848,17 @@ define([
             definicion,
             espesores,
             lineasDeFamilia,
-            campoMedida: leida.campoMedida
+            campoMedida: leida.campoMedida,
+            medidas,
+            captura: leida.usaMapa ? definicionConMapa(definicion) : definicion
         };
     };
 
     const mostrarPaso2 = (preparacion, { valoresPrevios, pesoPrevio, conversionPrevia, errores }) => construirPaso2({
         configuracion: preparacion.configuracion,
-        definicion: preparacion.definicion,
+        definicion: preparacion.captura,
         unidadPeso: leerUnidadDePeso(preparacion.copia),
-        espesores: preparacion.espesores,
+        catalogos: opcionesPorCatalogo(preparacion),
         valoresPrevios,
         pesoPrevio,
         conversionPrevia,
@@ -928,6 +991,17 @@ define([
         return encontrados.length > 0 ? encontrados[0] : null;
     };
 
+    // RN5-03: el ID elegido ya fue validado contra C-8.
+    const medidaElegida = (preparacion, valores) => (Object.prototype.hasOwnProperty.call(valores, mapaMedidas.MARCADOR)
+        ? mapaMedidas.buscar(preparacion.medidas, valores[mapaMedidas.MARCADOR])
+        : null);
+
+    // RN5-03: la medida llena los lados; el ID del mapa no es campo del artículo.
+    const completarConMedida = (valores, medida) => {
+        Object.assign(valores, mapaMedidas.valoresDe(medida, CAMPOS_DEL_MAPA));
+        delete valores[mapaMedidas.MARCADOR];
+    };
+
     const textosDelEspesor = (espesor) => (espesor === null ? {} : {
         [CAMPO_ESPESOR]: { codigo: espesor.codigo, texto: espesor.texto }
     });
@@ -936,20 +1010,25 @@ define([
         const eleccion = elegirConfiguracion(solicitud);
         if (eleccion.configuracion === null) return paso1ConNaturalezaInvalida(eleccion);
         const preparacion = prepararNaturaleza(eleccion.configuracion);
-        const valoresCrudos = preparacion.definicion.map((parametro, posicion) => leerParametro(solicitud, campoDeParametro(posicion)));
+        const valoresCrudos = preparacion.captura.map((parametro, posicion) => leerParametro(solicitud, campoDeParametro(posicion)));
         const pesoCrudo = leerParametro(solicitud, CAMPOS_FORMULARIO.PESO);
         const conversionCruda = aCadena(leerParametro(solicitud, CAMPOS_FORMULARIO.CONVERSION));
         const repetirPaso2 = (errores) => mostrarPaso2(preparacion, {
             valoresPrevios: valoresCrudos, pesoPrevio: pesoCrudo, conversionPrevia: conversionCruda, errores
         });
         const captura = parametros.validarValores({
-            parametros: preparacion.definicion,
+            parametros: preparacion.captura,
             valoresCrudos,
             pesoCrudo,
             conversionCruda,
-            opcionesCatalogo: preparacion.espesores.map((espesor) => espesor.id)
+            opcionesPorCatalogo: {
+                [CAMPO_ESPESOR]: preparacion.espesores.map((espesor) => espesor.id),
+                [mapaMedidas.MARCADOR]: preparacion.medidas.map((medida) => medida.id)
+            }
         });
         if (!captura.valido) return repetirPaso2(captura.errores);
+        const medida = medidaElegida(preparacion, captura.valores);
+        if (medida !== null) completarConMedida(captura.valores, medida);
         const erroresDeFormato = validarFormatosDeCaptura(preparacion, captura.valores);
         if (erroresDeFormato.length > 0) return repetirPaso2(erroresDeFormato);
         const espesor = espesorElegido(preparacion, captura.valores);
@@ -958,7 +1037,7 @@ define([
             orden: espesor === null ? null : espesor.orden,
             medida: preparacion.campoMedida === null ? null : captura.valores[preparacion.campoMedida]
         });
-        const textos = textosDelEspesor(espesor);
+        const textos = Object.assign(textosDelEspesor(espesor), medida === null ? {} : mapaMedidas.textosDe(medida));
         const codigo = patron.aplicar({ patron: preparacion.patronCodigo, valores: captura.valores, textos });
         const nombre = patron.aplicar({ patron: preparacion.patronNombre, valores: captura.valores, textos });
         if (nombre.length > LONGITUD_MAXIMA_ITEMID) return repetirPaso2([MENSAJES.NOMBRE_LARGO]);

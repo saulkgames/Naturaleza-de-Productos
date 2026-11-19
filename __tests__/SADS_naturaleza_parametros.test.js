@@ -365,3 +365,25 @@ describe('validarOrdenDeLados (D-18)', () => {
         expect(parametros.validarOrdenDeLados()).toEqual({ valido: true, errores: [] });
     });
 });
+
+describe('validarValores con opciones por catálogo (RN5-01)', () => {
+    const DEFINICION = Object.freeze([
+        { id: 'mapa', etiqueta: 'Medida', tipo: 'catalogo' },
+        { id: 'custitem_sads_nat_ptr_largo', etiqueta: 'Largo', tipo: 'float' },
+        { id: 'custitem_sads_nat_espesor', etiqueta: 'Espesor', tipo: 'catalogo' }
+    ]);
+    const validar = (valoresCrudos) => parametros.validarValores({
+        parametros: DEFINICION,
+        valoresCrudos,
+        pesoCrudo: '10',
+        opcionesPorCatalogo: { mapa: [501, 502], custitem_sads_nat_espesor: ['31'] }
+    });
+
+    test('cada catálogo se valida contra sus propias opciones', () => {
+        expect(validar(['502', '6', '31'])).toMatchObject({ valido: true, valores: { mapa: 502, custitem_sads_nat_ptr_largo: 6, custitem_sads_nat_espesor: 31 } });
+    });
+
+    test('una opción de otro catálogo se rechaza', () => {
+        expect(validar(['31', '6', '501']).errores).toEqual(['Medida: elija un valor de la lista.', 'Espesor: elija un valor de la lista.']);
+    });
+});

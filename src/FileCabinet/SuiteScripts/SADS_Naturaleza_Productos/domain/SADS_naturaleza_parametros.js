@@ -140,19 +140,23 @@ define(['./SADS_naturaleza_config_formato'], (formato) => {
      * @param {*} datos.pesoCrudo - Captura del peso.
      * @param {*} [datos.conversionCruda] - Captura de la conversión; si se omite (undefined) no se evalúa.
      * @param {string[]} [datos.opcionesCatalogo] - IDs internos permitidos para el parámetro de catálogo.
+     * @param {Object<string, string[]>} [datos.opcionesPorCatalogo] - IDs permitidos por ID de parámetro de catálogo;
+     * tiene prioridad sobre opcionesCatalogo (el espesor y el mapa de medidas, RN5-01).
      * @returns {{valido: boolean, errores: string[], valores: Object<string, number>, peso: ?number, conversion: ?number}}
      * valores incluye solo los parámetros válidos (el catálogo como número); peso y conversion son null si no son válidos.
      */
-    const validarValores = ({ parametros, valoresCrudos, pesoCrudo, conversionCruda, opcionesCatalogo } = {}) => {
+    const validarValores = ({ parametros, valoresCrudos, pesoCrudo, conversionCruda, opcionesCatalogo, opcionesPorCatalogo } = {}) => {
         const definidos = Array.isArray(parametros) ? parametros : [];
         const crudos = Array.isArray(valoresCrudos) ? valoresCrudos : [];
-        const opciones = Array.isArray(opcionesCatalogo) ? opcionesCatalogo.map((opcion) => String(opcion)) : [];
+        const aTextos = (lista) => (Array.isArray(lista) ? lista.map((opcion) => String(opcion)) : []);
+        const opciones = aTextos(opcionesCatalogo);
+        const opcionesDe = (id) => (tienePropiedad(opcionesPorCatalogo, id) ? aTextos(opcionesPorCatalogo[id]) : opciones);
         const errores = [];
         const valores = {};
         definidos.forEach((parametro, posicion) => {
             const etiqueta = etiquetaVisible(parametro);
             if (normalizarTipo(parametro.tipo) === TIPOS_SOPORTADOS.CATALOGO) {
-                const opcion = leerOpcionDeCatalogo(crudos[posicion], opciones);
+                const opcion = leerOpcionDeCatalogo(crudos[posicion], opcionesDe(parametro.id));
                 if (opcion === null) errores.push(mensajeCatalogoInvalido(etiqueta));
                 else valores[parametro.id] = opcion;
                 return;

@@ -481,5 +481,105 @@
       <custrecord_sads_natfam_precio>[scriptid=customrecord_pfp_famprecios.val_26689_5490848_sb1_515]</custrecord_sads_natfam_precio>
       <isinactive>F</isinactive>
     </instance>
+    <instance scriptid="val_sads_espesor_config_ptrr_1">
+      <custrecord_sads_natfam_config>[scriptid=customrecord_sads_naturaleza_productos.val_sads_nat_config_record_ptrr]</custrecord_sads_natfam_config>
+      <custrecord_sads_natfam_desde>[scriptid=customrecord_sads_espesor.val_sads_esp_ptr_c20]</custrecord_sads_natfam_desde>
+      <custrecord_sads_natfam_hasta>[scriptid=customrecord_sads_espesor.val_sads_esp_ptr_c18]</custrecord_sads_natfam_hasta>
+      <custrecord_sads_natfam_margen>[scriptid=customrecord_pfp_fammargenes_.val_5522235_5490848_713]</custrecord_sads_natfam_margen>
+      <custrecord_sads_natfam_med_desde>.5</custrecord_sads_natfam_med_desde>
+      <custrecord_sads_natfam_med_hasta>8</custrecord_sads_natfam_med_hasta>
+      <custrecord_sads_natfam_precio>[scriptid=customrecord_pfp_famprecios.val_26687_5490848_sb1_614]</custrecord_sads_natfam_precio>
+      <isinactive>F</isinactive>
+    </instance>
+    <instance scriptid="val_sads_espesor_config_ptrr_2">
+      <custrecord_sads_natfam_config>[scriptid=customrecord_sads_naturaleza_productos.val_sads_nat_config_record_ptrr]</custrecord_sads_natfam_config>
+      <custrecord_sads_natfam_desde>[scriptid=customrecord_sads_espesor.val_sads_esp_ptr_c16]</custrecord_sads_natfam_desde>
+      <custrecord_sads_natfam_hasta>[scriptid=customrecord_sads_espesor.val_sads_esp_ptr_c16]</custrecord_sads_natfam_hasta>
+      <custrecord_sads_natfam_margen>[scriptid=customrecord_pfp_fammargenes_.val_5522235_5490848_713]</custrecord_sads_natfam_margen>
+      <custrecord_sads_natfam_med_desde>.5</custrecord_sads_natfam_med_desde>
+      <custrecord_sads_natfam_med_hasta>8</custrecord_sads_natfam_med_hasta>
+      <custrecord_sads_natfam_precio>[scriptid=customrecord_pfp_famprecios.val_263837_5490848_945]</custrecord_sads_natfam_precio>
+      <isinactive>F</isinactive>
+    </instance>
+    <instance scriptid="val_sads_espesor_config_ptrr_3">
+      <custrecord_sads_natfam_config>[scriptid=customrecord_sads_naturaleza_productos.val_sads_nat_config_record_ptrr]</custrecord_sads_natfam_config>
+      <custrecord_sads_natfam_desde>[scriptid=customrecord_sads_espesor.val_sads_esp_ptr_c14]</custrecord_sads_natfam_desde>
+      <custrecord_sads_natfam_hasta>[scriptid=customrecord_sads_espesor.val_sads_esp_ptr_c09]</custrecord_sads_natfam_hasta>
+      <custrecord_sads_natfam_margen>[scriptid=customrecord_pfp_fammargenes_.val_5522235_5490848_713]</custrecord_sads_natfam_margen>
+      <custrecord_sads_natfam_med_desde>.5</custrecord_sads_natfam_med_desde>
+      <custrecord_sads_natfam_med_hasta>3</custrecord_sads_natfam_med_hasta>
+      <custrecord_sads_natfam_precio>[scriptid=customrecord_pfp_famprecios.val_26688_5490848_sb1_408]</custrecord_sads_natfam_precio>
+      <isinactive>F</isinactive>
+    </instance>
+    <instance scriptid="val_sads_espesor_config_ptrr_4">
+      <custrecord_sads_natfam_config>[scriptid=customrecord_sads_naturaleza_productos.val_sads_nat_config_record_ptrr]</custrecord_sads_natfam_config>
+      <custrecord_sads_natfam_desde>[scriptid=customrecord_sads_espesor.val_sads_esp_ptr_c14]</custrecord_sads_natfam_desde>
+      <custrecord_sads_natfam_hasta>[scriptid=customrecord_sads_espesor.val_sads_esp_ptr_c09]</custrecord_sads_natfam_hasta>
+      <custrecord_sads_natfam_margen>[scriptid=customrecord_pfp_fammargenes_.val_5522235_5490848_713]</custrecord_sads_natfam_margen>
+      <custrecord_sads_natfam_med_desde>3.5</custrecord_sads_natfam_med_desde>
+      <custrecord_sads_natfam_med_hasta>8</custrecord_sads_natfam_med_hasta>
+      <custrecord_sads_natfam_precio>[scriptid=customrecord_pfp_famprecios.val_26689_5490848_sb1_515]</custrecord_sads_natfam_precio>
+      <isinactive>F</isinactive>
+    </instance>
+    <instance scriptid="val_sads_espesor_config_ptrr_5">
+      <custrecord_sads_natfam_config>[scriptid=customrecord_sads_naturaleza_productos.val_sads_nat_config_record_ptrr]</custrecord_sads_natfam_config>
+      <custrecord_sads_natfam_desde>[scriptid=customrecord_sads_espesor.val_sads_esp_ptr_e18]</custrecord_sads_natfam_desde>
+      <custrecord_sads_natfam_hasta>[scriptid=customrecord_sads_espesor.val_sads_esp_ptr_e50]</custrecord_sads_natfam_hasta>
+      <custrecord_sads_natfam_margen>[scriptid=customrecord_pfp_fammargenes_.val_5522235_5490848_713]</custrecord_sads_natfam_margen>
+      <custrecord_sads_natfam_med_desde>.5</custrecord_sads_natfam_med_desde>
+      <custrecord_sads_natfam_med_hasta>8</custrecord_sads_natfam_med_hasta>
+      <custrecord_sads_natfam_precio>[scriptid=customrecord_pfp_famprecios.val_26689_5490848_sb1_515]</custrecord_sads_natfam_precio>
+      <isinactive>F</isinactive>
+    </instance>
+    <instance scriptid="val_sads_espesor_config_mpptrr_1">
+      <custrecord_sads_natfam_config>[scriptid=customrecord_sads_naturaleza_productos.val_sads_nat_config_record_mpptrr]</custrecord_sads_natfam_config>
+      <custrecord_sads_natfam_desde>[scriptid=customrecord_sads_espesor.val_sads_esp_ptr_c20]</custrecord_sads_natfam_desde>
+      <custrecord_sads_natfam_hasta>[scriptid=customrecord_sads_espesor.val_sads_esp_ptr_c18]</custrecord_sads_natfam_hasta>
+      <custrecord_sads_natfam_margen>[scriptid=customrecord_pfp_fammargenes_.val_6067916_5490848_922]</custrecord_sads_natfam_margen>
+      <custrecord_sads_natfam_med_desde>.5</custrecord_sads_natfam_med_desde>
+      <custrecord_sads_natfam_med_hasta>8</custrecord_sads_natfam_med_hasta>
+      <custrecord_sads_natfam_precio>[scriptid=customrecord_pfp_famprecios.val_26687_5490848_sb1_614]</custrecord_sads_natfam_precio>
+      <isinactive>F</isinactive>
+    </instance>
+    <instance scriptid="val_sads_espesor_config_mpptrr_2">
+      <custrecord_sads_natfam_config>[scriptid=customrecord_sads_naturaleza_productos.val_sads_nat_config_record_mpptrr]</custrecord_sads_natfam_config>
+      <custrecord_sads_natfam_desde>[scriptid=customrecord_sads_espesor.val_sads_esp_ptr_c16]</custrecord_sads_natfam_desde>
+      <custrecord_sads_natfam_hasta>[scriptid=customrecord_sads_espesor.val_sads_esp_ptr_c16]</custrecord_sads_natfam_hasta>
+      <custrecord_sads_natfam_margen>[scriptid=customrecord_pfp_fammargenes_.val_6067916_5490848_922]</custrecord_sads_natfam_margen>
+      <custrecord_sads_natfam_med_desde>.5</custrecord_sads_natfam_med_desde>
+      <custrecord_sads_natfam_med_hasta>8</custrecord_sads_natfam_med_hasta>
+      <custrecord_sads_natfam_precio>[scriptid=customrecord_pfp_famprecios.val_263837_5490848_945]</custrecord_sads_natfam_precio>
+      <isinactive>F</isinactive>
+    </instance>
+    <instance scriptid="val_sads_espesor_config_mpptrr_3">
+      <custrecord_sads_natfam_config>[scriptid=customrecord_sads_naturaleza_productos.val_sads_nat_config_record_mpptrr]</custrecord_sads_natfam_config>
+      <custrecord_sads_natfam_desde>[scriptid=customrecord_sads_espesor.val_sads_esp_ptr_c14]</custrecord_sads_natfam_desde>
+      <custrecord_sads_natfam_hasta>[scriptid=customrecord_sads_espesor.val_sads_esp_ptr_c09]</custrecord_sads_natfam_hasta>
+      <custrecord_sads_natfam_margen>[scriptid=customrecord_pfp_fammargenes_.val_6067916_5490848_922]</custrecord_sads_natfam_margen>
+      <custrecord_sads_natfam_med_desde>.5</custrecord_sads_natfam_med_desde>
+      <custrecord_sads_natfam_med_hasta>3</custrecord_sads_natfam_med_hasta>
+      <custrecord_sads_natfam_precio>[scriptid=customrecord_pfp_famprecios.val_26688_5490848_sb1_408]</custrecord_sads_natfam_precio>
+      <isinactive>F</isinactive>
+    </instance>
+    <instance scriptid="val_sads_espesor_config_mpptrr_4">
+      <custrecord_sads_natfam_config>[scriptid=customrecord_sads_naturaleza_productos.val_sads_nat_config_record_mpptrr]</custrecord_sads_natfam_config>
+      <custrecord_sads_natfam_desde>[scriptid=customrecord_sads_espesor.val_sads_esp_ptr_c14]</custrecord_sads_natfam_desde>
+      <custrecord_sads_natfam_hasta>[scriptid=customrecord_sads_espesor.val_sads_esp_ptr_c09]</custrecord_sads_natfam_hasta>
+      <custrecord_sads_natfam_margen>[scriptid=customrecord_pfp_fammargenes_.val_6067916_5490848_922]</custrecord_sads_natfam_margen>
+      <custrecord_sads_natfam_med_desde>3.5</custrecord_sads_natfam_med_desde>
+      <custrecord_sads_natfam_med_hasta>8</custrecord_sads_natfam_med_hasta>
+      <custrecord_sads_natfam_precio>[scriptid=customrecord_pfp_famprecios.val_26689_5490848_sb1_515]</custrecord_sads_natfam_precio>
+      <isinactive>F</isinactive>
+    </instance>
+    <instance scriptid="val_sads_espesor_config_mpptrr_5">
+      <custrecord_sads_natfam_config>[scriptid=customrecord_sads_naturaleza_productos.val_sads_nat_config_record_mpptrr]</custrecord_sads_natfam_config>
+      <custrecord_sads_natfam_desde>[scriptid=customrecord_sads_espesor.val_sads_esp_ptr_e18]</custrecord_sads_natfam_desde>
+      <custrecord_sads_natfam_hasta>[scriptid=customrecord_sads_espesor.val_sads_esp_ptr_e50]</custrecord_sads_natfam_hasta>
+      <custrecord_sads_natfam_margen>[scriptid=customrecord_pfp_fammargenes_.val_6067916_5490848_922]</custrecord_sads_natfam_margen>
+      <custrecord_sads_natfam_med_desde>.5</custrecord_sads_natfam_med_desde>
+      <custrecord_sads_natfam_med_hasta>8</custrecord_sads_natfam_med_hasta>
+      <custrecord_sads_natfam_precio>[scriptid=customrecord_pfp_famprecios.val_26689_5490848_sb1_515]</custrecord_sads_natfam_precio>
+      <isinactive>F</isinactive>
+    </instance>
   </instances>
 </customrecordtype>

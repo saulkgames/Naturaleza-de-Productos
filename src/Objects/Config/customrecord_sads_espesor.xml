@@ -392,6 +392,14 @@
       <isinactive>F</isinactive>
       <name>Cal.07</name>
     </instance>
+    <instance scriptid="val_sads_esp_ptr_e12">
+      <custrecord_sads_esp_codigo>E12</custrecord_sads_esp_codigo>
+      <custrecord_sads_esp_orden>.125</custrecord_sads_esp_orden>
+      <custrecord_sads_esp_texto>1/8&apos;&apos;</custrecord_sads_esp_texto>
+      <custrecord_sads_esp_tipo>[scriptid=customlist_sads_tipo_espesor.val_sads_tesp_ptr]</custrecord_sads_esp_tipo>
+      <isinactive>F</isinactive>
+      <name>1/8&quot; - E12</name>
+    </instance>
     <instance scriptid="val_sads_esp_ptr_e18">
       <custrecord_sads_esp_codigo>E18</custrecord_sads_esp_codigo>
       <custrecord_sads_esp_orden>.1875</custrecord_sads_esp_orden>
