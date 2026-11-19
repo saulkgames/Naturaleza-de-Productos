@@ -10,7 +10,7 @@ Un Suitelet crea artículos nuevos de una naturaleza con solo capturar sus pará
 | Plataforma | SuiteScript 2.1 |
 | Ambiente de desarrollo | Sandbox `Almetal_SB` (authId en `project.json`, excluido del control de versiones) |
 | Pruebas | Jest 30 con `@oracle/suitecloud-unit-testing`: 16 suites, 675 pruebas aprobadas (2026-11-19) |
-| Estado | Iteración B y cálculo de precio implementados; los artículos se crean inactivos hasta validar el precio en sandbox (P4-01 a P4-04) |
+| Estado | Validado en sandbox el 2026-11-19 (cálculo de precio, PTR rectangular, Lámina Negra y Sistema de Cortes); pendiente el paso a producción (sección 7) |
 | Diseño vigente | [Plan v5](planes/2026-11-17_creador-articulos-naturaleza_plan_v5.md), [prompt v3](planes/2026-11-17_creador-articulos-naturaleza_prompt_v3.md) y [plan de cálculo de precio](planes/2026-11-18_calculo-precio-articulo_plan_v1.md) |
 | Actualización | 2026-11-19 |
 
@@ -289,6 +289,17 @@ Resultado del 2026-11-19: 16 de 16 suites y 675 de 675 pruebas aprobadas.
 6. Limpieza manual en la cuenta, porque SDF no borra objetos: script `customscript_sads_sl_naturaleza_config`, campo `custrecord_sads_naturaleza_tipo_art`, lista `customlist_sads_tipos_articulo`, campo `custitem_sads_nat_pla_espesor` y los archivos `testt.js`, `SADS_SL_naturaleza_config.js`, `SADS_SL_naturaleza_config.md` y `domain/SADS_naturaleza_alta_reglas.js`.
 
 En producción, la plantilla, las familias y las subsidiarias tienen IDs distintos a los del sandbox.
+
+
+Paso a producción:
+| Paso | Detalle |
+|---|---|
+| 1 | Descargar `customrecord_sads_naturaleza_productos.xml` desde sandbox para incluir las Familias de Corte marcadas en cada naturaleza; sin esto, el deploy las deja vacías y el Suitelet no permite crear. |
+| 2 | Verificar que los valores de `customlist_familias_de_corte` tengan el mismo ID interno en producción: el MULTISELECT guarda IDs, y un valor creado en sandbox después del último refresh no existe en producción. |
+| 3 | `npm test` y `project:deploy` (alcance de `deploy.xml`: Config, Naturalezas, Scripts y la carpeta del Suitelet). |
+| 4 | Re-aplicar la audiencia del deployment del Suitelet (R-10). |
+| 5 | Crear un artículo por naturaleza (placa, PTRC, MPPTRC, PTRR, MPPTRR, LNE) y revisar código, nombre, familia, precio base y datos de corte. |
+| 6 | Con lo anterior correcto, `custscript_sads_sl_art_activo` = T en el deployment (sin código). |
 
 ## 8. Riesgos vigentes
 | Enunciado | Fundamento | Consecuencia |

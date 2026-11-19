@@ -173,3 +173,4 @@ Límite: S4-01 a S4-08 solo se confirman en sandbox; S4-08 depende de un módulo
 | Fecha | Cambio |
 |---|---|
 | 2026-11-19 | H-05 corregido por el usuario (commit 92fc57e). IDs propios de la lista de naturalezas renombrados; prueba de portabilidad; familias DRT pendientes de verificar en producción (sección 4E de la documentación). |
+| 2026-11-19 | Validado en sandbox por el usuario (P4-01 a P4-04). Familias DRT verificadas en producción. Pendiente: paso a producción. |

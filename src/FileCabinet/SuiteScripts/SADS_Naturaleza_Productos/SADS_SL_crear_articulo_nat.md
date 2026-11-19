@@ -3,7 +3,8 @@
 | Dato | Valor |
 |---|---|
 | Fecha de generación | 2026-11-13 (formatos: 2026-11-14; iteración B: 2026-11-18; cálculo de precio: 2026-11-19) |
-| Iteración | B: espesor por catálogo, familias de precio y margen por rango, peso, conversión y descripciones. Cálculo de precio en el Suitelet (sección 4D). Artículos inactivos hasta pasar P4-01 a P4-04 |
+| Iteración | B: espesor por catálogo, familias de precio y margen por rango, peso, conversión y descripciones. Cálculo de precio (4D), PTR rectangular (4F), Lámina Negra (4G) y Sistema de Cortes (4H). Validado en sandbox el 2026-11-19 |
+| Estado | Validado en sandbox por el usuario el 2026-11-19: P4-01 a P4-04, PTRR/MPPTRR, LNE y Sistema de Cortes; supuestos S4-01 a S4-09 confirmados por esas pruebas. Pendiente: paso a producción (sección 12) |
 | Suitelet | `customscript_sads_sl_crear_articulo_nat` / `customdeploy_sads_sl_crear_articulo_nat` |
 | User Events | `customscript_sads_ue_naturaleza_config` / `customdeploy_sads_ue_naturaleza_config`; `customscript_sads_ue_nat_familia` / `customdeploy_sads_ue_nat_familia` |
 | Plataforma | SuiteScript 2.1, `@NModuleScope SameAccount` |
@@ -714,6 +715,16 @@ Cálculo de precio (sandbox `Almetal_SB`):
 4. Con P4-01 a P4-04 aprobadas, cambiar `custscript_sads_sl_art_activo` a T (sin código); P3-12 queda cubierta.
 Producción: después de sandbox; re-aplicar la audiencia después de cada despliegue (R-10); capturar espesores y familias (los IDs internos difieren entre cuentas).
 Reversión: configuración de placas con JSON y patrones de iteración A; inactivar `customdeploy_sads_ue_nat_familia`; deployment del Suitelet a inactivo; los artículos creados se inactivan a mano.
+
+Paso a producción (después de la validación en sandbox del 2026-11-19):
+| Paso | Detalle |
+|---|---|
+| 1 | Descargar `customrecord_sads_naturaleza_productos.xml` desde sandbox para incluir las Familias de Corte marcadas en cada naturaleza; sin esto, el deploy las deja vacías y el Suitelet no permite crear. |
+| 2 | Verificar que los valores de `customlist_familias_de_corte` tengan el mismo ID interno en producción: el MULTISELECT guarda IDs, y un valor creado en sandbox después del último refresh no existe en producción. |
+| 3 | `npm test` y `project:deploy` (alcance de `deploy.xml`: Config, Naturalezas, Scripts y la carpeta del Suitelet). |
+| 4 | Re-aplicar la audiencia del deployment del Suitelet (R-10). |
+| 5 | Crear un artículo por naturaleza (placa, PTRC, MPPTRC, PTRR, MPPTRR, LNE) y revisar código, nombre, familia, precio base y datos de corte. |
+| 6 | Con lo anterior correcto, `custscript_sads_sl_art_activo` = T en el deployment (sin código). |
 
 ## 13. Supuestos
 | ID | Supuesto | Cómo se confirma |
