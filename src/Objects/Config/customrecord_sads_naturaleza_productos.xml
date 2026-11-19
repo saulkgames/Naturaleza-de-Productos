@@ -371,11 +371,94 @@ Ejemplo: [&quot;custitem_pl_ancho&quot;,&quot;custitem_pl_espesor&quot;,&quot;cu
       <storevalue>T</storevalue>
       <subtab></subtab>
     </customrecordcustomfield>
+    <customrecordcustomfield scriptid="custrecord_sads_naturaleza_fam_corte">
+      <accesslevel>2</accesslevel>
+      <aidescription></aidescription>
+      <allowquickadd>F</allowquickadd>
+      <applyformatting>F</applyformatting>
+      <checkspelling>F</checkspelling>
+      <defaultchecked>F</defaultchecked>
+      <defaultselection></defaultselection>
+      <defaultvalue></defaultvalue>
+      <description>Familias de corte (Sistema de Cortes) que aplican a la naturaleza. En el paso 2 el usuario elige una; se escribe en custitem_famili_de_corte_item. Si falta una, se da de alta en la lista Familias de Corte.</description>
+      <displayheight></displayheight>
+      <displaytype>NORMAL</displaytype>
+      <displaywidth></displaywidth>
+      <dynamicdefault></dynamicdefault>
+      <enabletextenhance>F</enabletextenhance>
+      <encryptatrest>F</encryptatrest>
+      <fieldtype>MULTISELECT</fieldtype>
+      <globalsearch>F</globalsearch>
+      <help></help>
+      <isformula>F</isformula>
+      <ismandatory>F</ismandatory>
+      <isparent>F</isparent>
+      <label>Familias de Corte</label>
+      <linktext></linktext>
+      <maxlength></maxlength>
+      <maxvalue></maxvalue>
+      <minvalue></minvalue>
+      <onparentdelete></onparentdelete>
+      <parentsubtab></parentsubtab>
+      <rolerestrict>F</rolerestrict>
+      <searchcomparefield></searchcomparefield>
+      <searchdefault></searchdefault>
+      <searchlevel>2</searchlevel>
+      <selectrecordtype>[scriptid=customlist_familias_de_corte]</selectrecordtype>
+      <showinlist>T</showinlist>
+      <sourcefilterby></sourcefilterby>
+      <sourcefrom></sourcefrom>
+      <sourcelist></sourcelist>
+      <storevalue>T</storevalue>
+      <subtab></subtab>
+    </customrecordcustomfield>
+    <customrecordcustomfield scriptid="custrecord_sads_naturaleza_valor_unid">
+      <accesslevel>2</accesslevel>
+      <aidescription></aidescription>
+      <allowquickadd>F</allowquickadd>
+      <applyformatting>F</applyformatting>
+      <checkspelling>F</checkspelling>
+      <defaultchecked>F</defaultchecked>
+      <defaultselection></defaultselection>
+      <defaultvalue></defaultvalue>
+      <description>Lista JSON de IDs del JSON de parámetros cuyo producto es custitem_value_per_units. Láminas y placas: lado A y lado B (4 x 10 = 40). PTR: largo en metros.</description>
+      <displayheight></displayheight>
+      <displaytype>NORMAL</displaytype>
+      <displaywidth></displaywidth>
+      <dynamicdefault></dynamicdefault>
+      <enabletextenhance>F</enabletextenhance>
+      <encryptatrest>F</encryptatrest>
+      <fieldtype>TEXT</fieldtype>
+      <globalsearch>F</globalsearch>
+      <help></help>
+      <isformula>F</isformula>
+      <ismandatory>F</ismandatory>
+      <isparent>F</isparent>
+      <label>Parámetros para Valor de Unidades</label>
+      <linktext></linktext>
+      <maxlength></maxlength>
+      <maxvalue></maxvalue>
+      <minvalue></minvalue>
+      <onparentdelete></onparentdelete>
+      <parentsubtab></parentsubtab>
+      <rolerestrict>F</rolerestrict>
+      <searchcomparefield></searchcomparefield>
+      <searchdefault></searchdefault>
+      <searchlevel>2</searchlevel>
+      <selectrecordtype></selectrecordtype>
+      <showinlist>T</showinlist>
+      <sourcefilterby></sourcefilterby>
+      <sourcefrom></sourcefrom>
+      <sourcelist></sourcelist>
+      <storevalue>T</storevalue>
+      <subtab></subtab>
+    </customrecordcustomfield>
   </customrecordcustomfields>
   <instances>
     <instance scriptid="val_sads_nat_config_record_pla36">
       <custrecord_sads_naturaleza_campo_med></custrecord_sads_naturaleza_campo_med>
       <custrecord_sads_naturaleza_config>[&quot;custitem_sads_nat_pla_lado_a&quot;,&quot;custitem_sads_nat_pla_lado_b&quot;,&quot;custitem_sads_nat_espesor&quot;]</custrecord_sads_naturaleza_config>
+      <custrecord_sads_naturaleza_valor_unid>[&quot;custitem_sads_nat_pla_lado_a&quot;,&quot;custitem_sads_nat_pla_lado_b&quot;]</custrecord_sads_naturaleza_valor_unid>
       <custrecord_sads_naturaleza_lista>[scriptid=customlist_sads_naturaleza_productos.val_sads_natlist_pla36]</custrecord_sads_naturaleza_lista>
       <custrecord_sads_naturaleza_mapa_med>F</custrecord_sads_naturaleza_mapa_med>
       <custrecord_sads_naturaleza_patron_cod>PLA36{custitem_sads_nat_espesor:codigo}{custitem_sads_nat_pla_lado_a:entero1}{custitem_sads_nat_pla_lado_b:entero2}</custrecord_sads_naturaleza_patron_cod>
@@ -388,6 +471,7 @@ Ejemplo: [&quot;custitem_pl_ancho&quot;,&quot;custitem_pl_espesor&quot;,&quot;cu
     <instance scriptid="val_sads_nat_config_record_ptrc">
       <custrecord_sads_naturaleza_campo_med>custitem_sads_nat_ptr_lado</custrecord_sads_naturaleza_campo_med>
       <custrecord_sads_naturaleza_config>[&quot;custitem_sads_nat_ptr_lado&quot;,&quot;custitem_sads_nat_ptr_largo&quot;,&quot;custitem_sads_nat_espesor&quot;]</custrecord_sads_naturaleza_config>
+      <custrecord_sads_naturaleza_valor_unid>[&quot;custitem_sads_nat_ptr_largo&quot;]</custrecord_sads_naturaleza_valor_unid>
       <custrecord_sads_naturaleza_lista>[scriptid=customlist_sads_naturaleza_productos.val_sads_natlist_ptrc]</custrecord_sads_naturaleza_lista>
       <custrecord_sads_naturaleza_mapa_med>F</custrecord_sads_naturaleza_mapa_med>
       <custrecord_sads_naturaleza_patron_cod>PTRC{custitem_sads_nat_ptr_lado:centesimas3}{custitem_sads_nat_espesor:codigo}</custrecord_sads_naturaleza_patron_cod>
@@ -400,6 +484,7 @@ Ejemplo: [&quot;custitem_pl_ancho&quot;,&quot;custitem_pl_espesor&quot;,&quot;cu
     <instance scriptid="val_sads_nat_config_record_mpptrc">
       <custrecord_sads_naturaleza_campo_med>custitem_sads_nat_ptr_lado</custrecord_sads_naturaleza_campo_med>
       <custrecord_sads_naturaleza_config>[&quot;custitem_sads_nat_ptr_lado&quot;,&quot;custitem_sads_nat_ptr_largo&quot;,&quot;custitem_sads_nat_espesor&quot;]</custrecord_sads_naturaleza_config>
+      <custrecord_sads_naturaleza_valor_unid>[&quot;custitem_sads_nat_ptr_largo&quot;]</custrecord_sads_naturaleza_valor_unid>
       <custrecord_sads_naturaleza_lista>[scriptid=customlist_sads_naturaleza_productos.val_sads_natlist_mpptrc]</custrecord_sads_naturaleza_lista>
       <custrecord_sads_naturaleza_mapa_med>F</custrecord_sads_naturaleza_mapa_med>
       <custrecord_sads_naturaleza_patron_cod>MPPTRC{custitem_sads_nat_ptr_lado:centesimas3}{custitem_sads_nat_espesor:codigo}</custrecord_sads_naturaleza_patron_cod>
@@ -412,6 +497,7 @@ Ejemplo: [&quot;custitem_pl_ancho&quot;,&quot;custitem_pl_espesor&quot;,&quot;cu
     <instance scriptid="val_sads_nat_config_record_ptrr">
       <custrecord_sads_naturaleza_campo_med>custitem_sads_nat_ptr_lado</custrecord_sads_naturaleza_campo_med>
       <custrecord_sads_naturaleza_config>[&quot;custitem_sads_nat_ptr_lado&quot;,&quot;custitem_sads_nat_ptr_lado_b&quot;,&quot;custitem_sads_nat_ptr_largo&quot;,&quot;custitem_sads_nat_espesor&quot;]</custrecord_sads_naturaleza_config>
+      <custrecord_sads_naturaleza_valor_unid>[&quot;custitem_sads_nat_ptr_largo&quot;]</custrecord_sads_naturaleza_valor_unid>
       <custrecord_sads_naturaleza_lista>[scriptid=customlist_sads_naturaleza_productos.val_sads_natlist_ptrr]</custrecord_sads_naturaleza_lista>
       <custrecord_sads_naturaleza_mapa_med>T</custrecord_sads_naturaleza_mapa_med>
       <custrecord_sads_naturaleza_patron_cod>PTRR{mapa:codigo}{custitem_sads_nat_espesor:codigo}</custrecord_sads_naturaleza_patron_cod>
@@ -424,6 +510,7 @@ Ejemplo: [&quot;custitem_pl_ancho&quot;,&quot;custitem_pl_espesor&quot;,&quot;cu
     <instance scriptid="val_sads_nat_config_record_mpptrr">
       <custrecord_sads_naturaleza_campo_med>custitem_sads_nat_ptr_lado</custrecord_sads_naturaleza_campo_med>
       <custrecord_sads_naturaleza_config>[&quot;custitem_sads_nat_ptr_lado&quot;,&quot;custitem_sads_nat_ptr_lado_b&quot;,&quot;custitem_sads_nat_ptr_largo&quot;,&quot;custitem_sads_nat_espesor&quot;]</custrecord_sads_naturaleza_config>
+      <custrecord_sads_naturaleza_valor_unid>[&quot;custitem_sads_nat_ptr_largo&quot;]</custrecord_sads_naturaleza_valor_unid>
       <custrecord_sads_naturaleza_lista>[scriptid=customlist_sads_naturaleza_productos.val_sads_natlist_mpptrr]</custrecord_sads_naturaleza_lista>
       <custrecord_sads_naturaleza_mapa_med>T</custrecord_sads_naturaleza_mapa_med>
       <custrecord_sads_naturaleza_patron_cod>MPPTRR{mapa:codigo}{custitem_sads_nat_espesor:codigo}</custrecord_sads_naturaleza_patron_cod>
@@ -436,6 +523,7 @@ Ejemplo: [&quot;custitem_pl_ancho&quot;,&quot;custitem_pl_espesor&quot;,&quot;cu
     <instance scriptid="val_sads_nat_config_record_lne">
       <custrecord_sads_naturaleza_campo_med>custitem_sads_nat_lne_lado_a</custrecord_sads_naturaleza_campo_med>
       <custrecord_sads_naturaleza_config>[&quot;custitem_sads_nat_lne_lado_a&quot;,&quot;custitem_sads_nat_lne_lado_b&quot;,&quot;custitem_sads_nat_espesor&quot;]</custrecord_sads_naturaleza_config>
+      <custrecord_sads_naturaleza_valor_unid>[&quot;custitem_sads_nat_lne_lado_a&quot;,&quot;custitem_sads_nat_lne_lado_b&quot;]</custrecord_sads_naturaleza_valor_unid>
       <custrecord_sads_naturaleza_lista>[scriptid=customlist_sads_naturaleza_productos.val_sads_natlist_lne]</custrecord_sads_naturaleza_lista>
       <custrecord_sads_naturaleza_mapa_med>F</custrecord_sads_naturaleza_mapa_med>
       <custrecord_sads_naturaleza_patron_cod>LNE{custitem_sads_nat_lne_lado_a:entero1}{custitem_sads_nat_lne_lado_b:entero2}{custitem_sads_nat_espesor:codigo}</custrecord_sads_naturaleza_patron_cod>

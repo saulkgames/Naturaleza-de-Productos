@@ -159,7 +159,25 @@ const solicitudGet = () => crearSolicitud('GET');
 
 const solicitudParametros = (parametros) => crearSolicitud('POST', Object.assign({ custpage_accion: 'parametros' }, parametros));
 
-const solicitudCrear = (parametros) => crearSolicitud('POST', Object.assign({ custpage_accion: 'crear' }, parametros));
+const solicitudCrear = (parametros) => crearSolicitud('POST', Object.assign({ custpage_accion: 'crear', custpage_familia_corte: '7' }, parametros));
+
+// RN6-01: familias de corte marcadas en la naturaleza (MULTISELECT de lookupFields).
+const FAMILIAS_CORTE = Object.freeze([{ value: '7', text: 'Corte A' }, { value: '8', text: 'Corte B' }]);
+
+// Si la configuración de la prueba no trae datos de corte, se usan las familias anteriores y el primer parámetro del JSON.
+const conDatosDeCorte = (configuracion) => {
+    const completa = Object.assign({ custrecord_sads_naturaleza_fam_corte: FAMILIAS_CORTE.slice() }, configuracion);
+    if (!Object.prototype.hasOwnProperty.call(completa, 'custrecord_sads_naturaleza_valor_unid')) {
+        let primero = null;
+        try {
+            primero = JSON.parse(completa.custrecord_sads_naturaleza_config)[0];
+        } catch (errorDeJson) {
+            primero = null;
+        }
+        completa.custrecord_sads_naturaleza_valor_unid = primero === null ? '' : JSON.stringify([primero]);
+    }
+    return completa;
+};
 
 const crearErrorNetSuite = (nombre, mensaje) => {
     const error = new Error(mensaje);
@@ -212,7 +230,7 @@ const prepararEscenario = (ajustes = {}) => {
         return { asMappedResults: () => filasPara(consulta.query, datos) };
     });
     search.lookupFields.mockImplementation((opciones) => (opciones.type === REGISTRO_CONFIGURACION
-        ? Object.assign({}, datos.configuracion)
+        ? conDatosDeCorte(datos.configuracion)
         : { custitem_alm_art_preciofinal: datos.precioFormula }));
     search.create.mockImplementation((definicion) => {
         const id = definicion.filters[0][2];
@@ -339,6 +357,7 @@ describe('estructura del módulo', () => {
             './domain/SADS_naturaleza_familias',
             './domain/SADS_naturaleza_precio',
             './domain/SADS_naturaleza_mapa_medidas',
+            './domain/SADS_naturaleza_corte',
             './infra/SADS_naturaleza_articulo_ns',
             './infra/SADS_naturaleza_precio_ns'
         ]);
@@ -498,7 +517,9 @@ describe('paso 2 (POST parametros)', () => {
                 'custrecord_sads_naturaleza_patron_cod',
                 'custrecord_sads_naturaleza_tipo_esp',
                 'custrecord_sads_naturaleza_campo_med',
-                'custrecord_sads_naturaleza_mapa_med'
+                'custrecord_sads_naturaleza_mapa_med',
+                'custrecord_sads_naturaleza_fam_corte',
+                'custrecord_sads_naturaleza_valor_unid'
             ]
         });
         expect(record.copy).toHaveBeenCalledTimes(1);
@@ -646,7 +667,11 @@ describe('creación (POST crear)', () => {
             isinactive: true,
             custitemalm_articulo_preciocotizacion: 20,
             custitem_drt_ci_margen_para_venta: 20,
-            custitem11: PRECIO_ESPERADO
+            custitem11: PRECIO_ESPERADO,
+            custitem_alm_corte: true,
+            usebins: true,
+            custitem_value_per_units: 2,
+            custitem_famili_de_corte_item: '7'
         });
         expect(copia.save).toHaveBeenCalledTimes(1);
         expect(copia.save).toHaveBeenCalledWith({ ignoreMandatoryFields: false });
@@ -666,7 +691,7 @@ describe('creación (POST crear)', () => {
         expect(log.audit).toHaveBeenCalledTimes(1);
         expect(log.audit.mock.calls[0][0].details).toBe(
             'ID: 777. Código: PL-0.25-4X2. Configuración: 11. Estado: Inactivo. Espesor: . Familia de precio: FAM68. Conversión: 125.5. '
-            + 'Precio base: 3224.00.'
+            + 'Precio base: 3224.00. Familia de corte: Corte A. Valor de unidades: 2.'
         );
         expect(formulario.campos.custpage_precio_texto.defaultValue).toBe('3224.00');
         expect(formulario.campos.custpage_familia_texto.defaultValue).toBe('FAM68');
@@ -1454,5 +1479,94 @@ describe('PTR rectangular con mapa de medidas (RN5-01 a RN5-05)', () => {
         prepararEscenario();
         ejecutar(solicitudParametros({ custpage_configuracion: '11' }));
         expect(consultasEjecutadas().filter((consulta) => /customrecord_sads_mapa_medidas_ptrr/.test(consulta.query))).toHaveLength(0);
+    });
+});
+
+describe('datos para el Sistema de Cortes (RN6-01 a RN6-05)', () => {
+    const LNE = Object.freeze({
+        custrecord_sads_naturaleza_config: '["custitem_sads_nat_lne_lado_a","custitem_sads_nat_lne_lado_b","custitem_sads_nat_espesor"]',
+        custrecord_sads_naturaleza_plantilla: ID_PLANTILLA,
+        custrecord_sads_naturaleza_patron_cod: 'LNE{custitem_sads_nat_lne_lado_a:entero1}{custitem_sads_nat_lne_lado_b:entero2}'
+            + '{custitem_sads_nat_espesor:codigo}',
+        custrecord_sads_naturaleza_patron_nom: "Lamina Negra {custitem_sads_nat_lne_lado_a}'x{custitem_sads_nat_lne_lado_b}' "
+            + '{custitem_sads_nat_espesor:texto}',
+        custrecord_sads_naturaleza_tipo_esp: [{ value: '2', text: 'Calibre' }],
+        custrecord_sads_naturaleza_campo_med: 'custitem_sads_nat_lne_lado_a',
+        custrecord_sads_naturaleza_valor_unid: '["custitem_sads_nat_lne_lado_a","custitem_sads_nat_lne_lado_b"]',
+        custrecord_sads_naturaleza_fam_corte: [{ value: '21', text: "Lamina Negra 4' C18" }, { value: '22', text: "Lamina Negra 3' C20" }]
+    });
+    const CAMPOS_LNE = Object.freeze({
+        custitem_sads_nat_lne_lado_a: { label: 'Lado A', type: 'integer' },
+        custitem_sads_nat_lne_lado_b: { label: 'Lado B', type: 'integer' },
+        custitem_sads_nat_espesor: { label: 'Espesor', type: 'select' }
+    });
+    const CALIBRES = Object.freeze([{ id: 18, nombre: 'Cal.18 - LNE', texto: 'Cal.18', codigo: 'C18', orden: 0.0478 }]);
+    const FAMILIAS_LNE = Object.freeze([{
+        id: 1, desde_id: 18, desde_orden: 0.0478, desde_tipo: 2, hasta_id: 18, hasta_orden: 0.0478, hasta_tipo: 2,
+        medida_desde: 3, medida_hasta: 4, precio_id: 91, margen_id: 5, precio_nombre: 'FAM 091', precio_cotizacion: 20, margen: 20
+    }]);
+    const CAPTURA = Object.freeze({
+        custpage_configuracion: '11', custpage_par_0: '4', custpage_par_1: '10', custpage_par_2: '18',
+        custpage_peso: '10', custpage_conversion: '10', custpage_familia_corte: '21'
+    });
+    const escenario = (ajustes = {}) => prepararEscenario(Object.assign({
+        configuracion: LNE, campos: CAMPOS_LNE, espesores: CALIBRES, familias: FAMILIAS_LNE
+    }, ajustes));
+
+    test("Lamina Negra 4' x 10' Cal.18: valor 40, espesor 0.0478, familia elegida, corte y depósitos", () => {
+        const { valoresAsignados } = escenario();
+        const formulario = ejecutar(solicitudCrear(CAPTURA));
+        expect(valoresAsignados).toMatchObject({
+            custitem_value_per_units: 40,
+            custitemalm_articulo_espesor: '0.0478',
+            custitem_famili_de_corte_item: '21',
+            custitem_alm_corte: true,
+            usebins: true
+        });
+        expect(formulario.campos.custpage_familia_corte_texto.defaultValue).toBe("Lamina Negra 4' C18");
+        expect(formulario.campos.custpage_valor_unidades_texto.defaultValue).toBe('40');
+    });
+
+    test('paso 2: la familia de corte solo ofrece las marcadas en la naturaleza', () => {
+        escenario();
+        const formulario = ejecutar(solicitudParametros({ custpage_configuracion: '11' }));
+        expect(formulario.campos.custpage_familia_corte).toMatchObject({ label: 'Familia de Corte', type: FieldType.SELECT });
+        expect(formulario.campos.custpage_familia_corte.opciones.map((opcion) => opcion.text))
+            .toEqual(['', "Lamina Negra 4' C18", "Lamina Negra 3' C20"]);
+    });
+
+    test('una familia de corte vacía o ajena a la naturaleza repite el paso 2', () => {
+        ['', '7', '99'].forEach((valor) => {
+            jest.clearAllMocks();
+            const { copia } = escenario();
+            const formulario = ejecutar(solicitudCrear(Object.assign({}, CAPTURA, { custpage_familia_corte: valor })));
+            expect(textosDeMensajes(formulario)).toEqual(['Familia de Corte: elija un valor de la lista.']);
+            expect(copia.save).not.toHaveBeenCalled();
+        });
+    });
+
+    test('naturaleza sin familias de corte: error de configuración', () => {
+        escenario({ configuracion: Object.assign({}, LNE, { custrecord_sads_naturaleza_fam_corte: [] }) });
+        esperarPaginaDeError(ejecutar(solicitudParametros({ custpage_configuracion: '11' })),
+            'La naturaleza no tiene familias de corte. Solicite el alta a un usuario con permiso sobre la lista '
+            + 'Familias de Corte y que el usuario técnico las marque en la configuración.');
+    });
+
+    test('parámetros de valor de unidades vacíos o ajenos al JSON: error de configuración', () => {
+        escenario({ configuracion: Object.assign({}, LNE, { custrecord_sads_naturaleza_valor_unid: '' }) });
+        esperarPaginaDeError(ejecutar(solicitudParametros({ custpage_configuracion: '11' })),
+            'La configuración de esta naturaleza no es válida: Parámetros para Valor de Unidades: capture una lista JSON de IDs '
+            + 'de la configuración.');
+        jest.clearAllMocks();
+        escenario({ configuracion: Object.assign({}, LNE, { custrecord_sads_naturaleza_valor_unid: '["custitem_otro"]' }) });
+        esperarPaginaDeError(ejecutar(solicitudParametros({ custpage_configuracion: '11' })),
+            'La configuración de esta naturaleza no es válida: Parámetros para Valor de Unidades: custitem_otro no es un ID '
+            + 'de la configuración.');
+    });
+
+    test('naturaleza sin espesor: no escribe el espesor de corte', () => {
+        const { valoresAsignados } = prepararEscenario();
+        ejecutar(solicitudCrear(CAPTURA_VALIDA));
+        expect(Object.prototype.hasOwnProperty.call(valoresAsignados, 'custitemalm_articulo_espesor')).toBe(false);
     });
 });

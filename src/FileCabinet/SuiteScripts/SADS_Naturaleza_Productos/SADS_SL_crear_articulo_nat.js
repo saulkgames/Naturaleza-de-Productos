@@ -23,10 +23,11 @@ define([
     './domain/SADS_naturaleza_familias',
     './domain/SADS_naturaleza_precio',
     './domain/SADS_naturaleza_mapa_medidas',
+    './domain/SADS_naturaleza_corte',
     './infra/SADS_naturaleza_articulo_ns',
     './infra/SADS_naturaleza_precio_ns'
 ], (serverWidget, message, search, query, record, runtime, url, log, formato, patron, parametros, familias, precio, mapaMedidas,
-    articulos, precioNs) => {
+    corte, articulos, precioNs) => {
     const REGISTRO_CONFIGURACION = 'customrecord_sads_naturaleza_productos';
 
     const CAMPOS_CONFIGURACION = Object.freeze({
@@ -36,7 +37,18 @@ define([
         PATRON_CODIGO: 'custrecord_sads_naturaleza_patron_cod',
         TIPO_ESPESOR: 'custrecord_sads_naturaleza_tipo_esp',
         CAMPO_MEDIDA: 'custrecord_sads_naturaleza_campo_med',
-        MAPA_MEDIDAS: 'custrecord_sads_naturaleza_mapa_med'
+        MAPA_MEDIDAS: 'custrecord_sads_naturaleza_mapa_med',
+        FAMILIAS_CORTE: 'custrecord_sads_naturaleza_fam_corte',
+        VALOR_UNIDADES: 'custrecord_sads_naturaleza_valor_unid'
+    });
+
+    // RN6-01: campos del artículo que usa el Sistema de Cortes.
+    const CAMPOS_CORTE = Object.freeze({
+        DISPONIBLE: 'custitem_alm_corte',
+        DEPOSITOS: 'usebins',
+        VALOR_UNIDADES: 'custitem_value_per_units',
+        FAMILIA: 'custitem_famili_de_corte_item',
+        ESPESOR: 'custitemalm_articulo_espesor'
     });
 
     // RN5-01: el mapa de medidas de PTR rectangular llena estos campos del artículo.
@@ -107,6 +119,9 @@ define([
         ESPESOR_TEXTO: 'custpage_espesor_texto',
         FAMILIA_TEXTO: 'custpage_familia_texto',
         CONVERSION_TEXTO: 'custpage_conversion_texto',
+        FAMILIA_CORTE: 'custpage_familia_corte',
+        FAMILIA_CORTE_TEXTO: 'custpage_familia_corte_texto',
+        VALOR_UNIDADES_TEXTO: 'custpage_valor_unidades_texto',
         PRECIO_TEXTO: 'custpage_precio_texto'
     });
 
@@ -187,6 +202,8 @@ define([
         ESPESOR: 'Espesor',
         FAMILIA_PRECIO: 'Familia de precio',
         MEDIDA: 'Medida',
+        FAMILIA_CORTE: 'Familia de Corte',
+        VALOR_UNIDADES: 'Valor de Unidades',
         PRECIO: 'Precio base (MXN, sin IVA)',
         CODIGO: 'Código',
         NOMBRE: 'Nombre',
@@ -220,6 +237,9 @@ define([
         SIN_ESPESORES: 'No hay espesores activos para el tipo de esta naturaleza.',
         SIN_FAMILIAS: 'La naturaleza no tiene familias de precio configuradas.',
         CAMPO_MEDIDA_INVALIDO: 'El campo de medida para familias debe ser un parámetro numérico de la configuración.',
+        SIN_FAMILIAS_CORTE: 'La naturaleza no tiene familias de corte. Solicite el alta a un usuario con permiso sobre la lista '
+            + 'Familias de Corte y que el usuario técnico las marque en la configuración.',
+        FAMILIA_CORTE_INVALIDA: 'Familia de Corte: elija un valor de la lista.',
         MAPA_SIN_CAMPOS: 'La configuración usa el mapa de medidas: el JSON debe incluir custitem_sads_nat_ptr_lado y '
             + 'custitem_sads_nat_ptr_lado_b como parámetros numéricos.',
         MAPA_INVALIDO: (errores) => `El mapa de medidas no es válido: ${errores.join('; ')}`,
@@ -273,6 +293,11 @@ define([
         return Number.isFinite(numero) ? numero : null;
     };
 
+    // search.lookupFields devuelve un MULTISELECT como arreglo de {value, text}.
+    const opcionesDeSeleccionMultiple = (valor) => (Array.isArray(valor) ? valor : [])
+        .map((opcion) => ({ id: aCadena(opcion && opcion.value).trim(), nombre: aCadena(opcion && opcion.text) }))
+        .filter((opcion) => PATRON_ID_INTERNO.test(opcion.id));
+
     const esCasillaMarcada = (valor) => valor === true || aCadena(valor) === CASILLA_MARCADA;
 
     // search.lookupFields devuelve los SELECT como arreglo de {value, text}.
@@ -309,7 +334,9 @@ define([
                 CAMPOS_CONFIGURACION.PATRON_CODIGO,
                 CAMPOS_CONFIGURACION.TIPO_ESPESOR,
                 CAMPOS_CONFIGURACION.CAMPO_MEDIDA,
-                CAMPOS_CONFIGURACION.MAPA_MEDIDAS
+                CAMPOS_CONFIGURACION.MAPA_MEDIDAS,
+                CAMPOS_CONFIGURACION.FAMILIAS_CORTE,
+                CAMPOS_CONFIGURACION.VALOR_UNIDADES
             ]
         });
         const plantilla = aCadena(campos[CAMPOS_CONFIGURACION.PLANTILLA]).trim();
@@ -320,7 +347,9 @@ define([
             patronCodigo: aCadena(campos[CAMPOS_CONFIGURACION.PATRON_CODIGO]),
             tipoEspesorId: valorDeSeleccion(campos[CAMPOS_CONFIGURACION.TIPO_ESPESOR]),
             campoMedida: textoONulo(campos[CAMPOS_CONFIGURACION.CAMPO_MEDIDA]),
-            usaMapa: esCasillaMarcada(campos[CAMPOS_CONFIGURACION.MAPA_MEDIDAS])
+            usaMapa: esCasillaMarcada(campos[CAMPOS_CONFIGURACION.MAPA_MEDIDAS]),
+            familiasCorte: opcionesDeSeleccionMultiple(campos[CAMPOS_CONFIGURACION.FAMILIAS_CORTE]),
+            valorUnidades: campos[CAMPOS_CONFIGURACION.VALOR_UNIDADES]
         };
     };
 
@@ -447,7 +476,7 @@ define([
      * @param {boolean} datos.activo - Resultado de leerCrearActivo.
      * @returns {void}
      */
-    const asignarValores = (copia, { configuracionId, ids, valores, peso, conversion, familia, codigo, nombre, activo }) => {
+    const asignarValores = (copia, { configuracionId, ids, valores, peso, conversion, familia, codigo, nombre, activo, datosCorte }) => {
         copia.setValue({ fieldId: CAMPOS_ARTICULO.NATURALEZA, value: configuracionId });
         ids.forEach((id) => {
             copia.setValue({ fieldId: id, value: valores[id] });
@@ -466,6 +495,11 @@ define([
             copia.setValue({ fieldId: id, value: '' });
         });
         copia.setValue({ fieldId: CAMPOS_ARTICULO.INACTIVO, value: !activo });
+        copia.setValue({ fieldId: CAMPOS_CORTE.DISPONIBLE, value: true });
+        copia.setValue({ fieldId: CAMPOS_CORTE.DEPOSITOS, value: true });
+        copia.setValue({ fieldId: CAMPOS_CORTE.VALOR_UNIDADES, value: datosCorte.valorUnidades });
+        copia.setValue({ fieldId: CAMPOS_CORTE.FAMILIA, value: datosCorte.familiaId });
+        if (datosCorte.espesorTexto !== null) copia.setValue({ fieldId: CAMPOS_CORTE.ESPESOR, value: datosCorte.espesorTexto });
     };
 
     /**
@@ -607,7 +641,8 @@ define([
      * @returns {serverWidget.Form}
      */
     const construirPaso2 = ({
-        configuracion, definicion, unidadPeso, catalogos, valoresPrevios, pesoPrevio, conversionPrevia, errores, urlInicio
+        configuracion, definicion, unidadPeso, catalogos, valoresPrevios, pesoPrevio, conversionPrevia, familiasCorte,
+        familiaCortePrevia, errores, urlInicio
     }) => {
         const form = crearFormulario(TITULOS_FORMULARIO.PASO_2);
         if (errores.length > 0) {
@@ -653,6 +688,12 @@ define([
             entero: false,
             valorPrevio: conversionPrevia
         });
+        agregarSeleccion(form, {
+            id: CAMPOS_FORMULARIO.FAMILIA_CORTE,
+            etiqueta: ETIQUETAS.FAMILIA_CORTE,
+            opciones: familiasCorte,
+            valorPrevio: familiaCortePrevia
+        });
         agregarEnlace(form, { id: CAMPOS_FORMULARIO.ENLACE_INICIO, texto: ETIQUETAS.ENLACE_REGRESAR, destino: urlInicio });
         form.addSubmitButton({ label: ETIQUETAS.BOTON_CREAR });
         return form;
@@ -683,13 +724,14 @@ define([
      * @param {string} datos.familiaPrecio - Nombre de la familia de precio asignada.
      * @param {number} datos.conversion - Conversión guardada.
      * @param {string} datos.precio - Precio base guardado con 2 decimales.
+     * @param {{familiaNombre: string, valorUnidades: number}} datos.datosCorte - Datos para el Sistema de Cortes (RN6-01).
      * @param {?string} datos.advertencia - Aviso de precio distinto del campo fórmula (RN4-08); null si no aplica.
      * @param {string} datos.urlArticulo - URL del artículo creado.
      * @param {string} datos.urlInicio - URL del paso 1.
      * @returns {serverWidget.Form}
      */
     const construirConfirmacion = ({
-        codigo, nombre, inactivo, espesor, familiaPrecio, conversion, precio: precioBase, advertencia, urlArticulo, urlInicio
+        codigo, nombre, inactivo, espesor, familiaPrecio, conversion, precio: precioBase, datosCorte, advertencia, urlArticulo, urlInicio
     }) => {
         const form = crearFormulario(TITULOS_FORMULARIO.CONFIRMACION);
         agregarAviso(form, { tipo: message.Type.CONFIRMATION, titulo: TITULOS_AVISO.CREADO, lineas: [MENSAJES.CREADO] });
@@ -707,6 +749,12 @@ define([
             valor: aCadena(conversion)
         });
         agregarTextoDeSoloLectura(form, { id: CAMPOS_FORMULARIO.PRECIO_TEXTO, etiqueta: ETIQUETAS.PRECIO, valor: precioBase });
+        agregarTextoDeSoloLectura(form, {
+            id: CAMPOS_FORMULARIO.FAMILIA_CORTE_TEXTO, etiqueta: ETIQUETAS.FAMILIA_CORTE, valor: datosCorte.familiaNombre
+        });
+        agregarTextoDeSoloLectura(form, {
+            id: CAMPOS_FORMULARIO.VALOR_UNIDADES_TEXTO, etiqueta: ETIQUETAS.VALOR_UNIDADES, valor: aCadena(datosCorte.valorUnidades)
+        });
         agregarEnlacesFinales(form, { urlArticulo, urlInicio });
         return form;
     };
@@ -838,6 +886,9 @@ define([
         if (lineasDeFamilia.length === 0) throw errorDeConfiguracion(MENSAJES.SIN_FAMILIAS);
         validarCampoMedida(leida.campoMedida, definicion);
         const medidas = leida.usaMapa ? cargarMapa(definicion) : [];
+        if (leida.familiasCorte.length === 0) throw errorDeConfiguracion(MENSAJES.SIN_FAMILIAS_CORTE);
+        const parametrosDeValor = corte.leerParametrosDeValor(leida.valorUnidades, leida.ids);
+        if (!parametrosDeValor.valido) throw errorDeConfiguracion(MENSAJES.CONFIGURACION_INVALIDA(parametrosDeValor.errores));
         return {
             configuracion,
             ids: leida.ids,
@@ -850,11 +901,13 @@ define([
             lineasDeFamilia,
             campoMedida: leida.campoMedida,
             medidas,
-            captura: leida.usaMapa ? definicionConMapa(definicion) : definicion
+            captura: leida.usaMapa ? definicionConMapa(definicion) : definicion,
+            familiasCorte: leida.familiasCorte,
+            idsValorUnidades: parametrosDeValor.ids
         };
     };
 
-    const mostrarPaso2 = (preparacion, { valoresPrevios, pesoPrevio, conversionPrevia, errores }) => construirPaso2({
+    const mostrarPaso2 = (preparacion, { valoresPrevios, pesoPrevio, conversionPrevia, familiaCortePrevia, errores }) => construirPaso2({
         configuracion: preparacion.configuracion,
         definicion: preparacion.captura,
         unidadPeso: leerUnidadDePeso(preparacion.copia),
@@ -862,6 +915,8 @@ define([
         valoresPrevios,
         pesoPrevio,
         conversionPrevia,
+        familiasCorte: preparacion.familiasCorte,
+        familiaCortePrevia,
         errores,
         urlInicio: urlDelSuitelet()
     });
@@ -870,7 +925,7 @@ define([
         const eleccion = elegirConfiguracion(solicitud);
         if (eleccion.configuracion === null) return paso1ConNaturalezaInvalida(eleccion);
         return mostrarPaso2(prepararNaturaleza(eleccion.configuracion), {
-            valoresPrevios: [], pesoPrevio: '', conversionPrevia: '', errores: []
+            valoresPrevios: [], pesoPrevio: '', conversionPrevia: '', familiaCortePrevia: '', errores: []
         });
     };
 
@@ -931,11 +986,11 @@ define([
         return MENSAJES.PRECIO_DISTINTO(formatearPrecio(precioFinal), formatearPrecio(formula));
     };
 
-    const guardarArticulo = (preparacion, { valores, peso, conversion, espesor, familia, codigo, nombre, precioCalculado }) => {
+    const guardarArticulo = (preparacion, { valores, peso, conversion, espesor, familia, codigo, nombre, precioCalculado, datosCorte }) => {
         const activo = leerCrearActivo();
         const configuracionId = preparacion.configuracion.id;
         asignarValores(preparacion.copia, {
-            configuracionId, ids: preparacion.ids, valores, peso, conversion, familia, codigo, nombre, activo
+            configuracionId, ids: preparacion.ids, valores, peso, conversion, familia, codigo, nombre, activo, datosCorte
         });
         precioNs.asignarPrecio(preparacion.copia, precioCalculado);
         const articuloId = preparacion.copia.save({ ignoreMandatoryFields: false });
@@ -945,7 +1000,8 @@ define([
             title: TITULOS_LOG.CREADO,
             details: `ID: ${articuloId}. Código: ${codigo}. Configuración: ${configuracionId}. Estado: ${textoDeEstado(!activo)}. `
                 + `Espesor: ${nombreEspesor}. Familia de precio: ${familia.familiaPrecioNombre}. Conversión: ${conversion}. `
-                + `Precio base: ${formatearPrecio(precioFinal)}.`
+                + `Precio base: ${formatearPrecio(precioFinal)}. Familia de corte: ${datosCorte.familiaNombre}. `
+                + `Valor de unidades: ${datosCorte.valorUnidades}.`
         });
         const advertencia = verificarPrecioGuardado(preparacion.tipoRegistro, articuloId, precioFinal);
         return construirConfirmacion({
@@ -956,6 +1012,7 @@ define([
             familiaPrecio: familia.familiaPrecioNombre,
             conversion,
             precio: formatearPrecio(precioFinal),
+            datosCorte,
             advertencia,
             urlArticulo: urlDelArticulo(preparacion.tipoRegistro, articuloId),
             urlInicio: urlDelSuitelet()
@@ -1002,6 +1059,12 @@ define([
         delete valores[mapaMedidas.MARCADOR];
     };
 
+    // RN6-02: la familia de corte enviada debe ser una de las marcadas en la naturaleza (RN-11).
+    const familiaDeCorteElegida = (preparacion, crudo) => {
+        const encontradas = preparacion.familiasCorte.filter((opcion) => opcion.id === crudo);
+        return encontradas.length === 1 ? encontradas[0] : null;
+    };
+
     const textosDelEspesor = (espesor) => (espesor === null ? {} : {
         [CAMPO_ESPESOR]: { codigo: espesor.codigo, texto: espesor.texto }
     });
@@ -1013,8 +1076,9 @@ define([
         const valoresCrudos = preparacion.captura.map((parametro, posicion) => leerParametro(solicitud, campoDeParametro(posicion)));
         const pesoCrudo = leerParametro(solicitud, CAMPOS_FORMULARIO.PESO);
         const conversionCruda = aCadena(leerParametro(solicitud, CAMPOS_FORMULARIO.CONVERSION));
+        const familiaCorteCruda = aCadena(leerParametro(solicitud, CAMPOS_FORMULARIO.FAMILIA_CORTE)).trim();
         const repetirPaso2 = (errores) => mostrarPaso2(preparacion, {
-            valoresPrevios: valoresCrudos, pesoPrevio: pesoCrudo, conversionPrevia: conversionCruda, errores
+            valoresPrevios: valoresCrudos, pesoPrevio: pesoCrudo, conversionPrevia: conversionCruda, familiaCortePrevia: familiaCorteCruda, errores
         });
         const captura = parametros.validarValores({
             parametros: preparacion.captura,
@@ -1026,7 +1090,9 @@ define([
                 [mapaMedidas.MARCADOR]: preparacion.medidas.map((medida) => medida.id)
             }
         });
-        if (!captura.valido) return repetirPaso2(captura.errores);
+        const familiaCorte = familiaDeCorteElegida(preparacion, familiaCorteCruda);
+        const erroresDeCaptura = captura.errores.concat(familiaCorte === null ? [MENSAJES.FAMILIA_CORTE_INVALIDA] : []);
+        if (erroresDeCaptura.length > 0) return repetirPaso2(erroresDeCaptura);
         const medida = medidaElegida(preparacion, captura.valores);
         if (medida !== null) completarConMedida(captura.valores, medida);
         const erroresDeFormato = validarFormatosDeCaptura(preparacion, captura.valores);
@@ -1046,8 +1112,15 @@ define([
         const duplicado = buscarDuplicado(preparacion.configuracion.id, criterios);
         if (duplicado !== null) return mostrarDuplicado({ configuracionId: preparacion.configuracion.id, duplicado });
         const precioCalculado = calcularPrecio(preparacion, { familia, peso: captura.peso, conversion: captura.conversion });
+        const datosCorte = {
+            familiaId: familiaCorte.id,
+            familiaNombre: familiaCorte.nombre,
+            valorUnidades: corte.calcularValorDeUnidades({ ids: preparacion.idsValorUnidades, valores: captura.valores }),
+            espesorTexto: espesor === null ? null : corte.textoDeEspesor(espesor.orden)
+        };
         return guardarArticulo(preparacion, {
-            valores: captura.valores, peso: captura.peso, conversion: captura.conversion, espesor, familia, codigo, nombre, precioCalculado
+            valores: captura.valores, peso: captura.peso, conversion: captura.conversion, espesor, familia, codigo, nombre, precioCalculado,
+            datosCorte
         });
     };
 

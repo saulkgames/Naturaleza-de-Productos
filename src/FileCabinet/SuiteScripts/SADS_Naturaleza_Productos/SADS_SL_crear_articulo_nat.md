@@ -22,6 +22,7 @@
 4E. [IDs portables para producción](#4e-ids-portables-para-producción)
 4F. [PTR rectangular con mapa de medidas](#4f-ptr-rectangular-con-mapa-de-medidas)
 4G. [Lámina Negra (LNE)](#4g-lámina-negra-lne)
+4H. [Datos para el Sistema de Cortes](#4h-datos-para-el-sistema-de-cortes)
 5. [Campos del formulario](#5-campos-del-formulario)
 6. [Consultas SuiteQL](#6-consultas-suiteql)
 7. [User Event de configuración](#7-user-event-de-configuración)
@@ -499,6 +500,35 @@ Prueba `SADS_naturaleza_lne.test.js`: los 47 artículos vigentes de `RelacionLNE
 Huecos: Cal.15 y Cal.28 en ambos anchos y Cal.07 en 4' no tienen familia. Excepciones de margen que el Suitelet no replica: 12702 (Media Pieza Lamina), 12820 (MU PEDACERIA).
 Las líneas de familia apuntaban a `val_8428447_5490848_sb1_416` (ID de sandbox de la configuración); ahora a `val_sads_nat_config_record_lne`. Las 8 familias DRT de LNE están verificadas en producción y declaradas en el manifiesto.
 
+## 4H. Datos para el Sistema de Cortes
+Todo artículo creado por el Suitelet sale listo para el Sistema de Cortes (otro proyecto: solicitudes de corte que generan ajustes de inventario).
+
+| Campo del artículo | Valor | Regla |
+|---|---|---|
+| `custitem_alm_corte` (Disponible para corte) | T | RN6-01 |
+| `usebins` (Utilizar depósitos) | T | RN6-01 |
+| `custitem_famili_de_corte_item` | Familia elegida en el paso 2, de las marcadas en la naturaleza | RN6-02 |
+| `custitem_value_per_units` | Producto de los parámetros de "Parámetros para Valor de Unidades", redondeado a 6 decimales | RN6-03 |
+| `custitemalm_articulo_espesor` (texto) | Orden del espesor elegido, con cero y sin ceros finales (`0.0478`, `0.5`, `1`); sin espesor no se escribe | RN6-04 |
+
+Configuración (campos nuevos):
+| Campo | Tipo | Uso |
+|---|---|---|
+| `custrecord_sads_naturaleza_fam_corte` "Familias de Corte" | MULTISELECT a `customlist_familias_de_corte` | El usuario técnico marca las que aplican; el paso 2 ofrece solo esas. Sin familias marcadas, error de configuración. |
+| `custrecord_sads_naturaleza_valor_unid` "Parámetros para Valor de Unidades" | Texto JSON | Placas y LNE: `["…lado_a","…lado_b"]` (4 x 10 = 40). PTRC, MPPTRC, PTRR, MPPTRR: `["custitem_sads_nat_ptr_largo"]` (6, 3, 1). |
+
+| ID | Regla |
+|---|---|
+| RN6-01 | Disponible para corte y Utilizar depósitos = T en todo artículo creado. |
+| RN6-02 | La familia de corte es obligatoria en el paso 2 y debe ser una de las marcadas en la naturaleza; si falta una, el usuario lo notifica y un usuario con permiso la da de alta en la lista y el técnico la marca. |
+| RN6-03 | Valor de unidades = producto de los parámetros indicados (incluye los lados que llena el mapa de PTRR). El UE exige con plantilla una lista JSON de IDs del JSON de parámetros. |
+| RN6-04 | Espesor de corte = orden del registro SADS - Espesor elegido. |
+| RN6-05 | Las familias de corte no se validan en el UE (los deploys de SDF ejecutan el UE y las instancias del XML no las traen); las valida el Suitelet. |
+
+Riesgo: las familias de corte se capturan en la UI y no están en el XML. Después de capturarlas, descargar `customrecord_sads_naturaleza_productos.xml`; un deploy sin descargar las borra.
+Desviación del plan: las opciones del paso 2 salen de `search.lookupFields` (devuelve valor y texto del MULTISELECT); no se agregó la consulta C-9.
+Ejemplos del usuario verificados en `SADS_naturaleza_corte.test.js`: LNE 4'x10' C18 → 40 y 0.0478; Placa 6'x20' 1" → 120 y 1; PTR a 6.00m → 6; media pieza a 3.00m → 3.
+
 ## 5. Campos del formulario
 | ID | Tipo | Paso | Uso |
 |---|---|---|---|
@@ -815,7 +845,7 @@ Ver los logs: Customization > Scripting > Script Deployments > deployment > pest
 
 ## 16. Pruebas
 Comando: `npm test` (no requiere cuenta NetSuite).
-Resultado del 2026-11-19: 15 suites aprobadas de 15; 653 pruebas aprobadas de 653.
+Resultado del 2026-11-19: 16 suites aprobadas de 16; 675 pruebas aprobadas de 675.
 
 | Suite | Pruebas | Alcance |
 |---|---|---|
@@ -827,10 +857,11 @@ Resultado del 2026-11-19: 15 suites aprobadas de 15; 653 pruebas aprobadas de 65
 | `SADS_naturaleza_precio.test.js` | 29 | U-1 a U-5: casos de control 195.00 y 824.00, datos faltantes, margen, redondeo a 0.25, tolerancia; regla de dependencia |
 | `SADS_naturaleza_mapa_medidas.test.js` | 12 | RN5-02 a RN5-04; mapa desplegado contra el catálogo del proveedor y el CSV de PTRR (sección 4F) |
 | `SADS_naturaleza_lne.test.js` | 7 | Lámina Negra: configuración, calibres y familias contra la tabla del usuario (sección 4G) |
+| `SADS_naturaleza_corte.test.js` | 13 | Datos del Sistema de Cortes con los 8 ejemplos del usuario (sección 4H) |
 | `SADS_objetos_portables.test.js` | 5 | Alcance de `deploy.xml`, IDs portables y referencias existentes en los objetos desplegados (sección 4E) |
 | `SADS_naturaleza_precio_ns.test.js` | 16 | I-1: cargos, C-7, matriz de precios, errores de configuración, lectura del campo fórmula |
-| `SADS_SL_crear_articulo_nat.test.js` | 116 | P-09 a P-13, P-16, P-22; P3-08, P3-10, P3-11, P3-17, P3-18; medidas 707/620 y orden de lados; S-1 a S-4 del precio; estructura del entry point |
-| `SADS_UE_naturaleza_config.test.js` | 51 | P-17, P-18; RN-17; P3-13, P3-16; formatos de lados; errores inesperados |
+| `SADS_SL_crear_articulo_nat.test.js` | 122 | P-09 a P-13, P-16, P-22; P3-08, P3-10, P3-11, P3-17, P3-18; medidas 707/620 y orden de lados; S-1 a S-4 del precio; estructura del entry point |
+| `SADS_UE_naturaleza_config.test.js` | 54 | P-17, P-18; RN-17; P3-13, P3-16; formatos de lados; errores inesperados |
 | `SADS_UE_nat_familia.test.js` | 14 | P3-14, P3-19; RN3-07; errores inesperados |
 | `SADS_naturaleza_config_formato.test.js` | 109 | Contrato del JSON (sin cambios) |
 | `sample-test.js` | 2 | Plantilla de SuiteCloud |

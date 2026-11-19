@@ -9,7 +9,7 @@ Un Suitelet crea artículos nuevos de una naturaleza con solo capturar sus pará
 | Tipo de proyecto | SuiteCloud SDF, Account Customization (`src/manifest.xml`) |
 | Plataforma | SuiteScript 2.1 |
 | Ambiente de desarrollo | Sandbox `Almetal_SB` (authId en `project.json`, excluido del control de versiones) |
-| Pruebas | Jest 30 con `@oracle/suitecloud-unit-testing`: 15 suites, 653 pruebas aprobadas (2026-11-19) |
+| Pruebas | Jest 30 con `@oracle/suitecloud-unit-testing`: 16 suites, 675 pruebas aprobadas (2026-11-19) |
 | Estado | Iteración B y cálculo de precio implementados; los artículos se crean inactivos hasta validar el precio en sandbox (P4-01 a P4-04) |
 | Diseño vigente | [Plan v5](planes/2026-11-17_creador-articulos-naturaleza_plan_v5.md), [prompt v3](planes/2026-11-17_creador-articulos-naturaleza_prompt_v3.md) y [plan de cálculo de precio](planes/2026-11-18_calculo-precio-articulo_plan_v1.md) |
 | Actualización | 2026-11-19 |
@@ -140,6 +140,7 @@ flowchart LR
 | `domain/SADS_naturaleza_patron.js` | Dominio | Analiza, valida y aplica los patrones. |
 | `domain/SADS_naturaleza_parametros.js` | Dominio | IDs seguros, valores capturados, catálogo, orden de lados y criterios de duplicado. |
 | `domain/SADS_naturaleza_familias.js` | Dominio | Validación de rangos y resolución de la familia de un espesor. |
+| `domain/SADS_naturaleza_corte.js` | Dominio | Valor de unidades y espesor para el Sistema de Cortes. |
 | `domain/SADS_naturaleza_mapa_medidas.js` | Dominio | Mapa de medidas de PTR rectangular: validación, medida elegida y marcador `{mapa:codigo}`. |
 | `domain/SADS_naturaleza_precio.js` | Dominio | Cadena de fórmulas del precio, redondeo a 0.25 y comparación con el campo fórmula. |
 | `infra/SADS_naturaleza_articulo_ns.js` | Adaptador | Tipo de registro de un artículo a partir de su ID interno. |
@@ -226,7 +227,7 @@ Los XML incluyen datos: la configuración de Placas de Acero, con la plantilla d
 ```
 .
 ├── README.md
-├── __tests__/                         # 15 suites Jest
+├── __tests__/                         # 16 suites Jest
 ├── planes/                            # Planes y prompts de diseño
 ├── jest.config.js
 ├── package.json
@@ -247,6 +248,7 @@ Los XML incluyen datos: la configuración de Placas de Acero, con la plantilla d
         ├── infra/SADS_naturaleza_precio_ns.js
         └── domain/
             ├── SADS_naturaleza_config_formato.js
+            ├── SADS_naturaleza_corte.js
             ├── SADS_naturaleza_familias.js
             ├── SADS_naturaleza_mapa_medidas.js
             ├── SADS_naturaleza_parametros.js
@@ -258,8 +260,8 @@ Los XML incluyen datos: la configuración de Placas de Acero, con la plantilla d
 Comando: `npm test`; no requiere cuenta NetSuite.
 | Suite | Pruebas | Alcance |
 |---|---|---|
-| `SADS_SL_crear_articulo_nat.test.js` | 116 | Entry point del Suitelet con `jest.mock` de `N/`, incluido el cálculo y la escritura del precio. |
-| `SADS_UE_naturaleza_config.test.js` | 51 | Entry point del UE de configuración, incluido XEDIT. |
+| `SADS_SL_crear_articulo_nat.test.js` | 122 | Entry point del Suitelet con `jest.mock` de `N/`, incluido el cálculo y la escritura del precio. |
+| `SADS_UE_naturaleza_config.test.js` | 54 | Entry point del UE de configuración, incluido XEDIT. |
 | `SADS_UE_nat_familia.test.js` | 14 | Entry point del UE de familias, incluido XEDIT. |
 | `SADS_naturaleza_patron.test.js` | 158 | Marcadores, formatos (incluido `decimal2`), patrones de PTR y sustitución. |
 | `SADS_naturaleza_config_formato.test.js` | 109 | Contrato del JSON y compatibilidad con el CS y el UE de artículo. |
@@ -271,10 +273,11 @@ Comando: `npm test`; no requiere cuenta NetSuite.
 | `SADS_naturaleza_precio_ns.test.js` | 16 | Adaptador de precio: cargos, monedas, matriz de precios y campo fórmula. |
 | `SADS_naturaleza_mapa_medidas.test.js` | 12 | Mapa de medidas de PTR rectangular contra el catálogo del proveedor y los artículos existentes. |
 | `SADS_naturaleza_lne.test.js` | 7 | Lámina Negra contra los artículos existentes. |
+| `SADS_naturaleza_corte.test.js` | 13 | Datos para el Sistema de Cortes (valor de unidades y espesor). |
 | `SADS_objetos_portables.test.js` | 5 | Alcance de `deploy.xml`, ausencia de IDs generados por la cuenta y referencias existentes en los objetos desplegados. |
 | `sample-test.js` | 2 | Plantilla de SuiteCloud. |
 
-Resultado del 2026-11-19: 15 de 15 suites y 653 de 653 pruebas aprobadas.
+Resultado del 2026-11-19: 16 de 16 suites y 675 de 675 pruebas aprobadas.
 `suitecloud project:validate` no se ejecutó en esta versión: el entorno de desarrollo no tiene cuenta.
 
 ## 7. Despliegue y operación

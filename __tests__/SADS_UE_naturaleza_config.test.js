@@ -45,11 +45,24 @@ const crearRegistroFalso = (valores, camposEnviados) => ({
     getFields: jest.fn(() => (camposEnviados === undefined ? Object.keys(valores) : camposEnviados.slice()))
 });
 
+// RN6-02: si la prueba no define Parámetros para Valor de Unidades, se usa el primer ID del JSON.
+const conValorDeUnidades = (valores) => {
+    if (valores === null || Object.prototype.hasOwnProperty.call(valores, 'custrecord_sads_naturaleza_valor_unid')) return valores;
+    let ids = null;
+    try {
+        ids = JSON.parse(valores.custrecord_sads_naturaleza_config);
+    } catch (errorDeJson) {
+        ids = null;
+    }
+    if (!Array.isArray(ids) || ids.length === 0 || typeof ids[0] !== 'string') return valores;
+    return Object.assign({ custrecord_sads_naturaleza_valor_unid: JSON.stringify([ids[0]]) }, valores);
+};
+
 const crearContexto = ({ tipo = TIPOS_EVENTO.CREATE, nuevos = CONFIGURACION_VALIDA, anteriores = null, enviados } = {}) => ({
     type: tipo,
     UserEventType: TIPOS_EVENTO,
-    newRecord: crearRegistroFalso(nuevos, enviados),
-    oldRecord: anteriores === null ? null : crearRegistroFalso(anteriores)
+    newRecord: crearRegistroFalso(conValorDeUnidades(nuevos), enviados),
+    oldRecord: anteriores === null ? null : crearRegistroFalso(conValorDeUnidades(anteriores))
 });
 
 const prepararArticulos = (existentes = { [String(ID_PLANTILLA)]: 'inventoryitem' }) => {
@@ -118,6 +131,7 @@ describe('estructura del módulo', () => {
             './domain/SADS_naturaleza_patron',
             './domain/SADS_naturaleza_parametros',
             './domain/SADS_naturaleza_mapa_medidas',
+            './domain/SADS_naturaleza_corte',
             './infra/SADS_naturaleza_articulo_ns'
         ]);
     });
@@ -487,5 +501,28 @@ describe('mapa de medidas PTRR (RN5-05)', () => {
                 custrecord_sads_naturaleza_patron_nom: 'PTR {custitem_sads_nat_ptr_lado:fraccion16}'
             })
         }))).toEqual(['Con el Mapa de Medidas PTRR, el JSON debe incluir custitem_sads_nat_ptr_lado y custitem_sads_nat_ptr_lado_b.']);
+    });
+});
+
+describe('parámetros para valor de unidades (RN6-02)', () => {
+    test('con plantilla son obligatorios y deben ser IDs del JSON', () => {
+        expect(esperarRechazo(crearContexto({ nuevos: configuracionCon({ custrecord_sads_naturaleza_valor_unid: '' }) })))
+            .toEqual(['Parámetros para Valor de Unidades: capture una lista JSON de IDs de la configuración.']);
+        jest.clearAllMocks();
+        prepararArticulos();
+        expect(esperarRechazo(crearContexto({ nuevos: configuracionCon({ custrecord_sads_naturaleza_valor_unid: '["custitem_otro"]' }) })))
+            .toEqual(['Parámetros para Valor de Unidades: custitem_otro no es un ID de la configuración.']);
+    });
+
+    test('lados de placa se aceptan', () => {
+        expect(() => userEvent.beforeSubmit(crearContexto({
+            nuevos: configuracionCon({ custrecord_sads_naturaleza_valor_unid: '["custitem_pl_ancho","custitem_pl_largo"]' })
+        }))).not.toThrow();
+    });
+
+    test('sin plantilla no se exigen', () => {
+        expect(() => userEvent.beforeSubmit(crearContexto({
+            nuevos: configuracionCon({ custrecord_sads_naturaleza_plantilla: '', custrecord_sads_naturaleza_valor_unid: '' })
+        }))).not.toThrow();
     });
 });

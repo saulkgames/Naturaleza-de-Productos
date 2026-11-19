@@ -13,8 +13,9 @@ define([
     './domain/SADS_naturaleza_patron',
     './domain/SADS_naturaleza_parametros',
     './domain/SADS_naturaleza_mapa_medidas',
+    './domain/SADS_naturaleza_corte',
     './infra/SADS_naturaleza_articulo_ns'
-], (error, log, formato, patron, parametros, mapaMedidas, articulos) => {
+], (error, log, formato, patron, parametros, mapaMedidas, corte, articulos) => {
     const NOMBRE_ERROR = 'CONFIGURACION_NATURALEZA_INVALIDA';
     const PREFIJO_MENSAJE = 'La configuración no es válida: ';
     const SEPARADOR_ERRORES = '; ';
@@ -27,7 +28,8 @@ define([
         PATRON_CODIGO: 'custrecord_sads_naturaleza_patron_cod',
         TIPO_ESPESOR: 'custrecord_sads_naturaleza_tipo_esp',
         CAMPO_MEDIDA: 'custrecord_sads_naturaleza_campo_med',
-        MAPA_MEDIDAS: 'custrecord_sads_naturaleza_mapa_med'
+        MAPA_MEDIDAS: 'custrecord_sads_naturaleza_mapa_med',
+        VALOR_UNIDADES: 'custrecord_sads_naturaleza_valor_unid'
     });
 
     // RN5-05: campos del artículo que llena el mapa de medidas.
@@ -86,6 +88,7 @@ define([
         tipoEspesor: aCadena(leerValorFinal(context, CAMPOS_CONFIGURACION.TIPO_ESPESOR)).trim(),
         campoMedida: aCadena(leerValorFinal(context, CAMPOS_CONFIGURACION.CAMPO_MEDIDA)).trim(),
         usaMapa: esCasillaMarcada(leerValorFinal(context, CAMPOS_CONFIGURACION.MAPA_MEDIDAS)),
+        valorUnidades: aCadena(leerValorFinal(context, CAMPOS_CONFIGURACION.VALOR_UNIDADES)),
         json: leerValorFinal(context, CAMPOS_CONFIGURACION.JSON),
         plantilla: aCadena(leerValorFinal(context, CAMPOS_CONFIGURACION.PLANTILLA)).trim(),
         patronNombre: aCadena(leerValorFinal(context, CAMPOS_CONFIGURACION.PATRON_NOMBRE)),
@@ -129,7 +132,7 @@ define([
      * @param {{json: *, plantilla: string, patronNombre: string, patronCodigo: string, tipoEspesor: string}} configuracion
      * @returns {string[]} Mensajes de error; vacío si la configuración es válida.
      */
-    const validarConfiguracion = ({ json, plantilla, patronNombre, patronCodigo, tipoEspesor, campoMedida, usaMapa }) => {
+    const validarConfiguracion = ({ json, plantilla, patronNombre, patronCodigo, tipoEspesor, campoMedida, usaMapa, valorUnidades }) => {
         let ids;
         try {
             ids = formato.parsearConfiguracion(json);
@@ -145,7 +148,8 @@ define([
         return errores
             .concat(validarPlantilla(plantilla))
             .concat(validarPatron(patronCodigo, ETIQUETAS_PATRON.CODIGO, ids, usaMapa))
-            .concat(validarPatron(patronNombre, ETIQUETAS_PATRON.NOMBRE, ids, usaMapa));
+            .concat(validarPatron(patronNombre, ETIQUETAS_PATRON.NOMBRE, ids, usaMapa))
+            .concat(corte.leerParametrosDeValor(valorUnidades, ids).errores);
     };
 
     /**
