@@ -1,0 +1,74 @@
+<customlist scriptid="customlist_familias_de_corte">
+  <description>Se utiliza para la definición de familias con las que pueden establecerse cortes entre los productos que pertenecen a la misma familia de corte</description>
+  <isinactive>F</isinactive>
+  <ismatrixoption>F</ismatrixoption>
+  <isordered>T</isordered>
+  <name>Familias de Corte</name>
+  <customvalues>
+    <customvalue scriptid="val_5804723_5490848_337">
+      <abbreviation>B</abbreviation>
+      <isinactive>F</isinactive>
+      <value>Bronce</value>
+    </customvalue>
+    <customvalue scriptid="val_5804724_5490848_590">
+      <abbreviation>N</abbreviation>
+      <isinactive>F</isinactive>
+      <value>Nylacero</value>
+    </customvalue>
+    <customvalue scriptid="val_5804731_5490848_917">
+      <abbreviation>P</abbreviation>
+      <isinactive>F</isinactive>
+      <value>Placa 1&quot;</value>
+    </customvalue>
+    <customvalue scriptid="val_5804733_5490848_926">
+      <abbreviation>P</abbreviation>
+      <isinactive>F</isinactive>
+      <value>Placa 1 1/2&quot;</value>
+    </customvalue>
+    <customvalue scriptid="val_5804732_5490848_135">
+      <abbreviation>P</abbreviation>
+      <isinactive>F</isinactive>
+      <value>Placa 1 1/4&quot;</value>
+    </customvalue>
+    <customvalue scriptid="val_5804728_5490848_523">
+      <abbreviation>P</abbreviation>
+      <isinactive>F</isinactive>
+      <value>Placa 1/2&quot;</value>
+    </customvalue>
+    <customvalue scriptid="val_5804726_5490848_890">
+      <abbreviation>P</abbreviation>
+      <isinactive>F</isinactive>
+      <value>Placa 1/4&quot;</value>
+    </customvalue>
+    <customvalue scriptid="val_5804734_5490848_350">
+      <abbreviation>P</abbreviation>
+      <isinactive>F</isinactive>
+      <value>Placa 2&quot;</value>
+    </customvalue>
+    <customvalue scriptid="val_5804725_5490848_144">
+      <abbreviation>P</abbreviation>
+      <isinactive>F</isinactive>
+      <value>Placa 3/16&quot;</value>
+    </customvalue>
+    <customvalue scriptid="val_5804730_5490848_524">
+      <abbreviation>P</abbreviation>
+      <isinactive>F</isinactive>
+      <value>Placa 3/4&quot;</value>
+    </customvalue>
+    <customvalue scriptid="val_5804727_5490848_668">
+      <abbreviation>P</abbreviation>
+      <isinactive>F</isinactive>
+      <value>Placa 3/8&quot;</value>
+    </customvalue>
+    <customvalue scriptid="val_5804729_5490848_783">
+      <abbreviation>P</abbreviation>
+      <isinactive>F</isinactive>
+      <value>Placa 5/8&quot;</value>
+    </customvalue>
+    <customvalue scriptid="val_8265473_5490848_759">
+      <abbreviation></abbreviation>
+      <isinactive>F</isinactive>
+      <value>Tst_1_NoUsar</value>
+    </customvalue>
+  </customvalues>
+</customlist>
