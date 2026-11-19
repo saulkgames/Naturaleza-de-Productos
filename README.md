@@ -213,6 +213,7 @@ Hacia el dominio solo cruzan objetos planos, nunca registros, resultados de bús
 | Carpeta `src/Objects/Calculo de Precio/` (41 campos de artículo) | Referencia de la cadena de precios; no se despliega. El Suitelet replica sus fórmulas y escribe `custitemalm_articulo_preciocotizacion`, `custitem_drt_ci_margen_para_venta`, `custitem11` y `custitem_alm_articulo_conversionunidad`. |
 
 Campo que el Suitelet escribe y no está en el repositorio: `custitem_drt_ci_precio_teorico`; debe existir en la cuenta.
+| `src/Objects/Terceros/customlist_familias_de_corte.xml` | Lista del Sistema de Cortes; referencia, no se despliega. El manifiesto declara la lista y los valores que usan las naturalezas. |
 | `src/Objects/Terceros/customscript_drt_item_ue.xml` y `src/FileCabinet/SuiteScripts/drt_item_ue.js` | Script DRT descargado para cambiar su contexto de ejecución; no se despliega. |
 El manifiesto exige CUSTOMRECORDS, SUBSIDIARIES y SERVERSIDESCRIPTING, y declara como dependencias `customlist_alm_lista_unidadcotizacion` y `custitem_alm_art_preciofinal`.
 

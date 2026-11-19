@@ -527,6 +527,7 @@ Configuración (campos nuevos):
 | RN6-05 | Las familias de corte no se validan en el UE (los deploys de SDF ejecutan el UE y las instancias del XML no las traen); las valida el Suitelet. |
 
 Dependencias: un MULTISELECT se guarda en el XML como referencias unidas con `|`. `suitecloud project:adddependencies` lo toma como un solo objeto y escribe en el manifiesto una entrada con `|` que `project:validate` rechaza ("caracteres no permitidos"). Cada valor de `customlist_familias_de_corte` se declara a mano en `manifest.xml` y en `REFERENCIAS_EXTERNAS_VERIFICADAS` de la prueba de portabilidad (10 valores de placas, 2026-11-19; sin `sb1`, provienen de producción: verificar).
+La lista `customlist_familias_de_corte` es del Sistema de Cortes: su XML está en `src/Objects/Terceros/` como referencia y no se despliega desde este proyecto (D-28). Los valores que use una naturaleza deben existir en producción con el mismo scriptid; si falta uno, se da de alta en la lista y se repite el deploy.
 Estado del XML (commit c687e7a): solo placas tiene Familias de Corte; PTRC, MPPTRC, PTRR, MPPTRR y LNE las tienen vacías y el Suitelet no permite crear en ellas hasta marcarlas y volver a descargar el XML.
 Riesgo: las familias de corte se capturan en la UI y no están en el XML. Después de capturarlas, descargar `customrecord_sads_naturaleza_productos.xml`; un deploy sin descargar las borra.
 Desviación del plan: las opciones del paso 2 salen de `search.lookupFields` (devuelve valor y texto del MULTISELECT); no se agregó la consulta C-9.
