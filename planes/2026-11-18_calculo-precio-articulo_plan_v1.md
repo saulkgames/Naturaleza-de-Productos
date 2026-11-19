@@ -168,3 +168,8 @@ Revisión de cifras: U-1 y U-4 coinciden con el cálculo independiente (195.00 y
 `suitecloud project:validate` sin scriptid duplicado ni referencias rotas (H-04, H-05).
 Sandbox: P4-01 a P4-04.
 Límite: S4-01 a S4-08 solo se confirman en sandbox; S4-08 depende de un módulo DRT que no está en el repositorio.
+
+## Historial
+| Fecha | Cambio |
+|---|---|
+| 2026-11-19 | H-05 corregido por el usuario (commit 92fc57e). IDs propios de la lista de naturalezas renombrados; prueba de portabilidad; familias DRT pendientes de verificar en producción (sección 4E de la documentación). |
