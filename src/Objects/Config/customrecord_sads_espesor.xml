@@ -443,130 +443,130 @@
     <instance scriptid="val_sads_esp_lne_c07">
       <custrecord_sads_esp_codigo>C07</custrecord_sads_esp_codigo>
       <custrecord_sads_esp_orden>.1793</custrecord_sads_esp_orden>
-      <custrecord_sads_esp_texto>Cal.  07</custrecord_sads_esp_texto>
+      <custrecord_sads_esp_texto>Cal.07</custrecord_sads_esp_texto>
       <custrecord_sads_esp_tipo>[scriptid=customlist_sads_tipo_espesor.val_sads_tesp_calibre]</custrecord_sads_esp_tipo>
       <isinactive>F</isinactive>
-      <name>Cal. 7</name>
+      <name>Cal.07 - LNE</name>
     </instance>
     <instance scriptid="val_sads_esp_lne_c08">
       <custrecord_sads_esp_codigo>C08</custrecord_sads_esp_codigo>
       <custrecord_sads_esp_orden>.1644</custrecord_sads_esp_orden>
-      <custrecord_sads_esp_texto>Cal. 08</custrecord_sads_esp_texto>
+      <custrecord_sads_esp_texto>Cal.08</custrecord_sads_esp_texto>
       <custrecord_sads_esp_tipo>[scriptid=customlist_sads_tipo_espesor.val_sads_tesp_calibre]</custrecord_sads_esp_tipo>
       <isinactive>F</isinactive>
-      <name>Cal. 8</name>
+      <name>Cal.08 - LNE</name>
     </instance>
     <instance scriptid="val_sads_esp_lne_c09">
       <custrecord_sads_esp_codigo>C09</custrecord_sads_esp_codigo>
       <custrecord_sads_esp_orden>.1495</custrecord_sads_esp_orden>
-      <custrecord_sads_esp_texto>Cal. 09</custrecord_sads_esp_texto>
+      <custrecord_sads_esp_texto>Cal.09</custrecord_sads_esp_texto>
       <custrecord_sads_esp_tipo>[scriptid=customlist_sads_tipo_espesor.val_sads_tesp_calibre]</custrecord_sads_esp_tipo>
       <isinactive>F</isinactive>
-      <name>Cal. 9</name>
+      <name>Cal.09 - LNE</name>
     </instance>
     <instance scriptid="val_sads_esp_lne_c10">
       <custrecord_sads_esp_codigo>C10</custrecord_sads_esp_codigo>
       <custrecord_sads_esp_orden>.1345</custrecord_sads_esp_orden>
-      <custrecord_sads_esp_texto>Cal. 10</custrecord_sads_esp_texto>
+      <custrecord_sads_esp_texto>Cal.10</custrecord_sads_esp_texto>
       <custrecord_sads_esp_tipo>[scriptid=customlist_sads_tipo_espesor.val_sads_tesp_calibre]</custrecord_sads_esp_tipo>
       <isinactive>F</isinactive>
-      <name>Cal. 10</name>
+      <name>Cal.10 - LNE</name>
     </instance>
     <instance scriptid="val_sads_esp_lne_c11">
       <custrecord_sads_esp_codigo>C11</custrecord_sads_esp_codigo>
       <custrecord_sads_esp_orden>.1196</custrecord_sads_esp_orden>
-      <custrecord_sads_esp_texto>Cal. 11</custrecord_sads_esp_texto>
+      <custrecord_sads_esp_texto>Cal.11</custrecord_sads_esp_texto>
       <custrecord_sads_esp_tipo>[scriptid=customlist_sads_tipo_espesor.val_sads_tesp_calibre]</custrecord_sads_esp_tipo>
       <isinactive>F</isinactive>
-      <name>Cal. 11</name>
+      <name>Cal.11 - LNE</name>
     </instance>
     <instance scriptid="val_sads_esp_lne_c12">
       <custrecord_sads_esp_codigo>C12</custrecord_sads_esp_codigo>
       <custrecord_sads_esp_orden>.1046</custrecord_sads_esp_orden>
-      <custrecord_sads_esp_texto>Cal. 12</custrecord_sads_esp_texto>
+      <custrecord_sads_esp_texto>Cal.12</custrecord_sads_esp_texto>
       <custrecord_sads_esp_tipo>[scriptid=customlist_sads_tipo_espesor.val_sads_tesp_calibre]</custrecord_sads_esp_tipo>
       <isinactive>F</isinactive>
-      <name>Cal. 12</name>
+      <name>Cal.12 - LNE</name>
     </instance>
     <instance scriptid="val_sads_esp_lne_c13">
       <custrecord_sads_esp_codigo>C13</custrecord_sads_esp_codigo>
       <custrecord_sads_esp_orden>.0897</custrecord_sads_esp_orden>
-      <custrecord_sads_esp_texto>Cal. 13</custrecord_sads_esp_texto>
+      <custrecord_sads_esp_texto>Cal.13</custrecord_sads_esp_texto>
       <custrecord_sads_esp_tipo>[scriptid=customlist_sads_tipo_espesor.val_sads_tesp_calibre]</custrecord_sads_esp_tipo>
       <isinactive>F</isinactive>
-      <name>Cal .13</name>
+      <name>Cal.13 - LNE</name>
     </instance>
     <instance scriptid="val_sads_esp_lne_c14">
       <custrecord_sads_esp_codigo>C14</custrecord_sads_esp_codigo>
       <custrecord_sads_esp_orden>.0747</custrecord_sads_esp_orden>
-      <custrecord_sads_esp_texto>Cal. 14</custrecord_sads_esp_texto>
+      <custrecord_sads_esp_texto>Cal.14</custrecord_sads_esp_texto>
       <custrecord_sads_esp_tipo>[scriptid=customlist_sads_tipo_espesor.val_sads_tesp_calibre]</custrecord_sads_esp_tipo>
       <isinactive>F</isinactive>
-      <name>Cal. 14</name>
+      <name>Cal.14 - LNE</name>
     </instance>
     <instance scriptid="val_sads_esp_lne_c15">
       <custrecord_sads_esp_codigo>C15</custrecord_sads_esp_codigo>
       <custrecord_sads_esp_orden>.0673</custrecord_sads_esp_orden>
-      <custrecord_sads_esp_texto>Cal. 15</custrecord_sads_esp_texto>
+      <custrecord_sads_esp_texto>Cal.15</custrecord_sads_esp_texto>
       <custrecord_sads_esp_tipo>[scriptid=customlist_sads_tipo_espesor.val_sads_tesp_calibre]</custrecord_sads_esp_tipo>
       <isinactive>F</isinactive>
-      <name>Cal. 15</name>
+      <name>Cal.15 - LNE</name>
     </instance>
     <instance scriptid="val_sads_esp_lne_c16">
       <custrecord_sads_esp_codigo>C16</custrecord_sads_esp_codigo>
       <custrecord_sads_esp_orden>.0598</custrecord_sads_esp_orden>
-      <custrecord_sads_esp_texto>Cal. 16</custrecord_sads_esp_texto>
+      <custrecord_sads_esp_texto>Cal.16</custrecord_sads_esp_texto>
       <custrecord_sads_esp_tipo>[scriptid=customlist_sads_tipo_espesor.val_sads_tesp_calibre]</custrecord_sads_esp_tipo>
       <isinactive>F</isinactive>
-      <name>Cal. 16</name>
+      <name>Cal.16 - LNE</name>
     </instance>
     <instance scriptid="val_sads_esp_lne_c18">
       <custrecord_sads_esp_codigo>C18</custrecord_sads_esp_codigo>
       <custrecord_sads_esp_orden>.0478</custrecord_sads_esp_orden>
-      <custrecord_sads_esp_texto>Cal. 18</custrecord_sads_esp_texto>
+      <custrecord_sads_esp_texto>Cal.18</custrecord_sads_esp_texto>
       <custrecord_sads_esp_tipo>[scriptid=customlist_sads_tipo_espesor.val_sads_tesp_calibre]</custrecord_sads_esp_tipo>
       <isinactive>F</isinactive>
-      <name>Cal. 18</name>
+      <name>Cal.18 - LNE</name>
     </instance>
     <instance scriptid="val_sads_esp_lne_c20">
       <custrecord_sads_esp_codigo>C20</custrecord_sads_esp_codigo>
       <custrecord_sads_esp_orden>.0359</custrecord_sads_esp_orden>
-      <custrecord_sads_esp_texto>Cal .20</custrecord_sads_esp_texto>
+      <custrecord_sads_esp_texto>Cal.20</custrecord_sads_esp_texto>
       <custrecord_sads_esp_tipo>[scriptid=customlist_sads_tipo_espesor.val_sads_tesp_calibre]</custrecord_sads_esp_tipo>
       <isinactive>F</isinactive>
-      <name>Cal .20</name>
+      <name>Cal.20 - LNE</name>
     </instance>
     <instance scriptid="val_sads_esp_lne_c22">
       <custrecord_sads_esp_codigo>C22</custrecord_sads_esp_codigo>
       <custrecord_sads_esp_orden>.0299</custrecord_sads_esp_orden>
-      <custrecord_sads_esp_texto>Cal. 22</custrecord_sads_esp_texto>
+      <custrecord_sads_esp_texto>Cal.22</custrecord_sads_esp_texto>
       <custrecord_sads_esp_tipo>[scriptid=customlist_sads_tipo_espesor.val_sads_tesp_calibre]</custrecord_sads_esp_tipo>
       <isinactive>F</isinactive>
-      <name>Cal. 22</name>
+      <name>Cal.22 - LNE</name>
     </instance>
     <instance scriptid="val_sads_esp_lne_c24">
       <custrecord_sads_esp_codigo>C24</custrecord_sads_esp_codigo>
       <custrecord_sads_esp_orden>.0239</custrecord_sads_esp_orden>
-      <custrecord_sads_esp_texto>Cal. 24</custrecord_sads_esp_texto>
+      <custrecord_sads_esp_texto>Cal.24</custrecord_sads_esp_texto>
       <custrecord_sads_esp_tipo>[scriptid=customlist_sads_tipo_espesor.val_sads_tesp_calibre]</custrecord_sads_esp_tipo>
       <isinactive>F</isinactive>
-      <name>Cal. 24</name>
+      <name>Cal.24 - LNE</name>
     </instance>
     <instance scriptid="val_sads_esp_lne_c26">
       <custrecord_sads_esp_codigo>C26</custrecord_sads_esp_codigo>
       <custrecord_sads_esp_orden>.0179</custrecord_sads_esp_orden>
-      <custrecord_sads_esp_texto>Cal. 26</custrecord_sads_esp_texto>
+      <custrecord_sads_esp_texto>Cal.26</custrecord_sads_esp_texto>
       <custrecord_sads_esp_tipo>[scriptid=customlist_sads_tipo_espesor.val_sads_tesp_calibre]</custrecord_sads_esp_tipo>
       <isinactive>F</isinactive>
-      <name>Cal. 26</name>
+      <name>Cal.26 - LNE</name>
     </instance>
     <instance scriptid="val_sads_esp_lne_c28">
       <custrecord_sads_esp_codigo>C28</custrecord_sads_esp_codigo>
       <custrecord_sads_esp_orden>.0149</custrecord_sads_esp_orden>
-      <custrecord_sads_esp_texto>Cal. 28</custrecord_sads_esp_texto>
+      <custrecord_sads_esp_texto>Cal.28</custrecord_sads_esp_texto>
       <custrecord_sads_esp_tipo>[scriptid=customlist_sads_tipo_espesor.val_sads_tesp_calibre]</custrecord_sads_esp_tipo>
       <isinactive>F</isinactive>
-      <name>Cal. 28</name>
+      <name>Cal.28 - LNE</name>
     </instance>
   </instances>
 </customrecordtype>

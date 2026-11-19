@@ -48,6 +48,8 @@ define([
         PATRON_OBLIGATORIO: (etiqueta) => `${etiqueta}: es obligatorio cuando hay artículo plantilla.`,
         SIN_TIPO_ESPESOR: 'La configuración usa espesor y requiere Tipo de Espesor.',
         CAMPO_MEDIDA_FUERA: 'El Campo de Medida para Familias debe ser uno de los IDs de la configuración.',
+        CAMPO_MEDIDA_ESPESOR: 'El Campo de Medida para Familias debe ser un parámetro numérico, no el espesor: '
+            + 'el espesor ya elige la familia por su rango.',
         MAPA_SIN_CAMPOS: 'Con el Mapa de Medidas PTRR, el JSON debe incluir custitem_sads_nat_ptr_lado y custitem_sads_nat_ptr_lado_b.'
     });
 
@@ -110,10 +112,12 @@ define([
         usaMapa && CAMPOS_DEL_MAPA.some((campo) => ids.indexOf(campo) === -1) ? [MENSAJES.MAPA_SIN_CAMPOS] : []
     );
 
-    // D-21: el campo de medida para familias, si existe, es un ID del JSON.
-    const validarCampoMedida = (ids, campoMedida) => (
-        campoMedida !== '' && ids.indexOf(campoMedida) === -1 ? [MENSAJES.CAMPO_MEDIDA_FUERA] : []
-    );
+    // D-21: el campo de medida para familias, si existe, es un ID numérico del JSON; el espesor es catálogo (LNE, 2026-11-19).
+    const validarCampoMedida = (ids, campoMedida) => {
+        if (campoMedida === '') return [];
+        if (campoMedida === CAMPO_ESPESOR) return [MENSAJES.CAMPO_MEDIDA_ESPESOR];
+        return ids.indexOf(campoMedida) === -1 ? [MENSAJES.CAMPO_MEDIDA_FUERA] : [];
+    };
 
     // RN3-08.
     const validarTipoEspesor = (ids, tipoEspesor) => (

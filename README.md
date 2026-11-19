@@ -9,7 +9,7 @@ Un Suitelet crea artículos nuevos de una naturaleza con solo capturar sus pará
 | Tipo de proyecto | SuiteCloud SDF, Account Customization (`src/manifest.xml`) |
 | Plataforma | SuiteScript 2.1 |
 | Ambiente de desarrollo | Sandbox `Almetal_SB` (authId en `project.json`, excluido del control de versiones) |
-| Pruebas | Jest 30 con `@oracle/suitecloud-unit-testing`: 14 suites, 645 pruebas aprobadas (2026-11-19) |
+| Pruebas | Jest 30 con `@oracle/suitecloud-unit-testing`: 15 suites, 653 pruebas aprobadas (2026-11-19) |
 | Estado | Iteración B y cálculo de precio implementados; los artículos se crean inactivos hasta validar el precio en sandbox (P4-01 a P4-04) |
 | Diseño vigente | [Plan v5](planes/2026-11-17_creador-articulos-naturaleza_plan_v5.md), [prompt v3](planes/2026-11-17_creador-articulos-naturaleza_prompt_v3.md) y [plan de cálculo de precio](planes/2026-11-18_calculo-precio-articulo_plan_v1.md) |
 | Actualización | 2026-11-19 |
@@ -226,7 +226,7 @@ Los XML incluyen datos: la configuración de Placas de Acero, con la plantilla d
 ```
 .
 ├── README.md
-├── __tests__/                         # 14 suites Jest
+├── __tests__/                         # 15 suites Jest
 ├── planes/                            # Planes y prompts de diseño
 ├── jest.config.js
 ├── package.json
@@ -259,7 +259,7 @@ Comando: `npm test`; no requiere cuenta NetSuite.
 | Suite | Pruebas | Alcance |
 |---|---|---|
 | `SADS_SL_crear_articulo_nat.test.js` | 116 | Entry point del Suitelet con `jest.mock` de `N/`, incluido el cálculo y la escritura del precio. |
-| `SADS_UE_naturaleza_config.test.js` | 50 | Entry point del UE de configuración, incluido XEDIT. |
+| `SADS_UE_naturaleza_config.test.js` | 51 | Entry point del UE de configuración, incluido XEDIT. |
 | `SADS_UE_nat_familia.test.js` | 14 | Entry point del UE de familias, incluido XEDIT. |
 | `SADS_naturaleza_patron.test.js` | 158 | Marcadores, formatos (incluido `decimal2`), patrones de PTR y sustitución. |
 | `SADS_naturaleza_config_formato.test.js` | 109 | Contrato del JSON y compatibilidad con el CS y el UE de artículo. |
@@ -270,10 +270,11 @@ Comando: `npm test`; no requiere cuenta NetSuite.
 | `SADS_naturaleza_precio.test.js` | 29 | Cadena de fórmulas del precio, datos faltantes, margen y redondeo a 0.25. |
 | `SADS_naturaleza_precio_ns.test.js` | 16 | Adaptador de precio: cargos, monedas, matriz de precios y campo fórmula. |
 | `SADS_naturaleza_mapa_medidas.test.js` | 12 | Mapa de medidas de PTR rectangular contra el catálogo del proveedor y los artículos existentes. |
+| `SADS_naturaleza_lne.test.js` | 7 | Lámina Negra contra los artículos existentes. |
 | `SADS_objetos_portables.test.js` | 5 | Alcance de `deploy.xml`, ausencia de IDs generados por la cuenta y referencias existentes en los objetos desplegados. |
 | `sample-test.js` | 2 | Plantilla de SuiteCloud. |
 
-Resultado del 2026-11-19: 14 de 14 suites y 645 de 645 pruebas aprobadas.
+Resultado del 2026-11-19: 15 de 15 suites y 653 de 653 pruebas aprobadas.
 `suitecloud project:validate` no se ejecutó en esta versión: el entorno de desarrollo no tiene cuenta.
 
 ## 7. Despliegue y operación

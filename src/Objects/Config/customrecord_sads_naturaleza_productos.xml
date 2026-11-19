@@ -434,7 +434,7 @@ Ejemplo: [&quot;custitem_pl_ancho&quot;,&quot;custitem_pl_espesor&quot;,&quot;cu
       <name>Perfiles Tubulares Rectangulares Media Pieza</name>
     </instance>
     <instance scriptid="val_sads_nat_config_record_lne">
-      <custrecord_sads_naturaleza_campo_med>custitem_sads_nat_espesor</custrecord_sads_naturaleza_campo_med>
+      <custrecord_sads_naturaleza_campo_med>custitem_sads_nat_lne_lado_a</custrecord_sads_naturaleza_campo_med>
       <custrecord_sads_naturaleza_config>[&quot;custitem_sads_nat_lne_lado_a&quot;,&quot;custitem_sads_nat_lne_lado_b&quot;,&quot;custitem_sads_nat_espesor&quot;]</custrecord_sads_naturaleza_config>
       <custrecord_sads_naturaleza_lista>[scriptid=customlist_sads_naturaleza_productos.val_sads_natlist_lne]</custrecord_sads_naturaleza_lista>
       <custrecord_sads_naturaleza_mapa_med>F</custrecord_sads_naturaleza_mapa_med>

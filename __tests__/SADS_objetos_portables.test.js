@@ -23,7 +23,16 @@ const REFERENCIAS_EXTERNAS_VERIFICADAS = Object.freeze([
     'customrecord_pfp_famprecios.val_26689_5490848_sb1_515',
     'customrecord_pfp_fammargenes_.val_5474627_5490848_847',
     'customrecord_pfp_fammargenes_.val_5522235_5490848_713',
-    'customrecord_pfp_fammargenes_.val_6067916_5490848_922'
+    'customrecord_pfp_fammargenes_.val_6067916_5490848_922',
+    // Lámina Negra: verificadas por el usuario el 2026-11-19.
+    'customrecord_pfp_famprecios.val_26682_5490848_sb1_726',
+    'customrecord_pfp_famprecios.val_135478_5490848_666',
+    'customrecord_pfp_famprecios.val_26683_5490848_sb1_769',
+    'customrecord_pfp_famprecios.val_135481_5490848_142',
+    'customrecord_pfp_famprecios.val_135477_5490848_178',
+    'customrecord_pfp_famprecios.val_135479_5490848_671',
+    'customrecord_pfp_famprecios.val_135480_5490848_658',
+    'customrecord_pfp_fammargenes_.val_5500436_5490848_831'
 ]);
 
 const carpetasDesplegadas = () => {

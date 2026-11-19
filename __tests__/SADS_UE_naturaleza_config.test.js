@@ -424,6 +424,21 @@ describe('campo de medida para familias (D-21)', () => {
         }))).not.toThrow();
     });
 
+    test('el espesor como campo de medida se rechaza (caso Lámina Negra)', () => {
+        expect(esperarRechazo(crearContexto({
+            nuevos: configuracionCon({
+                custrecord_sads_naturaleza_config: '["custitem_sads_nat_lne_lado_a","custitem_sads_nat_lne_lado_b","custitem_sads_nat_espesor"]',
+                custrecord_sads_naturaleza_patron_cod: 'LNE{custitem_sads_nat_lne_lado_a:entero1}{custitem_sads_nat_lne_lado_b:entero2}'
+                    + '{custitem_sads_nat_espesor:codigo}',
+                custrecord_sads_naturaleza_patron_nom: "Lamina Negra {custitem_sads_nat_lne_lado_a}'x{custitem_sads_nat_lne_lado_b}' "
+                    + '{custitem_sads_nat_espesor:texto}',
+                custrecord_sads_naturaleza_tipo_esp: '2',
+                custrecord_sads_naturaleza_campo_med: 'custitem_sads_nat_espesor'
+            })
+        }))).toEqual(['El Campo de Medida para Familias debe ser un parámetro numérico, no el espesor: '
+            + 'el espesor ya elige la familia por su rango.']);
+    });
+
     test('un campo de medida fuera del JSON se rechaza', () => {
         expect(esperarRechazo(crearContexto({
             nuevos: configuracionCon({ custrecord_sads_naturaleza_campo_med: 'custitem_otro' })

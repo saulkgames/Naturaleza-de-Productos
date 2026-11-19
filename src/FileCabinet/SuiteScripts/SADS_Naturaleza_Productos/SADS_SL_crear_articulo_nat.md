@@ -21,6 +21,7 @@
 4D. [Cálculo de precio](#4d-cálculo-de-precio)
 4E. [IDs portables para producción](#4e-ids-portables-para-producción)
 4F. [PTR rectangular con mapa de medidas](#4f-ptr-rectangular-con-mapa-de-medidas)
+4G. [Lámina Negra (LNE)](#4g-lámina-negra-lne)
 5. [Campos del formulario](#5-campos-del-formulario)
 6. [Consultas SuiteQL](#6-consultas-suiteql)
 7. [User Event de configuración](#7-user-event-de-configuración)
@@ -479,6 +480,25 @@ Fuera de la prueba: 11222 `PTRR201C12` (3"x2" Cal.12; se corrige a mano a `PTRR3
 Supuesto S5-01: MPPTRR usa las mismas familias de precio que PTRR; no hay CSV de media pieza rectangular.
 `custitem_sads_nat_ptr_lado_b.xml` se generó en el proyecto; el usuario ya creó el campo en la cuenta: conviene descargar su versión antes del deploy.
 
+## 4G. Lámina Negra (LNE)
+Configuración `val_sads_nat_config_record_lne` (creada por el usuario el 2026-11-19): plantilla 10780; JSON `custitem_sads_nat_lne_lado_a`, `custitem_sads_nat_lne_lado_b` (enteros, pies) y `custitem_sads_nat_espesor` (tipo Calibre); código `LNE{lado_a:entero1}{lado_b:entero2}{espesor:codigo}`; nombre `Lamina Negra {lado_a}'x{lado_b}' {espesor:texto}`.
+Error de la primera prueba: el Campo de Medida para Familias era `custitem_sads_nat_espesor`, que es catálogo. Las líneas usan Medida 3 y 4 (ancho): el campo correcto es `custitem_sads_nat_lne_lado_a`. El UE de configuración ahora rechaza el espesor como campo de medida.
+
+| Ancho | Calibres | Familia |
+|---|---|---|
+| 3' | Cal.13–Cal.07 | FAM 017 |
+| 3' | Cal.14 | FAM 089 |
+| 3' | Cal.24–Cal.16 | FAM 018 |
+| 3' y 4' | Cal.26 | FAM 092 |
+| 4' | Cal.13–Cal.08 | FAM 088 |
+| 4' | Cal.14 | FAM 090 |
+| 4' | Cal.24–Cal.16 | FAM 091 |
+Margen "Lamina Negra" en todas.
+Catálogo: 16 calibres `val_sads_esp_lne_c07` … `c28`, texto `Cal.10` (sin espacio, como los artículos actuales) y nombre `Cal.10 - LNE`.
+Prueba `SADS_naturaleza_lne.test.js`: los 47 artículos vigentes de `RelacionLNE_familias.xlsx` reproducen su código y su familia (fuera: 1127 y 10821 con sufijo IN).
+Huecos: Cal.15 y Cal.28 en ambos anchos y Cal.07 en 4' no tienen familia. Excepciones de margen que el Suitelet no replica: 12702 (Media Pieza Lamina), 12820 (MU PEDACERIA).
+Las líneas de familia apuntaban a `val_8428447_5490848_sb1_416` (ID de sandbox de la configuración); ahora a `val_sads_nat_config_record_lne`. Las 8 familias DRT de LNE están verificadas en producción y declaradas en el manifiesto.
+
 ## 5. Campos del formulario
 | ID | Tipo | Paso | Uso |
 |---|---|---|---|
@@ -795,7 +815,7 @@ Ver los logs: Customization > Scripting > Script Deployments > deployment > pest
 
 ## 16. Pruebas
 Comando: `npm test` (no requiere cuenta NetSuite).
-Resultado del 2026-11-19: 14 suites aprobadas de 14; 645 pruebas aprobadas de 645.
+Resultado del 2026-11-19: 15 suites aprobadas de 15; 653 pruebas aprobadas de 653.
 
 | Suite | Pruebas | Alcance |
 |---|---|---|
@@ -806,10 +826,11 @@ Resultado del 2026-11-19: 14 suites aprobadas de 14; 645 pruebas aprobadas de 64
 | `SADS_naturaleza_articulo_ns.test.js` | 7 | Adaptador con y sin resultado |
 | `SADS_naturaleza_precio.test.js` | 29 | U-1 a U-5: casos de control 195.00 y 824.00, datos faltantes, margen, redondeo a 0.25, tolerancia; regla de dependencia |
 | `SADS_naturaleza_mapa_medidas.test.js` | 12 | RN5-02 a RN5-04; mapa desplegado contra el catálogo del proveedor y el CSV de PTRR (sección 4F) |
+| `SADS_naturaleza_lne.test.js` | 7 | Lámina Negra: configuración, calibres y familias contra la tabla del usuario (sección 4G) |
 | `SADS_objetos_portables.test.js` | 5 | Alcance de `deploy.xml`, IDs portables y referencias existentes en los objetos desplegados (sección 4E) |
 | `SADS_naturaleza_precio_ns.test.js` | 16 | I-1: cargos, C-7, matriz de precios, errores de configuración, lectura del campo fórmula |
 | `SADS_SL_crear_articulo_nat.test.js` | 116 | P-09 a P-13, P-16, P-22; P3-08, P3-10, P3-11, P3-17, P3-18; medidas 707/620 y orden de lados; S-1 a S-4 del precio; estructura del entry point |
-| `SADS_UE_naturaleza_config.test.js` | 50 | P-17, P-18; RN-17; P3-13, P3-16; formatos de lados; errores inesperados |
+| `SADS_UE_naturaleza_config.test.js` | 51 | P-17, P-18; RN-17; P3-13, P3-16; formatos de lados; errores inesperados |
 | `SADS_UE_nat_familia.test.js` | 14 | P3-14, P3-19; RN3-07; errores inesperados |
 | `SADS_naturaleza_config_formato.test.js` | 109 | Contrato del JSON (sin cambios) |
 | `sample-test.js` | 2 | Plantilla de SuiteCloud |
