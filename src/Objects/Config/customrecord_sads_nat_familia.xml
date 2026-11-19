@@ -331,8 +331,8 @@
     </customrecordcustomfield>
   </customrecordcustomfields>
   <instances>
-    <instance scriptid="val_8428201_5490848_sb1_419">
-      <custrecord_sads_natfam_config>[scriptid=customrecord_sads_naturaleza_productos.val_8427261_5490848_sb1_888]</custrecord_sads_natfam_config>
+    <instance scriptid="val_sads_espesor_config_pla36_1">
+      <custrecord_sads_natfam_config>[scriptid=customrecord_sads_naturaleza_productos.val_sads_nat_config_record_pla36]</custrecord_sads_natfam_config>
       <custrecord_sads_natfam_desde>[scriptid=customrecord_sads_espesor.val_sads_esp_fr018]</custrecord_sads_natfam_desde>
       <custrecord_sads_natfam_hasta>[scriptid=customrecord_sads_espesor.val_sads_esp_fr062]</custrecord_sads_natfam_hasta>
       <custrecord_sads_natfam_margen>[scriptid=customrecord_pfp_fammargenes_.val_5474627_5490848_847]</custrecord_sads_natfam_margen>
@@ -341,8 +341,8 @@
       <custrecord_sads_natfam_precio>[scriptid=customrecord_pfp_famprecios.val_26730_5490848_sb1_968]</custrecord_sads_natfam_precio>
       <isinactive>F</isinactive>
     </instance>
-    <instance scriptid="val_8428204_5490848_sb1_443">
-      <custrecord_sads_natfam_config>[scriptid=customrecord_sads_naturaleza_productos.val_8427261_5490848_sb1_888]</custrecord_sads_natfam_config>
+    <instance scriptid="val_sads_espesor_config_pla36_2">
+      <custrecord_sads_natfam_config>[scriptid=customrecord_sads_naturaleza_productos.val_sads_nat_config_record_pla36]</custrecord_sads_natfam_config>
       <custrecord_sads_natfam_desde>[scriptid=customrecord_sads_espesor.val_sads_esp_fr075]</custrecord_sads_natfam_desde>
       <custrecord_sads_natfam_hasta>[scriptid=customrecord_sads_espesor.val_sads_esp_fr200]</custrecord_sads_natfam_hasta>
       <custrecord_sads_natfam_margen>[scriptid=customrecord_pfp_fammargenes_.val_5474627_5490848_847]</custrecord_sads_natfam_margen>
