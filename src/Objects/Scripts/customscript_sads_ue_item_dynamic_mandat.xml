@@ -21,7 +21,7 @@
       <loglevel>DEBUG</loglevel>
       <recordtype>ITEMGROUP</recordtype>
       <runasrole>[scriptid=customrole_sads_naturaleza_config_exec]</runasrole>
-      <status>TESTING</status>
+      <status>RELEASED</status>
     </scriptdeployment>
     <scriptdeployment scriptid="customdeploy_ue_item_noninv_mndry_flds">
       <allemployees>T</allemployees>
@@ -36,7 +36,7 @@
       <loglevel>DEBUG</loglevel>
       <recordtype>NONINVENTORYITEM</recordtype>
       <runasrole>[scriptid=customrole_sads_naturaleza_config_exec]</runasrole>
-      <status>TESTING</status>
+      <status>RELEASED</status>
     </scriptdeployment>
     <scriptdeployment scriptid="customdeploy_ue_item_othchg_mndry_flds">
       <allemployees>T</allemployees>
@@ -51,7 +51,7 @@
       <loglevel>DEBUG</loglevel>
       <recordtype>OTHERCHARGEITEM</recordtype>
       <runasrole>[scriptid=customrole_sads_naturaleza_config_exec]</runasrole>
-      <status>TESTING</status>
+      <status>RELEASED</status>
     </scriptdeployment>
     <scriptdeployment scriptid="customdeploy_ue_item_serv_mndry_flds">
       <allemployees>T</allemployees>
@@ -66,7 +66,7 @@
       <loglevel>DEBUG</loglevel>
       <recordtype>SERVICEITEM</recordtype>
       <runasrole>[scriptid=customrole_sads_naturaleza_config_exec]</runasrole>
-      <status>TESTING</status>
+      <status>RELEASED</status>
     </scriptdeployment>
     <scriptdeployment scriptid="customdeploy_ue_item_kit_mndry_flds">
       <allemployees>T</allemployees>
@@ -81,7 +81,7 @@
       <loglevel>DEBUG</loglevel>
       <recordtype>KITITEM</recordtype>
       <runasrole>[scriptid=customrole_sads_naturaleza_config_exec]</runasrole>
-      <status>TESTING</status>
+      <status>RELEASED</status>
     </scriptdeployment>
     <scriptdeployment scriptid="customdeploy_ue_item_invprt_mndry_flds">
       <allemployees>T</allemployees>

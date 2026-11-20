@@ -20,7 +20,7 @@
       <isdeployed>T</isdeployed>
       <loglevel>DEBUG</loglevel>
       <recordtype>ITEMGROUP</recordtype>
-      <status>TESTING</status>
+      <status>RELEASED</status>
     </scriptdeployment>
     <scriptdeployment scriptid="customdeploy_cs_item_othchg_mndry_flds">
       <allemployees>T</allemployees>
@@ -34,7 +34,7 @@
       <isdeployed>T</isdeployed>
       <loglevel>DEBUG</loglevel>
       <recordtype>OTHERCHARGEITEM</recordtype>
-      <status>TESTING</status>
+      <status>RELEASED</status>
     </scriptdeployment>
     <scriptdeployment scriptid="customdeploy_cs_item_serv_mndry_flds">
       <allemployees>T</allemployees>
@@ -48,7 +48,7 @@
       <isdeployed>T</isdeployed>
       <loglevel>DEBUG</loglevel>
       <recordtype>SERVICEITEM</recordtype>
-      <status>TESTING</status>
+      <status>RELEASED</status>
     </scriptdeployment>
     <scriptdeployment scriptid="customdeploy_cs_item_kit_mndry_flds">
       <allemployees>T</allemployees>
@@ -62,7 +62,7 @@
       <isdeployed>T</isdeployed>
       <loglevel>DEBUG</loglevel>
       <recordtype>KITITEM</recordtype>
-      <status>TESTING</status>
+      <status>RELEASED</status>
     </scriptdeployment>
     <scriptdeployment scriptid="customdeploy_cs_item_noninv_mndry_flds">
       <allemployees>T</allemployees>
@@ -76,7 +76,7 @@
       <isdeployed>T</isdeployed>
       <loglevel>DEBUG</loglevel>
       <recordtype>NONINVENTORYITEM</recordtype>
-      <status>TESTING</status>
+      <status>RELEASED</status>
     </scriptdeployment>
     <scriptdeployment scriptid="customdeploy_item_invprt_mandatory_flds">
       <allemployees>T</allemployees>
