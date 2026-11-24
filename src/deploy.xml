@@ -3,10 +3,12 @@
         <path>~/AccountConfiguration/*</path>
     </configuration>
     <files>
-        <path>~/FileCabinet/*</path>
+        <path>~/FileCabinet/SuiteScripts/SADS_Naturaleza_Productos/*</path>
     </files>
     <objects>
-        <path>~/Objects/*</path>
+        <path>~/Objects/Config/*</path>
+        <path>~/Objects/Naturalezas/*</path>
+        <path>~/Objects/Scripts/*</path>
     </objects>
     <translationimports>
         <path>~/Translations/*</path>

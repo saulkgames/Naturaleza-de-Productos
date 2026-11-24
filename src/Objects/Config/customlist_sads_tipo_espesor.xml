@@ -1,0 +1,34 @@
+<customlist scriptid="customlist_sads_tipo_espesor">
+  <description>Tipos de espesor del catálogo de espesores (RN3-01).</description>
+  <isinactive>F</isinactive>
+  <ismatrixoption>F</ismatrixoption>
+  <isordered>T</isordered>
+  <name>SADS - Tipo de Espesor</name>
+  <customvalues>
+    <customvalue scriptid="val_sads_tesp_fraccion">
+      <abbreviation></abbreviation>
+      <isinactive>F</isinactive>
+      <value>Fracción de pulgada</value>
+    </customvalue>
+    <customvalue scriptid="val_sads_tesp_calibre">
+      <abbreviation></abbreviation>
+      <isinactive>F</isinactive>
+      <value>Calibre</value>
+    </customvalue>
+    <customvalue scriptid="val_sads_tesp_mm">
+      <abbreviation></abbreviation>
+      <isinactive>F</isinactive>
+      <value>Milímetros</value>
+    </customvalue>
+    <customvalue scriptid="val_sads_tesp_cedula">
+      <abbreviation></abbreviation>
+      <isinactive>F</isinactive>
+      <value>Cédula</value>
+    </customvalue>
+    <customvalue scriptid="val_sads_tesp_ptr">
+      <abbreviation></abbreviation>
+      <isinactive>F</isinactive>
+      <value>Pared de PTR</value>
+    </customvalue>
+  </customvalues>
+</customlist>

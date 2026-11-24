@@ -1,0 +1,54 @@
+<itemcustomfield scriptid="custitem9">
+  <accesslevel>2</accesslevel>
+  <aidescription></aidescription>
+  <appliestogroup>F</appliestogroup>
+  <appliestoinventory>T</appliestoinventory>
+  <appliestokit>F</appliestokit>
+  <appliestononinventory>F</appliestononinventory>
+  <appliestoothercharge>F</appliestoothercharge>
+  <appliestopricelist>F</appliestopricelist>
+  <appliestoservice>F</appliestoservice>
+  <appliestospecificitems>F</appliestospecificitems>
+  <appliestosubplan>F</appliestosubplan>
+  <applyformatting>T</applyformatting>
+  <checkspelling>F</checkspelling>
+  <currencysymbolfield></currencysymbolfield>
+  <defaultchecked>F</defaultchecked>
+  <defaultselection></defaultselection>
+  <defaultvalue>({custitem_cargofijo_flete}*{custitem_drt_ci_precio_teorico})+{custitem10}</defaultvalue>
+  <description>Sumatoria de Costos Porcentuales por Fletes y Costos Fijos por Fletes</description>
+  <displayheight></displayheight>
+  <displaytype>STATICTEXT</displaytype>
+  <displaywidth></displaywidth>
+  <dynamicdefault></dynamicdefault>
+  <enabletextenhance>F</enabletextenhance>
+  <encryptatrest>F</encryptatrest>
+  <fieldtype>CURRENCY</fieldtype>
+  <globalsearch>F</globalsearch>
+  <help>Este campo ejecuta la Sumatoria de Costos Porcentuales por Fletes y Costos Fijos por Fletes</help>
+  <includechilditems>F</includechilditems>
+  <isformula>T</isformula>
+  <ismandatory>F</ismandatory>
+  <ismhitemattribute>F</ismhitemattribute>
+  <isparent>F</isparent>
+  <itemmatrix>F</itemmatrix>
+  <itemsubtype>BOTH</itemsubtype>
+  <label>Total Fletes</label>
+  <linktext></linktext>
+  <maxlength></maxlength>
+  <maxvalue></maxvalue>
+  <minvalue></minvalue>
+  <onparentdelete></onparentdelete>
+  <parentsubtab></parentsubtab>
+  <searchcomparefield></searchcomparefield>
+  <searchdefault></searchdefault>
+  <searchlevel>2</searchlevel>
+  <selectrecordtype></selectrecordtype>
+  <showhierarchy>F</showhierarchy>
+  <showinlist>F</showinlist>
+  <sourcefilterby></sourcefilterby>
+  <sourcefrom></sourcefrom>
+  <sourcelist></sourcelist>
+  <storevalue>F</storevalue>
+  <subtab>ITEMMAIN</subtab>
+</itemcustomfield>

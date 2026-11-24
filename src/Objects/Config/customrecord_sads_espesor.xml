@@ -1,0 +1,572 @@
+<customrecordtype scriptid="customrecord_sads_espesor">
+  <accesstype>CUSTRECORDENTRYPERM</accesstype>
+  <aidescription></aidescription>
+  <allowattachments>T</allowattachments>
+  <allowinlinedeleting>F</allowinlinedeleting>
+  <allowinlinedetaching>T</allowinlinedetaching>
+  <allowinlineediting>F</allowinlineediting>
+  <allowmobileaccess>F</allowmobileaccess>
+  <allownumberingoverride>F</allownumberingoverride>
+  <allowquickadd>T</allowquickadd>
+  <allowquicksearch>F</allowquicksearch>
+  <allowuiaccess>T</allowuiaccess>
+  <customsegment></customsegment>
+  <description>Catálogo de espesores por tipo (fracción de pulgada, calibre, milímetros o cédula) que ofrece el Suitelet de creación de artículos.</description>
+  <enabledle>T</enabledle>
+  <enablekeywords>T</enablekeywords>
+  <enablemailmerge>F</enablemailmerge>
+  <enablenametranslation>F</enablenametranslation>
+  <enablenumbering>F</enablenumbering>
+  <enableoptimisticlocking>T</enableoptimisticlocking>
+  <enablesystemnotes>T</enablesystemnotes>
+  <hierarchical>F</hierarchical>
+  <icon></icon>
+  <iconbuiltin>T</iconbuiltin>
+  <iconindex></iconindex>
+  <includeinsearchmenu>T</includeinsearchmenu>
+  <includename>T</includename>
+  <isinactive>F</isinactive>
+  <isordered>F</isordered>
+  <numberinginit></numberinginit>
+  <numberingmindigits>2</numberingmindigits>
+  <numberingprefix></numberingprefix>
+  <numberingsuffix></numberingsuffix>
+  <recordname>SADS - Espesor</recordname>
+  <showcreationdate>T</showcreationdate>
+  <showcreationdateonlist>T</showcreationdateonlist>
+  <showid>T</showid>
+  <showlastmodified>T</showlastmodified>
+  <showlastmodifiedonlist>T</showlastmodifiedonlist>
+  <shownotes>T</shownotes>
+  <showowner>T</showowner>
+  <showownerallowchange>F</showownerallowchange>
+  <showowneronlist>T</showowneronlist>
+  <customrecordcustomfields>
+    <customrecordcustomfield scriptid="custrecord_sads_esp_tipo">
+      <accesslevel>2</accesslevel>
+      <aidescription></aidescription>
+      <allowquickadd>F</allowquickadd>
+      <applyformatting>F</applyformatting>
+      <checkspelling>F</checkspelling>
+      <defaultchecked>F</defaultchecked>
+      <defaultselection></defaultselection>
+      <defaultvalue></defaultvalue>
+      <description>Agrupa el catálogo; cada naturaleza ofrece los espesores de su tipo (RN3-01).</description>
+      <displayheight></displayheight>
+      <displaytype>NORMAL</displaytype>
+      <displaywidth></displaywidth>
+      <dynamicdefault></dynamicdefault>
+      <enabletextenhance>F</enabletextenhance>
+      <encryptatrest>F</encryptatrest>
+      <fieldtype>SELECT</fieldtype>
+      <globalsearch>F</globalsearch>
+      <help></help>
+      <isformula>F</isformula>
+      <ismandatory>T</ismandatory>
+      <isparent>F</isparent>
+      <label>Tipo de Espesor</label>
+      <linktext></linktext>
+      <maxlength></maxlength>
+      <maxvalue></maxvalue>
+      <minvalue></minvalue>
+      <onparentdelete>NO_ACTION</onparentdelete>
+      <parentsubtab></parentsubtab>
+      <rolerestrict>F</rolerestrict>
+      <searchcomparefield></searchcomparefield>
+      <searchdefault></searchdefault>
+      <searchlevel>2</searchlevel>
+      <selectrecordtype>[scriptid=customlist_sads_tipo_espesor]</selectrecordtype>
+      <showinlist>T</showinlist>
+      <sourcefilterby></sourcefilterby>
+      <sourcefrom></sourcefrom>
+      <sourcelist></sourcelist>
+      <storevalue>T</storevalue>
+      <subtab></subtab>
+    </customrecordcustomfield>
+    <customrecordcustomfield scriptid="custrecord_sads_esp_texto">
+      <accesslevel>2</accesslevel>
+      <aidescription></aidescription>
+      <allowquickadd>F</allowquickadd>
+      <applyformatting>F</applyformatting>
+      <checkspelling>F</checkspelling>
+      <defaultchecked>F</defaultchecked>
+      <defaultselection></defaultselection>
+      <defaultvalue></defaultvalue>
+      <description>Lo que escribe el marcador {id:texto} en el patrón de nombre (RN3-09).</description>
+      <displayheight></displayheight>
+      <displaytype>NORMAL</displaytype>
+      <displaywidth></displaywidth>
+      <dynamicdefault></dynamicdefault>
+      <enabletextenhance>F</enabletextenhance>
+      <encryptatrest>F</encryptatrest>
+      <fieldtype>TEXT</fieldtype>
+      <globalsearch>F</globalsearch>
+      <help>Ejemplos: 1/2&apos;&apos;, CAL 10, 10 MM, CED 40.</help>
+      <isformula>F</isformula>
+      <ismandatory>T</ismandatory>
+      <isparent>F</isparent>
+      <label>Texto para Nombre</label>
+      <linktext></linktext>
+      <maxlength>30</maxlength>
+      <maxvalue></maxvalue>
+      <minvalue></minvalue>
+      <onparentdelete></onparentdelete>
+      <parentsubtab></parentsubtab>
+      <rolerestrict>F</rolerestrict>
+      <searchcomparefield></searchcomparefield>
+      <searchdefault></searchdefault>
+      <searchlevel>2</searchlevel>
+      <selectrecordtype></selectrecordtype>
+      <showinlist>T</showinlist>
+      <sourcefilterby></sourcefilterby>
+      <sourcefrom></sourcefrom>
+      <sourcelist></sourcelist>
+      <storevalue>T</storevalue>
+      <subtab></subtab>
+    </customrecordcustomfield>
+    <customrecordcustomfield scriptid="custrecord_sads_esp_codigo">
+      <accesslevel>2</accesslevel>
+      <aidescription></aidescription>
+      <allowquickadd>F</allowquickadd>
+      <applyformatting>F</applyformatting>
+      <checkspelling>F</checkspelling>
+      <defaultchecked>F</defaultchecked>
+      <defaultselection></defaultselection>
+      <defaultvalue></defaultvalue>
+      <description>Lo que escribe el marcador {id:codigo} en el patrón de código (RN3-09). Único por tipo (RN3-03).</description>
+      <displayheight></displayheight>
+      <displaytype>NORMAL</displaytype>
+      <displaywidth></displaywidth>
+      <dynamicdefault></dynamicdefault>
+      <enabletextenhance>F</enabletextenhance>
+      <encryptatrest>F</encryptatrest>
+      <fieldtype>TEXT</fieldtype>
+      <globalsearch>F</globalsearch>
+      <help>Solo letras mayúsculas y dígitos. Ejemplos: 050, C10, 010, C40.</help>
+      <isformula>F</isformula>
+      <ismandatory>T</ismandatory>
+      <isparent>F</isparent>
+      <label>Segmento para Código</label>
+      <linktext></linktext>
+      <maxlength>10</maxlength>
+      <maxvalue></maxvalue>
+      <minvalue></minvalue>
+      <onparentdelete></onparentdelete>
+      <parentsubtab></parentsubtab>
+      <rolerestrict>F</rolerestrict>
+      <searchcomparefield></searchcomparefield>
+      <searchdefault></searchdefault>
+      <searchlevel>2</searchlevel>
+      <selectrecordtype></selectrecordtype>
+      <showinlist>T</showinlist>
+      <sourcefilterby></sourcefilterby>
+      <sourcefrom></sourcefrom>
+      <sourcelist></sourcelist>
+      <storevalue>T</storevalue>
+      <subtab></subtab>
+    </customrecordcustomfield>
+    <customrecordcustomfield scriptid="custrecord_sads_esp_orden">
+      <accesslevel>2</accesslevel>
+      <aidescription></aidescription>
+      <allowquickadd>F</allowquickadd>
+      <applyformatting>F</applyformatting>
+      <checkspelling>F</checkspelling>
+      <defaultchecked>F</defaultchecked>
+      <defaultselection></defaultselection>
+      <defaultvalue></defaultvalue>
+      <description>Grosor equivalente; define los rangos de familias de precio. Único por tipo (RN3-03).</description>
+      <displayheight></displayheight>
+      <displaytype>NORMAL</displaytype>
+      <displaywidth></displaywidth>
+      <dynamicdefault></dynamicdefault>
+      <enabletextenhance>F</enabletextenhance>
+      <encryptatrest>F</encryptatrest>
+      <fieldtype>FLOAT</fieldtype>
+      <globalsearch>F</globalsearch>
+      <help>Fracciones: pulgadas decimales (1/2 = 0.5). Milímetros: el número. Calibres: grosor nominal en mm. Cédulas: número de cédula.</help>
+      <isformula>F</isformula>
+      <ismandatory>T</ismandatory>
+      <isparent>F</isparent>
+      <label>Orden (grosor)</label>
+      <linktext></linktext>
+      <maxlength></maxlength>
+      <maxvalue></maxvalue>
+      <minvalue>.0001</minvalue>
+      <onparentdelete></onparentdelete>
+      <parentsubtab></parentsubtab>
+      <rolerestrict>F</rolerestrict>
+      <searchcomparefield></searchcomparefield>
+      <searchdefault></searchdefault>
+      <searchlevel>2</searchlevel>
+      <selectrecordtype></selectrecordtype>
+      <showinlist>T</showinlist>
+      <sourcefilterby></sourcefilterby>
+      <sourcefrom></sourcefrom>
+      <sourcelist></sourcelist>
+      <storevalue>T</storevalue>
+      <subtab></subtab>
+    </customrecordcustomfield>
+  </customrecordcustomfields>
+  <instances>
+    <instance scriptid="val_sads_esp_fr018">
+      <custrecord_sads_esp_codigo>018</custrecord_sads_esp_codigo>
+      <custrecord_sads_esp_orden>.18</custrecord_sads_esp_orden>
+      <custrecord_sads_esp_texto>3/16&quot;</custrecord_sads_esp_texto>
+      <custrecord_sads_esp_tipo>[scriptid=customlist_sads_tipo_espesor.val_sads_tesp_fraccion]</custrecord_sads_esp_tipo>
+      <isinactive>F</isinactive>
+      <name>3/16&quot;</name>
+    </instance>
+    <instance scriptid="val_sads_esp_fr062">
+      <custrecord_sads_esp_codigo>062</custrecord_sads_esp_codigo>
+      <custrecord_sads_esp_orden>.62</custrecord_sads_esp_orden>
+      <custrecord_sads_esp_texto>5/8&quot;</custrecord_sads_esp_texto>
+      <custrecord_sads_esp_tipo>[scriptid=customlist_sads_tipo_espesor.val_sads_tesp_fraccion]</custrecord_sads_esp_tipo>
+      <isinactive>F</isinactive>
+      <name>5/8&quot;</name>
+    </instance>
+    <instance scriptid="val_sads_esp_fr075">
+      <custrecord_sads_esp_codigo>075</custrecord_sads_esp_codigo>
+      <custrecord_sads_esp_orden>.75</custrecord_sads_esp_orden>
+      <custrecord_sads_esp_texto>3/4&quot;</custrecord_sads_esp_texto>
+      <custrecord_sads_esp_tipo>[scriptid=customlist_sads_tipo_espesor.val_sads_tesp_fraccion]</custrecord_sads_esp_tipo>
+      <isinactive>F</isinactive>
+      <name>3/4&quot;</name>
+    </instance>
+    <instance scriptid="val_sads_esp_fr200">
+      <custrecord_sads_esp_codigo>200</custrecord_sads_esp_codigo>
+      <custrecord_sads_esp_orden>2</custrecord_sads_esp_orden>
+      <custrecord_sads_esp_texto>2&quot;</custrecord_sads_esp_texto>
+      <custrecord_sads_esp_tipo>[scriptid=customlist_sads_tipo_espesor.val_sads_tesp_fraccion]</custrecord_sads_esp_tipo>
+      <isinactive>F</isinactive>
+      <name>2&quot;</name>
+    </instance>
+    <instance scriptid="val_sads_esp_fr025">
+      <custrecord_sads_esp_codigo>025</custrecord_sads_esp_codigo>
+      <custrecord_sads_esp_orden>.25</custrecord_sads_esp_orden>
+      <custrecord_sads_esp_texto>1/4&quot;</custrecord_sads_esp_texto>
+      <custrecord_sads_esp_tipo>[scriptid=customlist_sads_tipo_espesor.val_sads_tesp_fraccion]</custrecord_sads_esp_tipo>
+      <isinactive>F</isinactive>
+      <name>1/4&quot;</name>
+    </instance>
+    <instance scriptid="val_sads_esp_fr031">
+      <custrecord_sads_esp_codigo>031</custrecord_sads_esp_codigo>
+      <custrecord_sads_esp_orden>.31</custrecord_sads_esp_orden>
+      <custrecord_sads_esp_texto>5/16&quot;</custrecord_sads_esp_texto>
+      <custrecord_sads_esp_tipo>[scriptid=customlist_sads_tipo_espesor.val_sads_tesp_fraccion]</custrecord_sads_esp_tipo>
+      <isinactive>F</isinactive>
+      <name>5/16&quot;</name>
+    </instance>
+    <instance scriptid="val_sads_esp_fr037">
+      <custrecord_sads_esp_codigo>037</custrecord_sads_esp_codigo>
+      <custrecord_sads_esp_orden>.37</custrecord_sads_esp_orden>
+      <custrecord_sads_esp_texto>3/8&quot;</custrecord_sads_esp_texto>
+      <custrecord_sads_esp_tipo>[scriptid=customlist_sads_tipo_espesor.val_sads_tesp_fraccion]</custrecord_sads_esp_tipo>
+      <isinactive>F</isinactive>
+      <name>3/8&quot;</name>
+    </instance>
+    <instance scriptid="val_sads_esp_fr043">
+      <custrecord_sads_esp_codigo>043</custrecord_sads_esp_codigo>
+      <custrecord_sads_esp_orden>.43</custrecord_sads_esp_orden>
+      <custrecord_sads_esp_texto>7/16&quot;</custrecord_sads_esp_texto>
+      <custrecord_sads_esp_tipo>[scriptid=customlist_sads_tipo_espesor.val_sads_tesp_fraccion]</custrecord_sads_esp_tipo>
+      <isinactive>F</isinactive>
+      <name>7/16&quot;</name>
+    </instance>
+    <instance scriptid="val_sads_esp_fr050">
+      <custrecord_sads_esp_codigo>050</custrecord_sads_esp_codigo>
+      <custrecord_sads_esp_orden>.5</custrecord_sads_esp_orden>
+      <custrecord_sads_esp_texto>1/2&quot;</custrecord_sads_esp_texto>
+      <custrecord_sads_esp_tipo>[scriptid=customlist_sads_tipo_espesor.val_sads_tesp_fraccion]</custrecord_sads_esp_tipo>
+      <isinactive>F</isinactive>
+      <name>1/2&quot;</name>
+    </instance>
+    <instance scriptid="val_sads_esp_fr087">
+      <custrecord_sads_esp_codigo>087</custrecord_sads_esp_codigo>
+      <custrecord_sads_esp_orden>.87</custrecord_sads_esp_orden>
+      <custrecord_sads_esp_texto>7/8&quot;</custrecord_sads_esp_texto>
+      <custrecord_sads_esp_tipo>[scriptid=customlist_sads_tipo_espesor.val_sads_tesp_fraccion]</custrecord_sads_esp_tipo>
+      <isinactive>F</isinactive>
+      <name>7/8&quot;</name>
+    </instance>
+    <instance scriptid="val_sads_esp_fr100">
+      <custrecord_sads_esp_codigo>100</custrecord_sads_esp_codigo>
+      <custrecord_sads_esp_orden>1</custrecord_sads_esp_orden>
+      <custrecord_sads_esp_texto>1&quot;</custrecord_sads_esp_texto>
+      <custrecord_sads_esp_tipo>[scriptid=customlist_sads_tipo_espesor.val_sads_tesp_fraccion]</custrecord_sads_esp_tipo>
+      <isinactive>F</isinactive>
+      <name>1&quot;</name>
+    </instance>
+    <instance scriptid="val_sads_esp_fr125">
+      <custrecord_sads_esp_codigo>125</custrecord_sads_esp_codigo>
+      <custrecord_sads_esp_orden>1.25</custrecord_sads_esp_orden>
+      <custrecord_sads_esp_texto>1 1/4&quot;</custrecord_sads_esp_texto>
+      <custrecord_sads_esp_tipo>[scriptid=customlist_sads_tipo_espesor.val_sads_tesp_fraccion]</custrecord_sads_esp_tipo>
+      <isinactive>F</isinactive>
+      <name>1 1/4&quot;</name>
+    </instance>
+    <instance scriptid="val_sads_esp_fr150">
+      <custrecord_sads_esp_codigo>150</custrecord_sads_esp_codigo>
+      <custrecord_sads_esp_orden>1.5</custrecord_sads_esp_orden>
+      <custrecord_sads_esp_texto>1 1/2&quot;</custrecord_sads_esp_texto>
+      <custrecord_sads_esp_tipo>[scriptid=customlist_sads_tipo_espesor.val_sads_tesp_fraccion]</custrecord_sads_esp_tipo>
+      <isinactive>F</isinactive>
+      <name>1 1/2&quot;</name>
+    </instance>
+    <instance scriptid="val_sads_esp_fr175">
+      <custrecord_sads_esp_codigo>175</custrecord_sads_esp_codigo>
+      <custrecord_sads_esp_orden>1.75</custrecord_sads_esp_orden>
+      <custrecord_sads_esp_texto>1 3/4&quot;</custrecord_sads_esp_texto>
+      <custrecord_sads_esp_tipo>[scriptid=customlist_sads_tipo_espesor.val_sads_tesp_fraccion]</custrecord_sads_esp_tipo>
+      <isinactive>F</isinactive>
+      <name>1 3/4&quot;</name>
+    </instance>
+    <instance scriptid="val_sads_esp_ptr_c20">
+      <custrecord_sads_esp_codigo>C20</custrecord_sads_esp_codigo>
+      <custrecord_sads_esp_orden>.0359</custrecord_sads_esp_orden>
+      <custrecord_sads_esp_texto>Cal.20</custrecord_sads_esp_texto>
+      <custrecord_sads_esp_tipo>[scriptid=customlist_sads_tipo_espesor.val_sads_tesp_ptr]</custrecord_sads_esp_tipo>
+      <isinactive>F</isinactive>
+      <name>Cal.20</name>
+    </instance>
+    <instance scriptid="val_sads_esp_ptr_c18">
+      <custrecord_sads_esp_codigo>C18</custrecord_sads_esp_codigo>
+      <custrecord_sads_esp_orden>.0478</custrecord_sads_esp_orden>
+      <custrecord_sads_esp_texto>Cal.18</custrecord_sads_esp_texto>
+      <custrecord_sads_esp_tipo>[scriptid=customlist_sads_tipo_espesor.val_sads_tesp_ptr]</custrecord_sads_esp_tipo>
+      <isinactive>F</isinactive>
+      <name>Cal.18</name>
+    </instance>
+    <instance scriptid="val_sads_esp_ptr_c16">
+      <custrecord_sads_esp_codigo>C16</custrecord_sads_esp_codigo>
+      <custrecord_sads_esp_orden>.0598</custrecord_sads_esp_orden>
+      <custrecord_sads_esp_texto>Cal.16</custrecord_sads_esp_texto>
+      <custrecord_sads_esp_tipo>[scriptid=customlist_sads_tipo_espesor.val_sads_tesp_ptr]</custrecord_sads_esp_tipo>
+      <isinactive>F</isinactive>
+      <name>Cal.16</name>
+    </instance>
+    <instance scriptid="val_sads_esp_ptr_c14">
+      <custrecord_sads_esp_codigo>C14</custrecord_sads_esp_codigo>
+      <custrecord_sads_esp_orden>.0747</custrecord_sads_esp_orden>
+      <custrecord_sads_esp_texto>Cal.14</custrecord_sads_esp_texto>
+      <custrecord_sads_esp_tipo>[scriptid=customlist_sads_tipo_espesor.val_sads_tesp_ptr]</custrecord_sads_esp_tipo>
+      <isinactive>F</isinactive>
+      <name>Cal.14</name>
+    </instance>
+    <instance scriptid="val_sads_esp_ptr_c12">
+      <custrecord_sads_esp_codigo>C12</custrecord_sads_esp_codigo>
+      <custrecord_sads_esp_orden>.1046</custrecord_sads_esp_orden>
+      <custrecord_sads_esp_texto>Cal.12</custrecord_sads_esp_texto>
+      <custrecord_sads_esp_tipo>[scriptid=customlist_sads_tipo_espesor.val_sads_tesp_ptr]</custrecord_sads_esp_tipo>
+      <isinactive>F</isinactive>
+      <name>Cal.12</name>
+    </instance>
+    <instance scriptid="val_sads_esp_ptr_c11">
+      <custrecord_sads_esp_codigo>C11</custrecord_sads_esp_codigo>
+      <custrecord_sads_esp_orden>.1196</custrecord_sads_esp_orden>
+      <custrecord_sads_esp_texto>Cal.11</custrecord_sads_esp_texto>
+      <custrecord_sads_esp_tipo>[scriptid=customlist_sads_tipo_espesor.val_sads_tesp_ptr]</custrecord_sads_esp_tipo>
+      <isinactive>F</isinactive>
+      <name>Cal.11</name>
+    </instance>
+    <instance scriptid="val_sads_esp_ptr_c10">
+      <custrecord_sads_esp_codigo>C10</custrecord_sads_esp_codigo>
+      <custrecord_sads_esp_orden>.1345</custrecord_sads_esp_orden>
+      <custrecord_sads_esp_texto>Cal.10</custrecord_sads_esp_texto>
+      <custrecord_sads_esp_tipo>[scriptid=customlist_sads_tipo_espesor.val_sads_tesp_ptr]</custrecord_sads_esp_tipo>
+      <isinactive>F</isinactive>
+      <name>Cal.10</name>
+    </instance>
+    <instance scriptid="val_sads_esp_ptr_c09">
+      <custrecord_sads_esp_codigo>C09</custrecord_sads_esp_codigo>
+      <custrecord_sads_esp_orden>.1495</custrecord_sads_esp_orden>
+      <custrecord_sads_esp_texto>Cal.09</custrecord_sads_esp_texto>
+      <custrecord_sads_esp_tipo>[scriptid=customlist_sads_tipo_espesor.val_sads_tesp_ptr]</custrecord_sads_esp_tipo>
+      <isinactive>F</isinactive>
+      <name>Cal.09</name>
+    </instance>
+    <instance scriptid="val_sads_esp_ptr_c07">
+      <custrecord_sads_esp_codigo>C07</custrecord_sads_esp_codigo>
+      <custrecord_sads_esp_orden>.1793</custrecord_sads_esp_orden>
+      <custrecord_sads_esp_texto>Cal.07</custrecord_sads_esp_texto>
+      <custrecord_sads_esp_tipo>[scriptid=customlist_sads_tipo_espesor.val_sads_tesp_ptr]</custrecord_sads_esp_tipo>
+      <isinactive>F</isinactive>
+      <name>Cal.07</name>
+    </instance>
+    <instance scriptid="val_sads_esp_ptr_e18">
+      <custrecord_sads_esp_codigo>E18</custrecord_sads_esp_codigo>
+      <custrecord_sads_esp_orden>.1875</custrecord_sads_esp_orden>
+      <custrecord_sads_esp_texto>3/16&apos;&apos;</custrecord_sads_esp_texto>
+      <custrecord_sads_esp_tipo>[scriptid=customlist_sads_tipo_espesor.val_sads_tesp_ptr]</custrecord_sads_esp_tipo>
+      <isinactive>F</isinactive>
+      <name>3/16&quot; - E18</name>
+    </instance>
+    <instance scriptid="val_sads_esp_ptr_e25">
+      <custrecord_sads_esp_codigo>E25</custrecord_sads_esp_codigo>
+      <custrecord_sads_esp_orden>.25</custrecord_sads_esp_orden>
+      <custrecord_sads_esp_texto>1/4&apos;&apos;</custrecord_sads_esp_texto>
+      <custrecord_sads_esp_tipo>[scriptid=customlist_sads_tipo_espesor.val_sads_tesp_ptr]</custrecord_sads_esp_tipo>
+      <isinactive>F</isinactive>
+      <name>1/4&quot; - E25</name>
+    </instance>
+    <instance scriptid="val_sads_esp_ptr_e31">
+      <custrecord_sads_esp_codigo>E31</custrecord_sads_esp_codigo>
+      <custrecord_sads_esp_orden>.3125</custrecord_sads_esp_orden>
+      <custrecord_sads_esp_texto>5/16&apos;&apos;</custrecord_sads_esp_texto>
+      <custrecord_sads_esp_tipo>[scriptid=customlist_sads_tipo_espesor.val_sads_tesp_ptr]</custrecord_sads_esp_tipo>
+      <isinactive>F</isinactive>
+      <name>5/16&quot; - E31</name>
+    </instance>
+    <instance scriptid="val_sads_esp_ptr_e37">
+      <custrecord_sads_esp_codigo>E37</custrecord_sads_esp_codigo>
+      <custrecord_sads_esp_orden>.375</custrecord_sads_esp_orden>
+      <custrecord_sads_esp_texto>3/8&apos;&apos;</custrecord_sads_esp_texto>
+      <custrecord_sads_esp_tipo>[scriptid=customlist_sads_tipo_espesor.val_sads_tesp_ptr]</custrecord_sads_esp_tipo>
+      <isinactive>F</isinactive>
+      <name>3/8&quot; - E37</name>
+    </instance>
+    <instance scriptid="val_sads_esp_ptr_e50">
+      <custrecord_sads_esp_codigo>E50</custrecord_sads_esp_codigo>
+      <custrecord_sads_esp_orden>.5</custrecord_sads_esp_orden>
+      <custrecord_sads_esp_texto>1/2&apos;&apos;</custrecord_sads_esp_texto>
+      <custrecord_sads_esp_tipo>[scriptid=customlist_sads_tipo_espesor.val_sads_tesp_ptr]</custrecord_sads_esp_tipo>
+      <isinactive>F</isinactive>
+      <name>1/2&quot; - E50</name>
+    </instance>
+    <instance scriptid="val_sads_esp_ptr_e12">
+      <custrecord_sads_esp_codigo>E12</custrecord_sads_esp_codigo>
+      <custrecord_sads_esp_orden>.125</custrecord_sads_esp_orden>
+      <custrecord_sads_esp_texto>1/8&apos;&apos;</custrecord_sads_esp_texto>
+      <custrecord_sads_esp_tipo>[scriptid=customlist_sads_tipo_espesor.val_sads_tesp_ptr]</custrecord_sads_esp_tipo>
+      <isinactive>F</isinactive>
+      <name>1/8&quot; - E12</name>
+    </instance>
+    <instance scriptid="val_sads_esp_lne_c07">
+      <custrecord_sads_esp_codigo>C07</custrecord_sads_esp_codigo>
+      <custrecord_sads_esp_orden>.1793</custrecord_sads_esp_orden>
+      <custrecord_sads_esp_texto>Cal.07</custrecord_sads_esp_texto>
+      <custrecord_sads_esp_tipo>[scriptid=customlist_sads_tipo_espesor.val_sads_tesp_calibre]</custrecord_sads_esp_tipo>
+      <isinactive>F</isinactive>
+      <name>Cal.07 - LNE</name>
+    </instance>
+    <instance scriptid="val_sads_esp_lne_c08">
+      <custrecord_sads_esp_codigo>C08</custrecord_sads_esp_codigo>
+      <custrecord_sads_esp_orden>.1644</custrecord_sads_esp_orden>
+      <custrecord_sads_esp_texto>Cal.08</custrecord_sads_esp_texto>
+      <custrecord_sads_esp_tipo>[scriptid=customlist_sads_tipo_espesor.val_sads_tesp_calibre]</custrecord_sads_esp_tipo>
+      <isinactive>F</isinactive>
+      <name>Cal.08 - LNE</name>
+    </instance>
+    <instance scriptid="val_sads_esp_lne_c09">
+      <custrecord_sads_esp_codigo>C09</custrecord_sads_esp_codigo>
+      <custrecord_sads_esp_orden>.1495</custrecord_sads_esp_orden>
+      <custrecord_sads_esp_texto>Cal.09</custrecord_sads_esp_texto>
+      <custrecord_sads_esp_tipo>[scriptid=customlist_sads_tipo_espesor.val_sads_tesp_calibre]</custrecord_sads_esp_tipo>
+      <isinactive>F</isinactive>
+      <name>Cal.09 - LNE</name>
+    </instance>
+    <instance scriptid="val_sads_esp_lne_c10">
+      <custrecord_sads_esp_codigo>C10</custrecord_sads_esp_codigo>
+      <custrecord_sads_esp_orden>.1345</custrecord_sads_esp_orden>
+      <custrecord_sads_esp_texto>Cal.10</custrecord_sads_esp_texto>
+      <custrecord_sads_esp_tipo>[scriptid=customlist_sads_tipo_espesor.val_sads_tesp_calibre]</custrecord_sads_esp_tipo>
+      <isinactive>F</isinactive>
+      <name>Cal.10 - LNE</name>
+    </instance>
+    <instance scriptid="val_sads_esp_lne_c11">
+      <custrecord_sads_esp_codigo>C11</custrecord_sads_esp_codigo>
+      <custrecord_sads_esp_orden>.1196</custrecord_sads_esp_orden>
+      <custrecord_sads_esp_texto>Cal.11</custrecord_sads_esp_texto>
+      <custrecord_sads_esp_tipo>[scriptid=customlist_sads_tipo_espesor.val_sads_tesp_calibre]</custrecord_sads_esp_tipo>
+      <isinactive>F</isinactive>
+      <name>Cal.11 - LNE</name>
+    </instance>
+    <instance scriptid="val_sads_esp_lne_c12">
+      <custrecord_sads_esp_codigo>C12</custrecord_sads_esp_codigo>
+      <custrecord_sads_esp_orden>.1046</custrecord_sads_esp_orden>
+      <custrecord_sads_esp_texto>Cal.12</custrecord_sads_esp_texto>
+      <custrecord_sads_esp_tipo>[scriptid=customlist_sads_tipo_espesor.val_sads_tesp_calibre]</custrecord_sads_esp_tipo>
+      <isinactive>F</isinactive>
+      <name>Cal.12 - LNE</name>
+    </instance>
+    <instance scriptid="val_sads_esp_lne_c13">
+      <custrecord_sads_esp_codigo>C13</custrecord_sads_esp_codigo>
+      <custrecord_sads_esp_orden>.0897</custrecord_sads_esp_orden>
+      <custrecord_sads_esp_texto>Cal.13</custrecord_sads_esp_texto>
+      <custrecord_sads_esp_tipo>[scriptid=customlist_sads_tipo_espesor.val_sads_tesp_calibre]</custrecord_sads_esp_tipo>
+      <isinactive>F</isinactive>
+      <name>Cal.13 - LNE</name>
+    </instance>
+    <instance scriptid="val_sads_esp_lne_c14">
+      <custrecord_sads_esp_codigo>C14</custrecord_sads_esp_codigo>
+      <custrecord_sads_esp_orden>.0747</custrecord_sads_esp_orden>
+      <custrecord_sads_esp_texto>Cal.14</custrecord_sads_esp_texto>
+      <custrecord_sads_esp_tipo>[scriptid=customlist_sads_tipo_espesor.val_sads_tesp_calibre]</custrecord_sads_esp_tipo>
+      <isinactive>F</isinactive>
+      <name>Cal.14 - LNE</name>
+    </instance>
+    <instance scriptid="val_sads_esp_lne_c15">
+      <custrecord_sads_esp_codigo>C15</custrecord_sads_esp_codigo>
+      <custrecord_sads_esp_orden>.0673</custrecord_sads_esp_orden>
+      <custrecord_sads_esp_texto>Cal.15</custrecord_sads_esp_texto>
+      <custrecord_sads_esp_tipo>[scriptid=customlist_sads_tipo_espesor.val_sads_tesp_calibre]</custrecord_sads_esp_tipo>
+      <isinactive>F</isinactive>
+      <name>Cal.15 - LNE</name>
+    </instance>
+    <instance scriptid="val_sads_esp_lne_c16">
+      <custrecord_sads_esp_codigo>C16</custrecord_sads_esp_codigo>
+      <custrecord_sads_esp_orden>.0598</custrecord_sads_esp_orden>
+      <custrecord_sads_esp_texto>Cal.16</custrecord_sads_esp_texto>
+      <custrecord_sads_esp_tipo>[scriptid=customlist_sads_tipo_espesor.val_sads_tesp_calibre]</custrecord_sads_esp_tipo>
+      <isinactive>F</isinactive>
+      <name>Cal.16 - LNE</name>
+    </instance>
+    <instance scriptid="val_sads_esp_lne_c18">
+      <custrecord_sads_esp_codigo>C18</custrecord_sads_esp_codigo>
+      <custrecord_sads_esp_orden>.0478</custrecord_sads_esp_orden>
+      <custrecord_sads_esp_texto>Cal.18</custrecord_sads_esp_texto>
+      <custrecord_sads_esp_tipo>[scriptid=customlist_sads_tipo_espesor.val_sads_tesp_calibre]</custrecord_sads_esp_tipo>
+      <isinactive>F</isinactive>
+      <name>Cal.18 - LNE</name>
+    </instance>
+    <instance scriptid="val_sads_esp_lne_c20">
+      <custrecord_sads_esp_codigo>C20</custrecord_sads_esp_codigo>
+      <custrecord_sads_esp_orden>.0359</custrecord_sads_esp_orden>
+      <custrecord_sads_esp_texto>Cal.20</custrecord_sads_esp_texto>
+      <custrecord_sads_esp_tipo>[scriptid=customlist_sads_tipo_espesor.val_sads_tesp_calibre]</custrecord_sads_esp_tipo>
+      <isinactive>F</isinactive>
+      <name>Cal.20 - LNE</name>
+    </instance>
+    <instance scriptid="val_sads_esp_lne_c22">
+      <custrecord_sads_esp_codigo>C22</custrecord_sads_esp_codigo>
+      <custrecord_sads_esp_orden>.0299</custrecord_sads_esp_orden>
+      <custrecord_sads_esp_texto>Cal.22</custrecord_sads_esp_texto>
+      <custrecord_sads_esp_tipo>[scriptid=customlist_sads_tipo_espesor.val_sads_tesp_calibre]</custrecord_sads_esp_tipo>
+      <isinactive>F</isinactive>
+      <name>Cal.22 - LNE</name>
+    </instance>
+    <instance scriptid="val_sads_esp_lne_c24">
+      <custrecord_sads_esp_codigo>C24</custrecord_sads_esp_codigo>
+      <custrecord_sads_esp_orden>.0239</custrecord_sads_esp_orden>
+      <custrecord_sads_esp_texto>Cal.24</custrecord_sads_esp_texto>
+      <custrecord_sads_esp_tipo>[scriptid=customlist_sads_tipo_espesor.val_sads_tesp_calibre]</custrecord_sads_esp_tipo>
+      <isinactive>F</isinactive>
+      <name>Cal.24 - LNE</name>
+    </instance>
+    <instance scriptid="val_sads_esp_lne_c26">
+      <custrecord_sads_esp_codigo>C26</custrecord_sads_esp_codigo>
+      <custrecord_sads_esp_orden>.0179</custrecord_sads_esp_orden>
+      <custrecord_sads_esp_texto>Cal.26</custrecord_sads_esp_texto>
+      <custrecord_sads_esp_tipo>[scriptid=customlist_sads_tipo_espesor.val_sads_tesp_calibre]</custrecord_sads_esp_tipo>
+      <isinactive>F</isinactive>
+      <name>Cal.26 - LNE</name>
+    </instance>
+    <instance scriptid="val_sads_esp_lne_c28">
+      <custrecord_sads_esp_codigo>C28</custrecord_sads_esp_codigo>
+      <custrecord_sads_esp_orden>.0149</custrecord_sads_esp_orden>
+      <custrecord_sads_esp_texto>Cal.28</custrecord_sads_esp_texto>
+      <custrecord_sads_esp_tipo>[scriptid=customlist_sads_tipo_espesor.val_sads_tesp_calibre]</custrecord_sads_esp_tipo>
+      <isinactive>F</isinactive>
+      <name>Cal.28 - LNE</name>
+    </instance>
+  </instances>
+</customrecordtype>
