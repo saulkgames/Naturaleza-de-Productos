@@ -1,0 +1,9 @@
+Nombre,Tipo de Espesor,Texto para Nombre,Segmento para Código,Orden (grosor)
+"1/8"" - HSS",Pared de HSS,"1/8""",E12,0.125
+"3/16"" - HSS",Pared de HSS,"3/16""",E18,0.1875
+"1/4"" - HSS",Pared de HSS,"1/4""",E25,0.25
+"5/16"" - HSS",Pared de HSS,"5/16""",E31,0.3125
+"3/8"" - HSS",Pared de HSS,"3/8""",E37,0.375
+"1/2"" - HSS",Pared de HSS,"1/2""",E50,0.5
+"5/8"" - HSS",Pared de HSS,"5/8""",E62,0.625
+"3/4"" - HSS",Pared de HSS,"3/4""",E75,0.75
