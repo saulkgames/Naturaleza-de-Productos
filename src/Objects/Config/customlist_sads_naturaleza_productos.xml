@@ -5,6 +5,11 @@
   <isordered>T</isordered>
   <name>Naturalezas de Productos</name>
   <customvalues>
+    <customvalue scriptid="1">
+      <abbreviation>P</abbreviation>
+      <isinactive>F</isinactive>
+      <value>Placas de Acero</value>
+    </customvalue>
     <customvalue scriptid="val_sads_natlist_pla36">
       <abbreviation>P</abbreviation>
       <isinactive>F</isinactive>
@@ -20,20 +25,25 @@
       <isinactive>F</isinactive>
       <value>Perfiles Tubulares Redondos</value>
     </customvalue>
-    <customvalue scriptid="val_sads_natlist_mpptrc">
-      <abbreviation></abbreviation>
-      <isinactive>F</isinactive>
-      <value>Perfiles Tubulares Cuadrados Media Pieza</value>
-    </customvalue>
     <customvalue scriptid="val_sads_natlist_mpptrr">
       <abbreviation></abbreviation>
       <isinactive>F</isinactive>
       <value>Perfiles Tubulares Rectangulares Media Pieza</value>
     </customvalue>
+    <customvalue scriptid="val_sads_natlist_mpptrc">
+      <abbreviation></abbreviation>
+      <isinactive>F</isinactive>
+      <value>Perfiles Tubulares Cuadrados Media Pieza</value>
+    </customvalue>
     <customvalue scriptid="val_sads_natlist_lne">
       <abbreviation></abbreviation>
       <isinactive>F</isinactive>
       <value>Lamina Negra</value>
+    </customvalue>
+    <customvalue scriptid="val_9238736_5490848_810">
+      <abbreviation></abbreviation>
+      <isinactive>F</isinactive>
+      <value>HSS</value>
     </customvalue>
   </customvalues>
 </customlist>
