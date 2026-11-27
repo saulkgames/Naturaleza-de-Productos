@@ -20,6 +20,14 @@
 | `project:deploy` ejecuta Jest; la prueba de portabilidad rechaza scriptids propios de la forma `val_<n>_<cuenta>`. | `suitecloud.config.js`; `__tests__/SADS_objetos_portables.test.js:92` | Los objetos creados en la interfaz con scriptid generado bloquean el deploy hasta tratarlos en el repositorio. |
 | Un deploy sobrescribe los JS del File Cabinet y las instancias que vienen en los XML. | `AGENTS.md` §10 | Si el repositorio no tiene `centesimas4` o trae XML viejos, un deploy rompe HSS o borra las familias de corte capturadas en la interfaz. |
 
+## 1.1 Estado sincronizado de producción (commit `16d0b3e`, 2026-11-27)
+| Hecho | Efecto en este plan |
+|---|---|
+| La lista de naturalezas ya tiene el valor "HSS" con scriptid generado `val_9238736_5490848_810`. | B.2 está hecho; no crear otro valor. La configuración usa "HSS" en "Naturalezas de Productos". Confirma que la interfaz asigna scriptids generados (R-M3). |
+| La lista tiene un segundo valor "Placas de Acero" con scriptid `1` (numérico), además de `val_sads_natlist_pla36`. | Riesgo R-M8. No usarlo para HSS. |
+| Placas de Acero tiene una 11.ª familia de corte, `customlist_familias_de_corte.val_9225208_5490848_865`, que no está en `src/Objects/Terceros/customlist_familias_de_corte.xml` ni en la prueba de portabilidad. | Se resuelve en la Fase D. |
+| `npx jest`: 3 pruebas de `SADS_objetos_portables.test.js` fallan (672 de 675 aprobadas) por los tres puntos anteriores. | `project:deploy` ejecuta Jest y hoy queda bloqueado desde esta rama. Es una protección: no saltarla. Se corrige en la Fase D. |
+
 ## 2. Regla de seguridad
 Queda prohibido ejecutar `suitecloud project:deploy` contra producción desde el inicio de la Fase A hasta cerrar la Fase D.
 Registrar esta prohibición en el canal del equipo y en `README.md` §7.
@@ -50,7 +58,7 @@ Reversión: volver a subir los archivos de 0.1.
 | # | Objeto | Dónde | Valores |
 |---|---|---|---|
 | B.1 | Valor "Pared de HSS" | Personalización → Listas → SADS - Tipo de Espesor | Si la pantalla permite capturar el ID de script, usar `val_sads_tesp_hss`; si no, anotar el que asigne NetSuite. |
-| B.2 | Valor "Perfiles Estructurales Huecos (HSS)" | Lista de naturalezas (`customlist_sads_naturaleza_productos`) | ID de script `val_sads_natlist_hss` si se permite; si no, anotarlo. |
+| B.2 | Valor "HSS" | Lista de naturalezas (`customlist_sads_naturaleza_productos`) | Ya existe en producción (`val_9238736_5490848_810`). Sin acción. |
 | B.3 | 8 espesores | Configuración → Importar/Exportar → Importar registros CSV → Registros personalizados → SADS - Espesor; manejo "Agregar" | `docs/importacion/2026-11-27_hss_espesores.csv`. Mapear las 5 columnas por nombre. "Tipo de Espesor" se resuelve por nombre. |
 | B.4 | Configuración HSS, marcada como inactiva | Nuevo registro SADS - Naturaleza de Productos | Tabla 5.1 |
 | B.5 | 2 líneas de familia | Sublista de líneas de familia de la configuración | Tabla 5.2 |
@@ -61,7 +69,7 @@ Reversión: volver a subir los archivos de 0.1.
 | Campo (etiqueta) | Valor |
 |---|---|
 | Nombre | Perfiles Estructurales Huecos (HSS) |
-| Naturalezas de Productos | Perfiles Estructurales Huecos (HSS) |
+| Naturalezas de Productos | HSS |
 | Configuración de Campos Obligatorios | `["custitem_sads_nat_ptr_lado","custitem_sads_nat_ptr_lado_b","custitem_sads_nat_ptr_largo","custitem_sads_nat_espesor"]` |
 | Artículo Plantilla (ID interno) | 41233 |
 | Patrón de Código | `HSS{custitem_sads_nat_ptr_lado:entero2}{custitem_sads_nat_ptr_lado_b:entero2}{custitem_sads_nat_espesor:codigo}{custitem_sads_nat_ptr_largo:centesimas4}` |
@@ -96,7 +104,7 @@ Cierra el riesgo de un deploy con objetos desactualizados.
 | # | Acción | Control |
 |---|---|---|
 | D.1 | Con la CLI autenticada en producción, actualizar desde la cuenta (`suitecloud object:update` con instancias; confirmar la opción con `--help`) `customrecord_sads_naturaleza_productos`, `customrecord_sads_nat_familia`, `customrecord_sads_espesor`, `customlist_sads_naturaleza_productos` y `customlist_sads_tipo_espesor`. | El diff trae HSS y las familias de corte capturadas en la interfaz de todas las naturalezas. |
-| D.2 | Si aparecen scriptids `val_<n>_<cuenta>` en objetos propios, la prueba de portabilidad falla. Decidir: excepción documentada en la prueba o renombrado no posible (SDF no renombra scriptids). | Decisión registrada en README; no forzar deploy. |
+| D.2 | Resolver las fallas de portabilidad: scriptids generados (`val_9238736_5490848_810`, "Pared de HSS", espesores, configuración y líneas HSS), el valor numérico `1` de la lista y la familia de corte `val_9225208_5490848_865`. Opciones: excepción documentada en la prueba (SDF no renombra scriptids) y agregar la familia de corte a `Terceros/customlist_familias_de_corte.xml`. | Decisión registrada en README; `npx jest` verde; no forzar deploy. |
 | D.3 | Agregar las 3 dependencias DRT a `src/manifest.xml` y a `__tests__/SADS_objetos_portables.test.js`. | Prueba verde. |
 | D.4 | Agregar `__tests__/SADS_naturaleza_hss.test.js` que lea los XML sincronizados y verifique las 71 filas (tabla del prompt v2). | Prueba verde. |
 | D.5 | Actualizar README (conteos, HSS, decisión del formato, fin de la prohibición de deploy) y AGENTS.md. | `npx jest` completo verde; commit. |
@@ -112,6 +120,7 @@ Solo después de D.5 se puede volver a desplegar con SDF.
 | R-M5 | vendorname de 10717 y 41233 puede conservar el código con `E050`. | D-19: vendorname guarda el código; su valor actual no está en el listado. | Búsquedas por proveedor con el código viejo. | Revisar en 0.8; corregir a mano si aplica. |
 | R-M6 | El JS de producción puede diferir del repositorio. | El repositorio no registra el commit desplegado (README §7.2). | Reemplazar archivos revierte cambios de producción. | Comparación A.2 antes de subir. |
 | R-M7 | La configuración queda activa sin familias de corte. | RN6-02. | El Suitelet no crea HSS. | B.6 antes de B.7. |
+| R-M8 | La lista de naturalezas tiene dos valores "Placas de Acero" (scriptid `1` y `val_sads_natlist_pla36`). | XML sincronizado en `16d0b3e`. | Una configuración o reporte puede apuntar al valor equivocado; la prueba de portabilidad falla por el scriptid numérico. | Verificar en producción qué registros usan el valor `1`; si ninguno, inactivarlo (no borrar). |
 
 ## 9. Archivos de importación
 | Archivo | Registro | Filas | Columnas |
@@ -125,8 +134,8 @@ Codificación UTF-8, separador coma, comillas dobles escapadas (`"1/4"" - HSS"`)
 Supuestos:
 1. Los 71 HSS son artículos de inventario (verificar en 0.5).
 2. Los valores de "Familias de Corte" HSS existen (verificar en 0.7).
-3. La interfaz puede no permitir capturar el ID de script de valores de lista e instancias de registro personalizado (verificar en B.1).
+3. La interfaz asigna scriptids generados a los valores de lista: confirmado con el valor "HSS" (`val_9238736_5490848_810`). Se supone igual para instancias de registro personalizado.
 4. Las etiquetas de los campos en la cuenta coinciden con las del repositorio; si no, mapear por la etiqueta real.
-Fuentes: búsqueda guardada 4978 (2026-11-26); plan v4; prompt v2; XML y scripts del repositorio citados en la sección 1.
+Fuentes: búsqueda guardada 4978 (2026-11-26); XML sincronizado de producción (commit `16d0b3e`); `npx jest` del 2026-11-27; plan v4; prompt v2; XML y scripts del repositorio citados en la sección 1.
 Verificación de los CSV: generados con script desde la búsqueda 4978; 8, 6 y 71 filas; IDs únicos; 10671 excluido; los 71 códigos coinciden con la tabla del prompt v2.
 Límite: ningún dato de la cuenta se verificó desde esta sesión (sin conector NetSuite).
