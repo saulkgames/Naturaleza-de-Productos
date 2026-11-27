@@ -1,8 +1,10 @@
 # Tarea: Naturaleza Perfiles Estructurales Huecos (HSS)
 
+Versión del prompt: v2 (2026-11-27). Cambio respecto de v1: se incluye la validación lado A ≥ lado B (RN-HSS-04).
+
 ## Rol
 Eres un desarrollador senior de SuiteScript 2.1 y SuiteCloud SDF.
-Implementas exactamente el diseño aprobado `planes/2026-11-26_hss_plan_v3.md`.
+Implementas exactamente el diseño aprobado `planes/2026-11-26_hss_plan_v4.md`.
 No cambies reglas de negocio, scriptids ni IDs internos.
 Si detectas una contradicción o un dato faltante, detente y repórtalo en lugar de suponer.
 
@@ -18,6 +20,7 @@ Si detectas una contradicción o un dato faltante, detente y repórtalo en lugar
 | Archivo | Cambio |
 |---|---|
 | `src/FileCabinet/SuiteScripts/SADS_Naturaleza_Productos/domain/SADS_naturaleza_patron.js` | Formato `centesimas4` |
+| `src/FileCabinet/SuiteScripts/SADS_Naturaleza_Productos/SADS_SL_crear_articulo_nat.js` | Un par nuevo en `PARES_DE_LADOS` (RN-HSS-04) |
 | `src/Objects/Config/customlist_sads_naturaleza_productos.xml` | Valor `val_sads_natlist_hss` |
 | `src/Objects/Config/customlist_sads_tipo_espesor.xml` | Valor `val_sads_tesp_hss` |
 | `src/Objects/Config/customrecord_sads_espesor.xml` | 8 instancias `val_sads_esp_hss_*` |
@@ -27,6 +30,7 @@ Si detectas una contradicción o un dato faltante, detente y repórtalo en lugar
 | `__tests__/SADS_naturaleza_patron.test.js` | Casos de `centesimas4`; actualizar lista de formatos y mensajes de "Formatos válidos" |
 | `__tests__/SADS_naturaleza_hss.test.js` | Suite nueva (modelo: `__tests__/SADS_naturaleza_lne.test.js`) |
 | `__tests__/SADS_objetos_portables.test.js` | 3 scriptids DRT nuevos en la lista verificada |
+| `__tests__/SADS_SL_crear_articulo_nat.test.js` | Casos P-13 a P-15 (modelo: prueba D-18 existente) |
 | `docs/importacion/2026-11-26_hss_actualizacion_articulos.csv` | CSV para actualizar 71 artículos existentes |
 | `planes/prompt_patrones_codigo_nombre.md` | Fila de `centesimas4` en la tabla de formatos |
 | `README.md`, `AGENTS.md`, `docs/Naturaleza_de_Productos_Guia_Funcional.md`, `SADS_SL_crear_articulo_nat.md` | Conteos, naturaleza HSS, decisión del formato nuevo |
@@ -34,7 +38,7 @@ Si detectas una contradicción o un dato faltante, detente y repórtalo en lugar
 No crees scripts, capas, puertos ni archivos fuera de esta lista.
 
 ## Arquitectura
-Nivel 1 vigente. El único cambio de código es un formateador agregado a la tabla `FORMATEADORES` de `domain/SADS_naturaleza_patron.js`, que ya actúa como Strategy. El dominio no importa `N/`.
+Nivel 1 vigente. Hay dos cambios de código: un formateador agregado a la tabla `FORMATEADORES` de `domain/SADS_naturaleza_patron.js`, que ya actúa como Strategy, y un par en la constante `PARES_DE_LADOS` del Suitelet. La regla de orden ya existe en el dominio (`parametros.validarOrdenDeLados`, D-18); no se agrega lógica nueva. El dominio no importa `N/`.
 `SADS_UE_naturaleza_config.js` y el Suitelet usan el mismo módulo; reconocen `centesimas4` sin cambios propios. Confírmalo con Grep; si alguno tiene una lista de formatos propia, repórtalo.
 
 ## Especificación: formato `centesimas4`
@@ -48,6 +52,19 @@ Nivel 1 vigente. El único cambio de código es un formateador agregado a la tab
 | Diferencia con `centesimas3` | No trunca: rechaza |
 | Documentación | Comentario JSDoc de `FORMATOS` con la nueva decisión (siguiente ID D-xx libre del README) |
 El orden de `FORMATOS_VALIDOS` cambia el texto "Formatos válidos: …"; agrega `centesimas4` después de `centesimas3` y actualiza las pruebas que comparan ese texto.
+
+## Especificación: validación de lados (RN-HSS-04)
+| Atributo | Regla |
+|---|---|
+| Archivo | `SADS_SL_crear_articulo_nat.js`, constante `PARES_DE_LADOS` (cerca de la línea 66; confirmar con Grep) |
+| Cambio | Agregar, congelado como el par de placas, `{ menor: 'custitem_sads_nat_ptr_lado_b', mayor: 'custitem_sads_nat_ptr_lado' }` |
+| Mecanismo existente | `validarFormatosDeCaptura` filtra los pares cuyos dos IDs están en la configuración y llama a `parametros.validarOrdenDeLados` (D-18). No modificar esas funciones |
+| Efecto en HSS | Lado B > lado A repite el paso 2 con el mensaje de orden de lados construido con las etiquetas de los parámetros (por ejemplo `SADS PTR Lado Menor Pulgadas no puede ser mayor que SADS PTR Lado Pulgadas.`; reporta el texto real obtenido), conserva valores capturados y no busca duplicados ni guarda |
+| Lado A = lado B | Válido (HSS cuadrado) |
+| Efecto en PTRR y MPPTRR | Ninguno: usan los mismos dos campos, pero `medidaElegida` llena ambos lados desde el mapa antes de validar y las 24 filas del mapa cumplen mayor ≥ menor. Las pruebas existentes de PTRR deben seguir pasando sin cambios |
+| PTRC y MPPTRC | No aplica: su configuración no incluye `custitem_sads_nat_ptr_lado_b` |
+| Comentario | Actualiza el comentario de la constante citando D-18 y RN-HSS-04 |
+Actualiza también la tabla de reglas de `SADS_SL_crear_articulo_nat.md` (D-18) para mencionar el par de PTR.
 
 ## Modelo de datos
 ### Lista de naturalezas
@@ -98,10 +115,11 @@ Los 3 scriptids DRT son de otra personalización y existen en sandbox y producci
 | RN-HSS-01 | Código = `HSS` + lado A (2 dígitos) + lado B (2 dígitos) + código de espesor + largo en centésimas (4 dígitos). |
 | RN-HSS-02 | Nombre = `HSS <a>"x<b>"x<espesor> a <largo con 2 decimales>m`. |
 | RN-HSS-03 | Lado A ≤ 10 → FAM 025; lado A ≥ 12 → FAM 026; margen HSS en ambos; sin dependencia del espesor ni del largo. Lado A 11 → sin familia. |
+| RN-HSS-04 | Lado A ≥ lado B; lado B mayor que lado A repite el paso 2 del Suitelet. |
 | RN-HSS-05 | Valor de unidades = largo. |
 | RN-HSS-06 | El largo admite máximo 2 decimales. |
 | RN-HSS-07 | Las familias DRT de HSS están en `manifest.xml` y en la prueba de portabilidad. |
-Fuera de alcance: validar lado A ≥ lado B (no agregar a `PARES_DE_LADOS`), HSS redondo, artículo 10671 (espesor E31E).
+Fuera de alcance: HSS redondo, artículo 10671 (espesor E31E), validación de lados en CS y UE de artículo.
 
 ## Datos de la prueba `SADS_naturaleza_hss.test.js`
 Origen: búsqueda guardada de artículos 4978 (2026-11-26), 71 artículos en alcance.
@@ -156,6 +174,7 @@ Genera el CSV con un script desechable a partir de los datos de la prueba; no lo
 - Formato de código: 4 espacios, comillas simples, punto y coma, funciones flecha, `const`, `Object.freeze`.
 - scriptids portables: ninguno nuevo de la forma `val_<n>_<cuenta>` salvo las 3 dependencias DRT indicadas.
 - No tocar `Calculo de Precio/`, `Terceros/`, `drt_item_ue.js`, CS ni UE de artículo.
+- En el Suitelet, el único cambio permitido es el par de `PARES_DE_LADOS` y su comentario.
 - No inventar IDs. No escribir claves SAT, peso ni impuestos.
 - Máximo 2 intentos de corrección por la misma falla; si persiste, detente y reporta.
 
@@ -174,13 +193,16 @@ Genera el CSV con un script desechable a partir de los datos de la prueba; no lo
 | P-10 | 8 espesores HSS | Tipo `val_sads_tesp_hss`, códigos únicos, orden creciente |
 | P-11 | Valor de unidades con `corte.calcularValorDeUnidades` y largo 6.1 | 6.1 |
 | P-12 | `npx jest` completo | Todas las suites aprobadas; reportar conteo final |
+| P-13 | Suitelet, naturaleza HSS, lado A 4, lado B 6 | Repite paso 2 con el mensaje de orden de lados; conserva valores; sin consulta de duplicado; sin `save` |
+| P-14 | Suitelet, naturaleza HSS, lado A 6, lado B 6 | Pasa la validación de lados (cuadrado) |
+| P-15 | Pruebas existentes de PTRR con mapa | Sin cambios y aprobadas |
 
 ## Despliegue (solo documentar en README; no ejecutar)
 1. Sandbox: descargar configuración vigente de la cuenta y conciliar con el XML.
 2. Deploy SDF.
 3. Marcar en la configuración HSS las familias de corte HSS existentes.
 4. Importar el CSV de actualización.
-5. Prueba en sandbox: crear 8"x4" E25 6.10 m → `HSS0804E250610`, FAM 025, valor de unidades 6.1; intentar 16"x16" E50 6.10 m → rechazo por duplicado (41233).
+5. Prueba en sandbox: crear 8"x4" E25 6.10 m → `HSS0804E250610`, FAM 025, valor de unidades 6.1; intentar 16"x16" E50 6.10 m → rechazo por duplicado (41233); capturar lado A 4, lado B 6 → rechazo por orden de lados.
 6. Producción: repetir pasos 1 a 5.
 Reversión: inactivar `val_sads_nat_config_record_hss`; el formato nuevo no afecta a otras naturalezas.
 
@@ -188,5 +210,5 @@ Reversión: inactivar `val_sads_nat_config_record_hss`; el formato nuevo no afec
 1. Lista de archivos creados y modificados.
 2. Resumen de cambios por archivo.
 3. Desviaciones respecto del diseño, con justificación.
-4. Tabla de criterios P-01 a P-12 con resultado.
+4. Tabla de criterios P-01 a P-15 con resultado.
 5. Salida resumida de `npx jest` (suites y pruebas).
